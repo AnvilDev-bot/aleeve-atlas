@@ -51,7 +51,9 @@ public final class ClientMapSync {
                     data.version()));
         }
         String dimension = currentDimensionId();
-        for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries)) {
+        var minecraft = net.minecraft.client.Minecraft.getInstance();
+        java.util.UUID selfId = minecraft.player == null ? null : minecraft.player.getUUID();
+        for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries, selfId)) {
             ClientPacketDistributor.sendToServer(packet);
         }
         LOGGER.debug("Reported digest of {} chunk(s)", entries.size());
@@ -86,7 +88,10 @@ public final class ClientMapSync {
         }
         // 按服务端配置的带宽上限与间隔限流，避免堵塞实时包（§9.2 / §12.1）。
         BUDGET.beginTick();
-        for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas)) {
+        // 差异回传给摘要发送者（由服务端按 targetPlayer 精确路由）。
+        java.util.UUID target = payload.senderId();
+        for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas,
+                target)) {
             int estimated = estimate(packet);
             if (!BUDGET.canSend(estimated)) {
                 // 配额用尽：剩余分片留待下一轮同步，不做无界排队。

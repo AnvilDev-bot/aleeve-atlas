@@ -49,7 +49,7 @@ public final class ServerMapSync {
             }
             PacketDistributor.sendToPlayer(teammate,
                     new ChunkDigestPayload(payload.dimensionId(), aggregation.entries(),
-                            0, 1));
+                            0, 1, sender.getUUID()));
         }
         LOGGER.debug("Forwarded digest of {} chunk(s) from {} to teammates",
                 aggregation.entries().size(), sender.getGameProfile().name());
@@ -61,15 +61,18 @@ public final class ServerMapSync {
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
+        // 差异只回传给摘要发起者，避免在全体队友间重复回流（§3.3）。
+        java.util.UUID targetId = payload.targetPlayer();
+        if (targetId == null) {
+            return;
+        }
         var team = sender.getTeam();
         if (team == null) {
             return;
         }
-        for (ServerPlayer teammate : sender.level().getServer().getPlayerList().getPlayers()) {
-            if (teammate == sender || teammate.getTeam() != team) {
-                continue;
-            }
-            PacketDistributor.sendToPlayer(teammate, payload);
+        ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetId);
+        if (target != null && target != sender && target.getTeam() == team) {
+            PacketDistributor.sendToPlayer(target, payload);
         }
     }
 

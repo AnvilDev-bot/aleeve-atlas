@@ -12,7 +12,8 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 /// 每片携带若干区块的压缩像素数据；接收端按 `batchIndex/batchCount` 逐片写入本地缓存，
 /// 分帧处理以避免接收端帧率骤降（规格 §12.1）。
 public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
-        int batchIndex, int batchCount) implements CustomPacketPayload {
+        int batchIndex, int batchCount, java.util.UUID targetPlayer)
+        implements CustomPacketPayload {
     /// 单包区块数上限：每区块 16×16 像素压缩后约 1 KiB，取 128 区块留足余量。
     public static final int MAX_CHUNKS_PER_PACKET = 128;
 
@@ -29,6 +30,10 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         buf.writeUtf(payload.dimensionId, 256);
                         buf.writeVarInt(payload.batchIndex);
                         buf.writeVarInt(payload.batchCount);
+                        buf.writeBoolean(payload.targetPlayer != null);
+                        if (payload.targetPlayer != null) {
+                            buf.writeUUID(payload.targetPlayer);
+                        }
                         buf.writeVarInt(payload.chunks.size());
                         for (ChunkData chunk : payload.chunks) {
                             buf.writeInt(chunk.chunkX);
@@ -41,25 +46,27 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         String dimension = buf.readUtf(256);
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
+                        java.util.UUID target = buf.readBoolean() ? buf.readUUID() : null;
                         int size = buf.readVarInt();
                         List<ChunkData> chunks = new ArrayList<>(size);
                         for (int i = 0; i < size; i++) {
                             chunks.add(new ChunkData(buf.readInt(), buf.readInt(),
                                     buf.readVarLong(), buf.readByteArray()));
                         }
-                        return new ChunkDeltaPayload(dimension, chunks, batchIndex, batchCount);
+                        return new ChunkDeltaPayload(dimension, chunks, batchIndex, batchCount, target);
                     });
 
     /// 把区块数据切分为符合体积上限的分片。
-    public static List<ChunkDeltaPayload> split(String dimensionId, List<ChunkData> chunks) {
+    public static List<ChunkDeltaPayload> split(String dimensionId, List<ChunkData> chunks,
+            java.util.UUID targetPlayer) {
         List<ChunkDeltaPayload> packets = new ArrayList<>();
         int total = Math.max(1, (chunks.size() + MAX_CHUNKS_PER_PACKET - 1)
                 / MAX_CHUNKS_PER_PACKET);
         for (int index = 0; index < total; index++) {
             int from = index * MAX_CHUNKS_PER_PACKET;
             int to = Math.min(chunks.size(), from + MAX_CHUNKS_PER_PACKET);
-            packets.add(new ChunkDeltaPayload(dimensionId, List.copyOf(chunks.subList(from, to)),
-                    index, total));
+            packets.add(new ChunkDeltaPayload(dimensionId,
+                    List.copyOf(chunks.subList(from, to)), index, total, targetPlayer));
         }
         return packets;
     }

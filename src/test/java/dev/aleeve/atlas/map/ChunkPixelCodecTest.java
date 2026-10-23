@@ -40,7 +40,7 @@ class ChunkPixelCodecTest {
             entries.add(new dev.aleeve.atlas.network.ChunkDigestPayload.Entry(i, -i, i));
         }
         List<dev.aleeve.atlas.network.ChunkDigestPayload> packets =
-                dev.aleeve.atlas.network.ChunkDigestPayload.split("minecraft:overworld", entries);
+                dev.aleeve.atlas.network.ChunkDigestPayload.split("minecraft:overworld", entries, null);
         assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.entries().size()).sum();
         assertEquals(3000, total);
@@ -59,7 +59,7 @@ class ChunkPixelCodecTest {
             chunks.add(new dev.aleeve.atlas.network.ChunkDeltaPayload.ChunkData(i, i, i, payload));
         }
         List<dev.aleeve.atlas.network.ChunkDeltaPayload> packets =
-                dev.aleeve.atlas.network.ChunkDeltaPayload.split("minecraft:overworld", chunks);
+                dev.aleeve.atlas.network.ChunkDeltaPayload.split("minecraft:overworld", chunks, null);
         assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.chunks().size()).sum();
         assertEquals(300, total);
