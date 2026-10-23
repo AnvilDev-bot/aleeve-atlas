@@ -10,10 +10,13 @@ import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
+import dev.aleeve.atlas.AtlasSession;
+import dev.aleeve.atlas.waypoint.WaypointSyncPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /// 客户端路径点管理器（规格 §5.1）。
 ///
@@ -22,7 +25,15 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 public final class ClientWaypoints {
     private static WaypointStore store;
     private static String currentServerKey;
+    /// 待玩家确认的队友路径点（手动接受策略）。
+    private static final java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> PENDING =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     private ClientWaypoints() {
+    }
+
+    public static java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> pending() {
+        return PENDING;
     }
 
     /// 当前路径点存储；未连接时返回 {@code null}。
@@ -57,6 +68,24 @@ public final class ClientWaypoints {
         Waypoint waypoint = Waypoint.create(name, pos, minecraft.level.dimension(), 0xFF55FFFF);
         waypointStore.upsert(waypoint);
         return waypoint;
+    }
+
+    /// 把路径点分享给在线队友（规格 §5.2 手动同步）。
+    public static void share(Waypoint waypoint) {
+        if (!AtlasSession.synchronizedMode()) {
+            return;
+        }
+        ClientPacketDistributor.sendToServer(
+                new WaypointSyncPayload(WaypointSyncPayload.Action.UPSERT, waypoint));
+    }
+
+    /// 通知队友删除某路径点。
+    public static void shareDelete(Waypoint waypoint) {
+        if (!AtlasSession.synchronizedMode()) {
+            return;
+        }
+        ClientPacketDistributor.sendToServer(
+                new WaypointSyncPayload(WaypointSyncPayload.Action.DELETE, waypoint));
     }
 
     /// 记录玩家死亡位置，供复活后生成死亡点。

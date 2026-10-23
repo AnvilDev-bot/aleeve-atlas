@@ -27,6 +27,10 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.hud.light", "Light: %s");
 
         add("aleeve_atlas.message.ping_received", "%s sent a ping");
+        add("aleeve_atlas.message.waypoint_received", "Waypoint from %2$s accepted: %1$s");
+        add("aleeve_atlas.message.waypoint_shared", "%2$s shared waypoint %1$s at %3$s, %4$s, %5$s");
+        add("aleeve_atlas.message.waypoint_accept", "[Accept]");
+        add("aleeve_atlas.message.waypoint_ignore", "[Ignore]");
         add("aleeve_atlas.waypoint.default_name", "Waypoint");
         add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
         add("aleeve_atlas.message.death_point_added", "Death point recorded");
