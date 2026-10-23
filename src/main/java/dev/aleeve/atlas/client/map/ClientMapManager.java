@@ -137,9 +137,17 @@ public final class ClientMapManager {
         for (MapDimensionCache cache : caches.values()) {
             cache.flush();
         }
+        // 洞穴分层缓存独立于地表缓存，必须一并落盘（规格 §2.1 / §11）。
+        if (caveCache != null) {
+            caveCache.flush();
+        }
     }
 
     public void clear() {
+        if (caveCache != null) {
+            caveCache.flush();
+            caveCache = null;
+        }
         caches.clear();
         currentServerKey = null;
         currentDimension = null;
