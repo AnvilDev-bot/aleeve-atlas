@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.sync;
 
+import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
 import java.util.HashMap;
 import java.util.List;
@@ -56,13 +57,19 @@ public final class ServerMapSync {
     }
 
     /// 收到队友回传的差异分片：转发给当初上报摘要的发起者（规格 §3.3 分片流式传输）。
-    public static void handleDelta(dev.dubhe.atlas.network.ChunkDeltaPayload payload,
-            IPayloadContext context) {
+    ///
+    /// 本处理器注册为网络线程执行（§10），玩家与队伍查询属主线程 API，故切回主线程转发。
+    public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> forwardDelta(payload, context));
+    }
+
+    /// 在主线程把差异分片转发给摘要发起者。
+    private static void forwardDelta(ChunkDeltaPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
         // 差异只回传给摘要发起者，避免在全体队友间重复回流（§3.3）。
-        java.util.UUID targetId = payload.targetPlayer();
+        UUID targetId = payload.targetPlayer();
         if (targetId == null) {
             return;
         }

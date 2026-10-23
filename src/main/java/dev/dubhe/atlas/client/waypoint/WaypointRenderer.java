@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.waypoint.Waypoint;
@@ -94,7 +95,7 @@ public final class WaypointRenderer {
     }
 
     /// 圆形小地图形态判定工具。
-    public static boolean circular(dev.dubhe.atlas.config.AtlasClientConfig config) {
+    public static boolean circular(AtlasClientConfig config) {
         return config.minimap.shape == MinimapShape.CIRCLE;
     }
 }

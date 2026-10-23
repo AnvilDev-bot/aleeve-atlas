@@ -15,6 +15,7 @@ import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.HandlerThread;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /// 全部自定义负载注册（规格 §10）。
@@ -47,11 +48,18 @@ public final class AtlasPayloads {
         registrar.playBidirectional(WaypointSyncPayload.TYPE, WaypointSyncPayload.STREAM_CODEC,
                 WaypointSyncHandler::handle, ClientWaypointSync::handle);
 
-        // 地图增量同步：摘要与差异均为双向（服务端聚合后转发，§3.3）。
+        // 地图增量同步：摘要双向转发（服务端聚合后转发，§3.3）。
         registrar.playBidirectional(ChunkDigestPayload.TYPE, ChunkDigestPayload.STREAM_CODEC,
                 ServerMapSync::handleDigest, ClientMapSync::handleDigest);
-        registrar.playBidirectional(ChunkDeltaPayload.TYPE, ChunkDeltaPayload.STREAM_CODEC,
-                ServerMapSync::handleDelta, ClientMapSync::handleDelta);
+
+        // 增量分片解压属密集计算，注册为网络线程执行（规格 §10）：
+        // 处理器在网络线程完成解压，再用 context.enqueueWork 切回主线程写缓存。
+        PayloadRegistrar deltaRegistrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION)
+                .executesOn(HandlerThread.NETWORK)
+                .optional();
+        deltaRegistrar.playBidirectional(ChunkDeltaPayload.TYPE,
+                ChunkDeltaPayload.STREAM_CODEC, ServerMapSync::handleDelta,
+                ClientMapSync::handleDelta);
 
         // 领地下发：服务端 API 推送、客户端重组后写入注册表（§7.1）。
         registrar.playToClient(TerritorySyncPayload.TYPE, TerritorySyncPayload.STREAM_CODEC,
