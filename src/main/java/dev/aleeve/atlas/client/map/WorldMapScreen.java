@@ -4,6 +4,7 @@ import dev.aleeve.atlas.client.AtlasKeyMappings;
 import dev.aleeve.atlas.api.territory.AtlasTerritory;
 import dev.aleeve.atlas.api.territory.TerritoryGroup;
 import dev.aleeve.atlas.territory.TerritoryRegistry;
+import dev.aleeve.atlas.territory.TerritoryRuns;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -192,12 +193,31 @@ public final class WorldMapScreen extends Screen {
             int fill = withOpacity(group.themeColorRgb(), group.fillOpacity());
             boolean highlighted = hoveredGroups.contains(group);
             int border = highlighted ? 0xFFFFFFFF : group.borderStyle().colorArgb();
+            // 填充：按横向连续路段批量绘制，减少绘制调用（§12.1）。
+            for (TerritoryRuns.Run run : TerritoryRuns.of(group.chunks())) {
+                int[] first = chunkScreenRect(new ChunkPos(run.xStart(), run.z()));
+                if (first == null) {
+                    continue;
+                }
+                int x = first[0];
+                int y = first[1];
+                int width = first[2] * run.length();
+                int height = first[3];
+                // 裁剪到视口内，避免超出屏幕的无效填充。
+                int left = Math.max(0, x);
+                int top = Math.max(0, y);
+                int right = Math.min(width, x + width);
+                int bottom = Math.min(height, y + height);
+                if (right > left && bottom > top) {
+                    graphics.fill(left, top, right, bottom, fill);
+                }
+            }
+            // 边框：仅在与非领地交界处逐区块描边（§7.3）。
             for (ChunkPos chunk : group.chunks()) {
                 int[] rect = chunkScreenRect(chunk);
                 if (rect == null) {
                     continue;
                 }
-                graphics.fill(rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3], fill);
                 drawChunkOutline(graphics, group, chunk, rect, border);
             }
         }
