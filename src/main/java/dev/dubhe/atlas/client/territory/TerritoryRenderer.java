@@ -129,6 +129,9 @@ public final class TerritoryRenderer {
     }
 
     /// 按圆形边界裁剪的矩形填充：圆形模式下逐行与圆求交，方形模式直接填充。
+    ///
+    /// 相邻且在圆形内裁剪区间一致的若干行合并为一次填充，减少绘制调用：
+    /// 一块领地由数十个区块组成，逐行填充会产生上千次 `fill`，显著拖慢 HUD 渲染。
     private static void fillClipped(GuiGraphics graphics, int x, int y, int width, int height,
             int color, boolean circular, MinimapLayout layout) {
         if (!circular) {
@@ -138,19 +141,35 @@ public final class TerritoryRenderer {
         double centerX = layout.x() + layout.size() / 2.0;
         double centerZ = layout.y() + layout.size() / 2.0;
         double radius = layout.size() / 2.0;
-        for (int row = y; row < y + height; row++) {
-            double dy = row + 0.5 - centerZ;
-            double spanSq = radius * radius - dy * dy;
-            if (spanSq <= 0.0) {
+        int runStartRow = -1;
+        int runLeft = 0;
+        int runRight = 0;
+        for (int row = y; row <= y + height; row++) {
+            int left = 0;
+            int right = 0;
+            boolean visible = false;
+            if (row < y + height) {
+                double dy = row + 0.5 - centerZ;
+                double spanSq = radius * radius - dy * dy;
+                if (spanSq > 0.0) {
+                    double span = Math.sqrt(spanSq);
+                    left = Math.max(x, (int) Math.floor(centerX - span));
+                    right = Math.min(x + width, (int) Math.ceil(centerX + span));
+                    visible = right > left;
+                }
+            }
+            // 与上一行裁剪区间一致则继续累积，否则冲刷上一段。
+            if (visible && runStartRow >= 0 && left == runLeft && right == runRight) {
                 continue;
             }
-            double span = Math.sqrt(spanSq);
-            int from = (int) Math.floor(centerX - span);
-            int to = (int) Math.ceil(centerX + span);
-            int left = Math.max(x, from);
-            int right = Math.min(x + width, to);
-            if (right > left) {
-                graphics.fill(left, row, right, row + 1, color);
+            if (runStartRow >= 0) {
+                graphics.fill(runLeft, runStartRow, runRight, row, color);
+                runStartRow = -1;
+            }
+            if (visible) {
+                runStartRow = row;
+                runLeft = left;
+                runRight = right;
             }
         }
     }
