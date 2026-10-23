@@ -35,6 +35,12 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
         add("aleeve_atlas.message.death_point_added", "Death point recorded");
 
+        add("aleeve_atlas.screen.world_map.share_team", "Share to Team");
+        add("aleeve_atlas.screen.world_map.share_team.tip",
+                "Share the nearest waypoint with your team");
+        add("aleeve_atlas.message.waypoint_none", "No waypoint to share");
+        add("aleeve_atlas.message.waypoint_shared_team", "Shared waypoint: %s");
+
         add("aleeve_atlas.screen.world_map", "World Map");
         add("aleeve_atlas.screen.world_map.hint",
                 "Drag to pan, scroll to zoom, ESC or M to close");

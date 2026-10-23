@@ -23,6 +23,8 @@ import dev.aleeve.atlas.map.ChunkMapData;
 import dev.aleeve.atlas.map.MapDimensionCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -69,6 +71,54 @@ public final class WorldMapScreen extends Screen {
             canvas.register();
         }
         refreshCanvas();
+        addTeamButtons();
+    }
+
+    /// 队伍相关按钮：独立模式下置灰并给出说明（规格 §1 / AC-1）。
+    private void addTeamButtons() {
+        boolean synchronizedMode = dev.aleeve.atlas.AtlasSession.synchronizedMode();
+        Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
+        int buttonWidth = 120;
+        int buttonHeight = 20;
+        int x = width - buttonWidth - 6;
+        int y = 6;
+        Button share = Button.builder(label, button -> shareNearestWaypoint())
+                .bounds(x, y, buttonWidth, buttonHeight)
+                .tooltip(Tooltip.create(synchronizedMode
+                        ? Component.translatable("aleeve_atlas.screen.world_map.share_team.tip")
+                        : Component.translatable(
+                                "aleeve_atlas.message.server_unsupported")))
+                .build();
+        share.active = synchronizedMode;
+        addRenderableWidget(share);
+    }
+
+    /// 把视野中心最近的路径点分享给队伍（规格 §5.2 手动同步）。
+    private void shareNearestWaypoint() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.player == null) {
+            return;
+        }
+        Waypoint nearest = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
+            double dx = waypoint.pos().getX() + 0.5 - centerX;
+            double dz = waypoint.pos().getZ() + 0.5 - centerZ;
+            double distance = dx * dx + dz * dz;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearest = waypoint;
+            }
+        }
+        if (nearest == null) {
+            minecraft.player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.waypoint_none"), true);
+            return;
+        }
+        ClientWaypoints.share(nearest);
+        minecraft.player.displayClientMessage(
+                Component.translatable("aleeve_atlas.message.waypoint_shared_team",
+                        nearest.name()), true);
     }
 
     @Override
