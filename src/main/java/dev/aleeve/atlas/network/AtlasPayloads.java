@@ -6,6 +6,8 @@ import dev.aleeve.atlas.ping.ClientPings;
 import dev.aleeve.atlas.ping.PingBroadcastPayload;
 import dev.aleeve.atlas.ping.PingPayload;
 import dev.aleeve.atlas.ping.ServerPingHandler;
+import dev.aleeve.atlas.sync.ClientMapSync;
+import dev.aleeve.atlas.sync.ServerMapSync;
 import dev.aleeve.atlas.waypoint.WaypointSyncHandler;
 import dev.aleeve.atlas.waypoint.WaypointSyncPayload;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -33,8 +35,7 @@ public final class AtlasPayloads {
         registrar.playToClient(HandshakePayload.TYPE, HandshakePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleHandshake);
 
-        // 标点：客户端上报，服务端校验后广播给同队成员（§3.2/§10）。
-        // 上报与广播使用不同 payload 类型，避免方向冲突。
+        // 标点：上报与广播使用不同 payload 类型，避免方向冲突（§3.2/§10）。
         registrar.playToServer(PingPayload.TYPE, PingPayload.STREAM_CODEC,
                 ServerPingHandler::handle);
         registrar.playToClient(PingBroadcastPayload.TYPE, PingBroadcastPayload.STREAM_CODEC,
@@ -43,6 +44,12 @@ public final class AtlasPayloads {
         // 路径点同步：收发策略由客户端配置决定（§5.2/§5.3）。
         registrar.playBidirectional(WaypointSyncPayload.TYPE, WaypointSyncPayload.STREAM_CODEC,
                 WaypointSyncHandler::handle, ClientWaypointSync::handle);
+
+        // 地图增量同步：摘要与差异均为双向（服务端聚合后转发，§3.3）。
+        registrar.playBidirectional(ChunkDigestPayload.TYPE, ChunkDigestPayload.STREAM_CODEC,
+                ServerMapSync::handleDigest, ClientMapSync::handleDigest);
+        registrar.playBidirectional(ChunkDeltaPayload.TYPE, ChunkDeltaPayload.STREAM_CODEC,
+                ServerMapSync::handleDelta, ClientMapSync::handleDelta);
 
         registrar.optional();
     }

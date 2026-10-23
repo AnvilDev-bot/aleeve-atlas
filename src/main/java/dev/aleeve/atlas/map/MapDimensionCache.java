@@ -57,6 +57,14 @@ public final class MapDimensionCache {
         return chunks.size();
     }
 
+    /// 全部已缓存区块的摘要（坐标 + 版本号），供地图增量同步比对（规格 §3.3）。
+    ///
+    /// 仅返回内存中已加载的区块；精确全量摘要需要遍历区域文件，代价较高，
+    /// 因此同步按「当前会话已探索」范围进行，符合规格「仅限在线成员」的语义。
+    public java.util.List<ChunkMapData> loadedChunks() {
+        return java.util.List.copyOf(chunks.values());
+    }
+
     /// 该缓存对应的维度目录（诊断用）。
     public Path dimensionDir() {
         return dimensionDir;
