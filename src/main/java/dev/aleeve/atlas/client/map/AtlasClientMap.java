@@ -65,5 +65,6 @@ public final class AtlasClientMap {
         float lambda = (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
                 0.3, 0.5);
         AtlasTerritory.clientRegistry().setAnchorLambda(lambda);
+        DemoTerritory.registerIfDebugging();
     }
 }

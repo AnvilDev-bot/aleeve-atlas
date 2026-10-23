@@ -171,10 +171,12 @@ public final class WorldMapScreen extends Screen {
         }
 
         drawTerritories(graphics, mouseX, mouseY);
-        drawPlayerMarker(graphics);
         drawWaypoints(graphics);
         drawPings(graphics);
+        drawPlayerMarker(graphics);
         drawOverlayText(graphics);
+        // 组件渲染后再绘制领地标签，确保标签位于最上层（§7.5）。
+        drawTerritoryLabels(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -229,27 +231,6 @@ public final class WorldMapScreen extends Screen {
             }
         }
 
-        // 名称标签：仅在区块像素足够大时显示，避免缩小时标签重叠（§7.5 / AC-10）。
-        if (pixelsPerChunk >= MIN_PIXELS_FOR_LABEL) {
-            for (TerritoryGroup group : groups) {
-                TerritoryRegistry.CachedTerritory cached = registry.cached(group.territoryId());
-                if (cached == null) {
-                    continue;
-                }
-                for (TerritoryRegistry.Component component : cached.components()) {
-                    if (component.anchor() == null) {
-                        continue;
-                    }
-                    int[] rect = chunkScreenRect(component.anchor());
-                    if (rect == null) {
-                        continue;
-                    }
-                    graphics.drawString(minecraft.font, group.displayName(),
-                            rect[0] + rect[2] / 2, rect[1] + rect[3] / 2, 0xFFFFFFFF, true);
-                }
-            }
-        }
-
         // 悬停信息卡片按 zOrder 从高到低合并展示（§7.7 第 3 条）。
         if (!hoveredGroups.isEmpty()) {
             List<Component> lines = new ArrayList<>();
@@ -282,6 +263,58 @@ public final class WorldMapScreen extends Screen {
             graphics.drawString(minecraft.font, line, x + padding, textY, 0xFFFFFFFF, true);
             textY += lineHeight;
         }
+    }
+
+    /// 领地名称标签（规格 §7.5）。在组件渲染之后调用，确保标签位于最上层。
+    ///
+    /// 缩放到区块像素不足阈值时隐藏标签，仅保留色块（AC-10）。
+    private void drawTerritoryLabels(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || pixelsPerChunk < MIN_PIXELS_FOR_LABEL) {
+            return;
+        }
+        TerritoryRegistry registry = AtlasTerritory.clientRegistry();
+        var groups = registry.orderedForDimension(minecraft.level.dimension());
+        if (groups.isEmpty()) {
+            return;
+        }
+        for (TerritoryGroup group : groups) {
+            TerritoryRegistry.CachedTerritory cached = registry.cached(group.territoryId());
+            if (cached == null) {
+                continue;
+            }
+            for (TerritoryRegistry.Component component : cached.components()) {
+                if (component.anchor() == null) {
+                    continue;
+                }
+                // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见（§7.5）。
+                int[] rect = chunkScreenRect(component.anchor());
+                if (rect == null) {
+                    rect = firstVisibleChunkRect(component);
+                }
+                if (rect == null) {
+                    continue;
+                }
+                // 名称标签带深色背景框，避免在浅色地形上难以辨认（§7.5）。
+                int textWidth = minecraft.font.width(group.displayName());
+                int tx = rect[0] + rect[2] / 2 - textWidth / 2;
+                int ty = rect[1] + rect[3] / 2 - 4;
+                graphics.fill(tx - 2, ty - 2, tx + textWidth + 2, ty + 10, 0xB0000000);
+                graphics.drawString(minecraft.font, group.displayName(), tx, ty, 0xFFFFFFFF,
+                        false);
+            }
+        }
+    }
+
+    /// 分量内第一个可见区块的屏幕矩形；全部不可见时返回 null。
+    private int[] firstVisibleChunkRect(TerritoryRegistry.Component component) {
+        for (ChunkPos chunk : component.chunks()) {
+            int[] rect = chunkScreenRect(chunk);
+            if (rect != null) {
+                return rect;
+            }
+        }
+        return null;
     }
 
     /// 区块在屏幕上的矩形：`[x, y, width, height]`；完全不可见时返回 null。

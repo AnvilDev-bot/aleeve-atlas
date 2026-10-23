@@ -27,6 +27,6 @@ public record SimpleTerritory(
     public static SimpleTerritory of(String id, ResourceKey<Level> dimension,
             Set<ChunkPos> chunks, Component name, int themeColorRgb) {
         return new SimpleTerritory(id, dimension, Set.copyOf(chunks), name, themeColorRgb,
-                0.25F, BorderStyle.ofTheme(themeColorRgb), List.of(), 0);
+                0.45F, BorderStyle.ofTheme(themeColorRgb), List.of(), 0);
     }
 }
