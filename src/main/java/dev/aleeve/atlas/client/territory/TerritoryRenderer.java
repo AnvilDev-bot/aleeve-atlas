@@ -9,6 +9,7 @@ import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.ConfigBounds;
 import dev.aleeve.atlas.territory.TerritoryRegistry;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -43,8 +44,10 @@ public final class TerritoryRenderer {
             return;
         }
         double blocksPerPixel = (double) MinimapLayout.COVERED_BLOCKS / layout.size();
+        // 各区块的最高 zOrder：重叠区块的边框只由最高优先级领地绘制（§7.7 第 2 条）。
+        Map<ChunkPos, Integer> topZOrder = topZOrderByChunk(groups);
         for (TerritoryGroup group : groups) {
-            renderGroup(graphics, group, dimension,
+            renderGroup(graphics, group, dimension, topZOrder,
                     chunk -> {
                         double worldX = (chunk.x << 4) + 8.0;
                         double worldZ = (chunk.z << 4) + 8.0;
@@ -65,8 +68,8 @@ public final class TerritoryRenderer {
     /// 圆形小地图下，区块矩形需与圆形求交后逐行填充，
     /// 否则矩形角部会溢出圆形边界（规格 §2.2 圆形形态）。
     private static void renderGroup(GuiGraphics graphics, TerritoryGroup group,
-            ResourceKey<Level> dimension, ChunkProjector projector, boolean circular,
-            MinimapLayout layout) {
+            ResourceKey<Level> dimension, Map<ChunkPos, Integer> topZOrder,
+            ChunkProjector projector, boolean circular, MinimapLayout layout) {
         if (!group.dimension().equals(dimension)) {
             return;
         }
@@ -88,6 +91,11 @@ public final class TerritoryRenderer {
             if (rect == null) {
                 continue;
             }
+            // 被更高优先级领地覆盖的区块不绘制本层边框（§7.7 第 2 条）。
+            Integer top = topZOrder.get(chunk);
+            if (top != null && top > group.zOrder()) {
+                continue;
+            }
             int x = rect[0];
             int y = rect[1];
             int size = rect[2];
@@ -106,6 +114,17 @@ public final class TerritoryRenderer {
                         circular, layout);
             }
         }
+    }
+
+    /// 统计每个区块命中的最高 `zOrder`（规格 §7.7 第 2 条）。
+    private static Map<ChunkPos, Integer> topZOrderByChunk(List<TerritoryGroup> groups) {
+        Map<ChunkPos, Integer> top = new java.util.HashMap<>();
+        for (TerritoryGroup group : groups) {
+            for (ChunkPos chunk : group.chunks()) {
+                top.merge(chunk, group.zOrder(), Math::max);
+            }
+        }
+        return top;
     }
 
     /// 按圆形边界裁剪的矩形填充：圆形模式下逐行与圆求交，方形模式直接填充。
