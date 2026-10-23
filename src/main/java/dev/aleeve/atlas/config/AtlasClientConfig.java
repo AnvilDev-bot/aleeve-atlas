@@ -74,6 +74,9 @@ public class AtlasClientConfig {
         @Comment("Fade-out grace period in seconds for occluded markers (0.5 ~ 1.5).")
         public double fadeOutSeconds = 1.0;
 
+        @Comment("In hybrid mode, also expand icons for all entity types while the player list key is held.")
+        public boolean hybridExpandAllIcons = false;
+
         @CollapsibleObject
         @Comment("Per-category radar settings.")
         public Categories categories = new Categories();

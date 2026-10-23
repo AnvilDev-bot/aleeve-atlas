@@ -64,6 +64,8 @@
   "aleeve_atlas.configuration.radar.display_mode.tooltip": "Entity radar display mode.",
   "aleeve_atlas.configuration.radar.fade_out_seconds": "Fade Out Seconds",
   "aleeve_atlas.configuration.radar.fade_out_seconds.tooltip": "Fade-out grace period in seconds for occluded markers (0.5 ~ 1.5).",
+  "aleeve_atlas.configuration.radar.hybrid_expand_all_icons": "Hybrid Expand All Icons",
+  "aleeve_atlas.configuration.radar.hybrid_expand_all_icons.tooltip": "In hybrid mode, also expand icons for all entity types while the player list key is held.",
   "aleeve_atlas.configuration.radar.max_radar_distance": "Max Radar Distance",
   "aleeve_atlas.configuration.radar.max_radar_distance.tooltip": "Maximum radar detection distance in blocks.",
   "aleeve_atlas.configuration.radar.non_team_player_visibility": "Non Team Player Visibility",

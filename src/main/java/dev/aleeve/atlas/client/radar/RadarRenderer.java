@@ -48,6 +48,9 @@ public final class RadarRenderer {
         boolean showIcons = mode == RadarDisplayMode.ICON;
         boolean hybrid = mode == RadarDisplayMode.HYBRID;
         boolean playerListDown = hybrid && minecraft.options.keyPlayerList.isDown();
+        // 混合模式可配置为按住玩家列表键时展开全体实体图标（§6.1）。
+        boolean expandAllIcons = showIcons
+                || (playerListDown && config.radar.hybridExpandAllIcons);
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         // 本次绘制已占用的掉落物格位，用于密集合并（§6.2）。
         java.util.Set<Long> itemDots = new java.util.HashSet<>();
