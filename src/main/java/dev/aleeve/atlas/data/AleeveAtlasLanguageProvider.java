@@ -44,6 +44,15 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.territory_left", "Left %s");
         add("aleeve_atlas.message.territory_demo_added", "Demo territory added");
         add("aleeve_atlas.message.territory_demo_cleared", "Demo territory cleared");
+        add("aleeve_atlas.screen.waypoint_list", "Waypoints");
+        add("aleeve_atlas.screen.waypoint_list.show", "Show");
+        add("aleeve_atlas.screen.waypoint_list.hide", "Hide");
+        add("aleeve_atlas.screen.waypoint_list.share", "Share");
+        add("aleeve_atlas.screen.waypoint_list.share.tip", "Share this waypoint with your team");
+        add("aleeve_atlas.screen.waypoint_list.delete", "Delete");
+        add("aleeve_atlas.screen.waypoint_list.empty", "No waypoints in this dimension");
+        add("aleeve_atlas.screen.waypoint_list.death", "[death]");
+        add("aleeve_atlas.screen.waypoint_list.scroll_hint", "Scroll to browse");
         add("aleeve_atlas.screen.world_map.share_team", "Share to Team");
         add("aleeve_atlas.screen.world_map.share_team.tip",
                 "Share the nearest waypoint with your team");

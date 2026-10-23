@@ -12,6 +12,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import dev.aleeve.atlas.client.waypoint.ClientWaypoints;
+import dev.aleeve.atlas.client.waypoint.WaypointListScreen;
 import dev.aleeve.atlas.client.waypoint.WaypointRenderer;
 import dev.aleeve.atlas.ping.ClientPings;
 import dev.aleeve.atlas.ping.MapPingData;
@@ -92,6 +93,12 @@ public final class WorldMapScreen extends Screen {
                 .build();
         share.active = synchronizedMode;
         addRenderableWidget(share);
+
+        // 路径点管理列表入口（规格 §5.2），与分享按钮保持 6px 间隔。
+        addRenderableWidget(Button.builder(
+                        Component.translatable("aleeve_atlas.screen.waypoint_list"),
+                        button -> Minecraft.getInstance().setScreen(new WaypointListScreen()))
+                .bounds(x - 126, y, 120, 20).build());
     }
 
     /// 把视野中心最近的路径点分享给队伍（规格 §5.2 手动同步）。
