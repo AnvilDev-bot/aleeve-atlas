@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.map.MapPalette;
@@ -75,6 +76,7 @@ public final class MapCanvas {
     }
 
     private void redraw(MapDimensionCache cache) {
+        long startedAt = System.nanoTime();
         fill(MapPalette.TRANSPARENT);
         if (cache != null) {
             for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
@@ -94,6 +96,8 @@ public final class MapCanvas {
         if (initialized) {
             texture.upload();
         }
+        // 记录画布重绘耗时，供 §12.1 性能验收核对。
+        AtlasProfiling.recordCanvas(System.nanoTime() - startedAt);
     }
 
     /// 未探索区块底纹：深色底加每 4 像素的网格线，与已探索地形形成明确区分。

@@ -1,27 +1,25 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import java.nio.file.Path;
-import java.util.List;
-import net.minecraft.client.Minecraft;
-
+import com.mojang.brigadier.CommandDispatcher;
+import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.api.territory.AtlasTerritory;
+import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
 import dev.dubhe.atlas.ping.PingChannelPolicy;
-import dev.dubhe.atlas.waypoint.WaypointTransfer;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.api.territory.AtlasTerritory;
-import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.territory.SimpleTerritory;
+import dev.dubhe.atlas.waypoint.WaypointTransfer;
+import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.api.distmarker.Dist;
@@ -103,6 +101,8 @@ public final class AtlasClientCommands {
         }
         player.displayClientMessage(Component.literal(
                 AtlasProfiling.minimapSummary()), false);
+        player.displayClientMessage(Component.literal(
+                AtlasProfiling.canvasSummary()), false);
         // 标点通道诊断：确认是否存在与外部模组重复广播的风险（§3.2.2）。
         player.displayClientMessage(Component.literal(
                 PingChannelPolicy.describe()), false);

@@ -10,6 +10,9 @@ public final class AtlasProfiling {
     private static final int SAMPLE_CAPACITY = 300;
 
     private static final RenderTimer MINIMAP = new RenderTimer(SAMPLE_CAPACITY);
+    /// 世界地图画布单帧预算：8 ms（拖拽重绘为一次性开销，预算高于 HUD）。
+    public static final long CANVAS_BUDGET_NANOS = 8_000_000L;
+    private static final RenderTimer CANVAS = new RenderTimer(SAMPLE_CAPACITY);
 
     private AtlasProfiling() {
     }
@@ -23,6 +26,22 @@ public final class AtlasProfiling {
         return MINIMAP;
     }
 
+    public static RenderTimer canvas() {
+        return CANVAS;
+    }
+
+    /// 记录一次世界地图画布重绘耗时。
+    public static void recordCanvas(long nanos) {
+        CANVAS.record(nanos);
+    }
+
+    /// 世界地图画布统计摘要（供命令输出）。
+    public static String canvasSummary() {
+        return "worldmap canvas: avg=%.3fms max=%.3fms n=%d"
+                .formatted(CANVAS.averageMillis(), CANVAS.maxNanos() / 1_000_000.0,
+                        CANVAS.count());
+    }
+
     /// 小地图统计摘要（供命令输出）。
     public static String minimapSummary() {
         return "minimap: avg=%.3fms max=%.3fms over-budget=%.1f%% (n=%d, budget=1ms)"
@@ -33,5 +52,6 @@ public final class AtlasProfiling {
 
     public static void reset() {
         MINIMAP.reset();
+        CANVAS.reset();
     }
 }

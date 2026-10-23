@@ -28,10 +28,13 @@ public final class PerformanceReporter {
             return;
         }
         ticks = 0;
-        if (AtlasProfiling.minimap().count() == 0) {
-            return;
+        if (AtlasProfiling.minimap().count() > 0) {
+            LOGGER.info("{}", AtlasProfiling.minimapSummary());
         }
-        LOGGER.info("{}", AtlasProfiling.minimapSummary());
+        // 世界地图画布仅在拖拽或缩放时重绘，单独输出便于核对（§12.1）。
+        if (AtlasProfiling.canvas().count() > 0) {
+            LOGGER.info("{}", AtlasProfiling.canvasSummary());
+        }
         AtlasProfiling.reset();
     }
 }
