@@ -51,6 +51,7 @@ public final class MinimapRenderer {
         if (!texture.ready()) {
             return;
         }
+        long startedAt = System.nanoTime();
 
         MinimapLayout layout = MinimapLayout.of(config, minecraft);
         if (layout == null) {
@@ -88,6 +89,9 @@ public final class MinimapRenderer {
 
         TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular);
         drawInfo(graphics, config, minecraft, size, x, y);
+        // 记录渲染耗时，供 §12.1 性能验收读取。
+        dev.aleeve.atlas.client.profiling.AtlasProfiling.recordMinimap(
+                System.nanoTime() - startedAt);
     }
 
     /// 把朝向角与形态编码进顶点色：R 通道为 yaw/(2π)，G 通道为圆形开关。

@@ -31,7 +31,15 @@ public final class AtlasClientCommands {
     @SubscribeEvent
     public static void register(RegisterClientCommandsEvent event) {
         CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
-        dispatcher.register(Commands.literal("aleeve_atlas")
+        // 主名用不含下划线的 aleeveatlas（便于输入），同时保留 aleeve_atlas 作为别名。
+        dispatcher.register(build(Commands.literal("aleeveatlas")));
+        dispatcher.register(build(Commands.literal("aleeve_atlas")));
+    }
+
+    /// 组装命令树。
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> build(
+            com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> root) {
+        return root
                 .then(Commands.literal("waypoint")
                         .then(Commands.literal("accept")
                                 .then(Commands.argument("id", StringArgumentType.string())
@@ -42,8 +50,7 @@ public final class AtlasClientCommands {
                                 .then(Commands.argument("id", StringArgumentType.string())
                                         .executes(context -> confirm(context.getSource(),
                                                 StringArgumentType.getString(context, "id"),
-                                                false)))))
-                .then(Commands.literal("waypoint")
+                                                false))))
                         .then(Commands.literal("export")
                                 .then(Commands.argument("file", StringArgumentType.string())
                                         .executes(context -> exportWaypoints(context.getSource(),
@@ -56,7 +63,21 @@ public final class AtlasClientCommands {
                         .then(Commands.literal("demo")
                                 .executes(context -> demo(context.getSource())))
                         .then(Commands.literal("clear")
-                                .executes(context -> clear(context.getSource())))));
+                                .executes(context -> clear(context.getSource()))))
+                .then(Commands.literal("perf")
+                        .executes(context -> reportPerformance(context.getSource())));
+    }
+
+    /// 输出渲染性能统计（规格 §12.1 验收）。
+    private static int reportPerformance(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            return 0;
+        }
+        player.displayClientMessage(Component.literal(
+                dev.aleeve.atlas.client.profiling.AtlasProfiling.minimapSummary()), false);
+        dev.aleeve.atlas.client.profiling.AtlasProfiling.reset();
+        return 1;
     }
 
     private static int confirm(CommandSourceStack source, String rawId, boolean accepted) {
