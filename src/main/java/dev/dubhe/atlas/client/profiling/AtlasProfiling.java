@@ -13,6 +13,8 @@ public final class AtlasProfiling {
     /// 世界地图画布单帧预算：8 ms（拖拽重绘为一次性开销，预算高于 HUD）。
     public static final long CANVAS_BUDGET_NANOS = 8_000_000L;
     private static final RenderTimer CANVAS = new RenderTimer(SAMPLE_CAPACITY);
+    /// 画布平移（像素搬移加边缘补绘）的独立统计。
+    private static final RenderTimer CANVAS_SCROLL = new RenderTimer(SAMPLE_CAPACITY);
 
     private AtlasProfiling() {
     }
@@ -35,6 +37,22 @@ public final class AtlasProfiling {
         CANVAS.record(nanos);
     }
 
+    /// 记录一次画布平移耗时。
+    public static void recordCanvasScroll(long nanos) {
+        CANVAS_SCROLL.record(nanos);
+    }
+
+    public static RenderTimer canvasScroll() {
+        return CANVAS_SCROLL;
+    }
+
+    /// 画布平移统计摘要。
+    public static String canvasScrollSummary() {
+        return "worldmap scroll: avg=%.3fms max=%.3fms n=%d"
+                .formatted(CANVAS_SCROLL.averageMillis(),
+                        CANVAS_SCROLL.maxNanos() / 1_000_000.0, CANVAS_SCROLL.count());
+    }
+
     /// 世界地图画布统计摘要（供命令输出）。
     public static String canvasSummary() {
         return "worldmap canvas: avg=%.3fms max=%.3fms n=%d"
@@ -53,5 +71,6 @@ public final class AtlasProfiling {
     public static void reset() {
         MINIMAP.reset();
         CANVAS.reset();
+        CANVAS_SCROLL.reset();
     }
 }

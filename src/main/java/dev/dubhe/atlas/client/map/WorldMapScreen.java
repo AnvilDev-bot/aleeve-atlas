@@ -81,6 +81,37 @@ public final class WorldMapScreen extends Screen {
         refreshCanvas();
         addTeamButtons();
         active = this;
+        verifyScrollIfRequested();
+    }
+
+    /// 自检：按环境变量指定的步数连续平移，验证像素搬移路径。
+    ///
+    /// 仅用于自动化验收，正常游玩不触发。
+    private void verifyScrollIfRequested() {
+        String raw = System.getenv("ALEEVE_ATLAS_SCROLL_SELFTEST");
+        if (raw == null || cache == null) {
+            return;
+        }
+        int steps;
+        try {
+            steps = Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return;
+        }
+        // 以玩家位置为基准，逐段平移视野并同步界面中心，确保画布与采样一致。
+        double startX = centerX;
+        double startZ = centerZ;
+        for (int i = 1; i <= steps; i++) {
+            int dx = (i % 2 == 0) ? i : -i;
+            int dz = (i % 3 == 0) ? -i : i;
+            centerX = startX + dx * ChunkMapData.SIZE;
+            centerZ = startZ + dz * ChunkMapData.SIZE;
+            refreshCanvas();
+        }
+        // 平移结束后回到原点，便于截图核对画面是否与平移前一致。
+        centerX = startX;
+        centerZ = startZ;
+        refreshCanvas();
     }
 
     @Override

@@ -22,8 +22,20 @@ public final class AtlasClientTick {
     private AtlasClientTick() {
     }
 
+    /// 自检只执行一次。
+    private static boolean scrollSelfTestDone;
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // 自动化验收：打开世界地图并连续平移，验证像素搬移路径（正常游玩不触发）。
+        if (!scrollSelfTestDone && System.getenv("ALEEVE_ATLAS_SCROLL_SELFTEST") != null) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null && minecraft.level != null
+                    && minecraft.screen == null) {
+                scrollSelfTestDone = true;
+                AtlasWorldMap.open();
+            }
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
