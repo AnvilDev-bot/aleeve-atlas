@@ -122,6 +122,8 @@
   "aleeve_atlas.screen.waypoint_list.hide": "隐藏",
   "aleeve_atlas.screen.waypoint_list.share": "分享",
   "aleeve_atlas.screen.waypoint_list.share.tip": "把该路径点分享给队伍",
+  "aleeve_atlas.screen.waypoint_list.public": "公开",
+  "aleeve_atlas.screen.waypoint_list.private": "私密",
   "aleeve_atlas.screen.waypoint_list.delete": "删除",
   "aleeve_atlas.screen.waypoint_list.empty": "该维度暂无路径点",
   "aleeve_atlas.screen.waypoint_list.death": "[死亡]",

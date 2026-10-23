@@ -126,6 +126,8 @@
   "aleeve_atlas.screen.waypoint_list.delete": "Delete",
   "aleeve_atlas.screen.waypoint_list.empty": "No waypoints in this dimension",
   "aleeve_atlas.screen.waypoint_list.hide": "Hide",
+  "aleeve_atlas.screen.waypoint_list.private": "Private",
+  "aleeve_atlas.screen.waypoint_list.public": "Public",
   "aleeve_atlas.screen.waypoint_list.scroll_hint": "Scroll to browse",
   "aleeve_atlas.screen.waypoint_list.share": "Share",
   "aleeve_atlas.screen.waypoint_list.share.tip": "Share this waypoint with your team",

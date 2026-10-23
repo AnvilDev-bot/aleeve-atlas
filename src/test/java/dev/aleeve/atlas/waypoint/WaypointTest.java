@@ -22,7 +22,7 @@ class WaypointTest {
     @Test
     void roundTripPreservesAllFields() {
         Waypoint original = new Waypoint(UUID.randomUUID(), "Base", new BlockPos(10, 64, -20),
-                OVERWORLD, 0xFF00FF00, "home", true, 300, false, "Aleeve");
+                OVERWORLD, 0xFF00FF00, "home", true, 300, false, "Aleeve", true);
 
         CompoundTag tag = original.save();
         Waypoint restored = Waypoint.load(tag, WaypointTest::resolve);

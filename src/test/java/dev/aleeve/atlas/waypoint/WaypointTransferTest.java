@@ -22,7 +22,7 @@ class WaypointTransferTest {
     void exportThenImportRoundTripsAllFields() throws IOException {
         Waypoint original = new Waypoint(java.util.UUID.randomUUID(), "Base",
                 new BlockPos(12, 70, -34), Level.OVERWORLD, 0xFF00FF00, "home", true, 300,
-                false, "Aleeve");
+                false, "Aleeve", true);
         Path file = tempDir.resolve("export.nbt");
 
         WaypointTransfer.exportTo(file, List.of(original));
@@ -71,7 +71,7 @@ class WaypointTransferTest {
         Waypoint existingOnly = Waypoint.create("existing", new BlockPos(1, 2, 3),
                 Level.OVERWORLD, 0xFFFFFFFF);
         Waypoint importedSameId = new Waypoint(sharedId.id(), "new", new BlockPos(9, 9, 9),
-                Level.OVERWORLD, 0xFFFF0000, "default", true, 256, false, "");
+                Level.OVERWORLD, 0xFFFF0000, "default", true, 256, false, "", true);
         Waypoint brandNew = Waypoint.create("fresh", new BlockPos(4, 5, 6), Level.OVERWORLD,
                 0xFF00FFFF);
 

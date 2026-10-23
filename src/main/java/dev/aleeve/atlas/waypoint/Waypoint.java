@@ -22,7 +22,8 @@ public record Waypoint(
         boolean enabled,
         int visibleDistance,
         boolean deathPoint,
-        String sourcePlayer) {
+        String sourcePlayer,
+        boolean shareable) {
 
     public static final String DEFAULT_ICON = "default";
     public static final int DEFAULT_VISIBLE_DISTANCE = 256;
@@ -31,28 +32,33 @@ public record Waypoint(
     public static Waypoint create(String name, BlockPos pos, ResourceKey<Level> dimension,
             int colorArgb) {
         return new Waypoint(UUID.randomUUID(), name, pos, dimension, colorArgb, DEFAULT_ICON,
-                true, DEFAULT_VISIBLE_DISTANCE, false, "");
+                true, DEFAULT_VISIBLE_DISTANCE, false, "", true);
     }
 
     /// 新建死亡点（规格 §5.1）。
     public static Waypoint deathPoint(BlockPos pos, ResourceKey<Level> dimension) {
         return new Waypoint(UUID.randomUUID(), "death", pos, dimension, 0xFFFF5555,
-                "death", true, DEFAULT_VISIBLE_DISTANCE, true, "");
+                "death", true, DEFAULT_VISIBLE_DISTANCE, true, "", true);
     }
 
     public Waypoint withName(String newName) {
         return new Waypoint(id, newName, pos, dimension, colorArgb, icon, enabled, visibleDistance,
-                deathPoint, sourcePlayer);
+                deathPoint, sourcePlayer, shareable);
     }
 
     public Waypoint withEnabled(boolean newEnabled) {
         return new Waypoint(id, name, pos, dimension, colorArgb, icon, newEnabled,
-                visibleDistance, deathPoint, sourcePlayer);
+                visibleDistance, deathPoint, sourcePlayer, shareable);
     }
 
     public Waypoint withSource(String source) {
         return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
-                deathPoint, source);
+                deathPoint, source, shareable);
+    }
+
+    public Waypoint withShareable(boolean newShareable) {
+        return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
+                deathPoint, sourcePlayer, newShareable);
     }
 
     public CompoundTag save() {
@@ -84,7 +90,8 @@ public record Waypoint(
                 tag.getBooleanOr("enabled", true),
                 tag.getIntOr("visible", DEFAULT_VISIBLE_DISTANCE),
                 tag.getBooleanOr("death", false),
-                tag.getStringOr("source", ""));
+                tag.getStringOr("source", ""),
+                tag.getBooleanOr("shareable", true));
     }
 
     /// 序列化路径点列表。

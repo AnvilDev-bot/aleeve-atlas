@@ -48,6 +48,8 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.screen.waypoint_list.hide", "Hide");
         add("aleeve_atlas.screen.waypoint_list.share", "Share");
         add("aleeve_atlas.screen.waypoint_list.share.tip", "Share this waypoint with your team");
+        add("aleeve_atlas.screen.waypoint_list.public", "Public");
+        add("aleeve_atlas.screen.waypoint_list.private", "Private");
         add("aleeve_atlas.screen.waypoint_list.delete", "Delete");
         add("aleeve_atlas.screen.waypoint_list.empty", "No waypoints in this dimension");
         add("aleeve_atlas.screen.waypoint_list.death", "[death]");

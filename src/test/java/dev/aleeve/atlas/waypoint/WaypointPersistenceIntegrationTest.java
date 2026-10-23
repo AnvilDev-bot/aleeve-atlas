@@ -117,9 +117,9 @@ class WaypointPersistenceIntegrationTest {
         WaypointStore store = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);
         UUID id = UUID.randomUUID();
         Waypoint first = new Waypoint(id, "v1", BlockPos.ZERO, Level.OVERWORLD, 0xFFFFFFFF,
-                "default", true, 256, false, "");
+                "default", true, 256, false, "", true);
         Waypoint second = new Waypoint(id, "v2", BlockPos.ZERO, Level.OVERWORLD, 0xFFFFFFFF,
-                "default", true, 256, false, "");
+                "default", true, 256, false, "", true);
 
         store.upsert(first);
         store.upsert(second);

@@ -77,7 +77,7 @@ class WaypointStoreDimensionTest {
         Waypoint near = Waypoint.create("near", new BlockPos(0, 64, 0), Level.OVERWORLD,
                 0xFFFFFFFF);
         Waypoint far = new Waypoint(java.util.UUID.randomUUID(), "far", new BlockPos(1000, 64, 0),
-                Level.OVERWORLD, 0xFFFFFFFF, "default", true, 100, false, "");
+                Level.OVERWORLD, 0xFFFFFFFF, "default", true, 100, false, "", true);
         store.upsert(near);
         store.upsert(far);
 

@@ -58,7 +58,7 @@ public final class WaypointListScreen extends Screen {
             }
             Waypoint waypoint = entries.get(index);
             int y = LIST_TOP + rowIndex * ROW_HEIGHT;
-            int buttonX = width - BUTTON_WIDTH * 3 - 12;
+            int buttonX = width - BUTTON_WIDTH * 4 - 16;
 
             Button toggle = Button.builder(
                             Component.translatable(waypoint.enabled()
@@ -80,10 +80,19 @@ public final class WaypointListScreen extends Screen {
             share.active = synchronizedMode;
             addRenderableWidget(share);
 
+            // 私密切换：单独关闭该路径点的自动同步（§5.2）。
+            Button privacy = Button.builder(
+                            Component.translatable(waypoint.shareable()
+                                    ? "aleeve_atlas.screen.waypoint_list.public"
+                                    : "aleeve_atlas.screen.waypoint_list.private"),
+                            button -> toggleShareable(waypoint))
+                    .bounds(buttonX + (BUTTON_WIDTH + 4) * 3, y, BUTTON_WIDTH, 20).build();
+            addRenderableWidget(privacy);
+
             Button delete = Button.builder(
                             Component.translatable("aleeve_atlas.screen.waypoint_list.delete"),
                             button -> delete(waypoint))
-                    .bounds(buttonX + (BUTTON_WIDTH + 4) * 2, y, BUTTON_WIDTH, 20).build();
+                    .bounds(buttonX + (BUTTON_WIDTH + 4) * 3, y, BUTTON_WIDTH, 20).build();
             addRenderableWidget(delete);
             rowIndex++;
         }
@@ -100,6 +109,15 @@ public final class WaypointListScreen extends Screen {
             return;
         }
         store.upsert(waypoint.withEnabled(!waypoint.enabled()));
+        reloadEntries();
+    }
+
+    private void toggleShareable(Waypoint waypoint) {
+        var store = ClientWaypoints.store();
+        if (store == null) {
+            return;
+        }
+        store.upsert(waypoint.withShareable(!waypoint.shareable()));
         reloadEntries();
     }
 

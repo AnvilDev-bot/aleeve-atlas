@@ -37,6 +37,7 @@ public record WaypointSyncPayload(Action action, Waypoint waypoint) implements C
                         buf.writeVarInt(payload.waypoint.visibleDistance());
                         buf.writeBoolean(payload.waypoint.deathPoint());
                         buf.writeUtf(payload.waypoint.sourcePlayer(), 64);
+                        buf.writeBoolean(payload.waypoint.shareable());
                     },
                     buf -> {
                         Action action = buf.readEnum(Action.class);
@@ -50,11 +51,12 @@ public record WaypointSyncPayload(Action action, Waypoint waypoint) implements C
                         int visible = buf.readVarInt();
                         boolean death = buf.readBoolean();
                         String source = buf.readUtf(64);
+                        boolean shareable = buf.readBoolean();
                         ResourceKey<Level> dimension = ResourceKey.create(Registries.DIMENSION,
                                 dimensionId);
                         return new WaypointSyncPayload(action,
                                 new Waypoint(id, name, pos, dimension, color, icon, enabled,
-                                        visible, death, source));
+                                        visible, death, source, shareable));
                     });
 
     @Override
