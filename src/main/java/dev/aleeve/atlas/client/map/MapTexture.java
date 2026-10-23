@@ -174,11 +174,17 @@ public final class MapTexture {
         }
     }
 
+    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象（§12.1）。
     public void close() {
+        if (!initialized) {
+            return;
+        }
         try {
-            texture.close();
+            Minecraft.getInstance().getTextureManager().release(textureId);
         } catch (Exception e) {
-            LOGGER.warn("Failed to close minimap texture", e);
+            LOGGER.warn("Failed to release minimap texture", e);
+        } finally {
+            initialized = false;
         }
     }
 }

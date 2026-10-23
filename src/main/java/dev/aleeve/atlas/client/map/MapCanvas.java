@@ -112,11 +112,17 @@ public final class MapCanvas {
         image.setPixel(x, PIXELS - 1 - y, argb);
     }
 
+    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象（§12.1）。
     public void close() {
+        if (!initialized) {
+            return;
+        }
         try {
-            texture.close();
+            Minecraft.getInstance().getTextureManager().release(textureId);
         } catch (Exception e) {
-            LOGGER.warn("Failed to close world map canvas", e);
+            LOGGER.warn("Failed to release world map canvas", e);
+        } finally {
+            initialized = false;
         }
     }
 }
