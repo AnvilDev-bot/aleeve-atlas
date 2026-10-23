@@ -40,18 +40,15 @@ public final class RadarStyle {
         return ColorUtil.parseHex(hex, defaultColor(category));
     }
 
-    /// 同队判定：默认对接原版计分板队伍（规格 §3.1）。
+    /// 同队判定：经队伍适配层决定，默认对接原版计分板队伍（规格 §3.1）。
     public static boolean isTeammate(Entity entity) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!(entity instanceof Player player) || minecraft.player == null
                 || player == minecraft.player) {
             return false;
         }
-        ClientLevel level = minecraft.level;
-        if (level == null || minecraft.player.getTeam() == null) {
-            return false;
-        }
-        return minecraft.player.getTeam() == player.getTeam();
+        return dev.aleeve.atlas.team.TeamProviders.active()
+                .sameTeam(minecraft.player.getUUID(), player.getUUID());
     }
 
     private static int defaultColor(RadarCategory category) {

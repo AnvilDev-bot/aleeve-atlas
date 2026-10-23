@@ -1,6 +1,15 @@
 package dev.aleeve.atlas.client.map;
 
 import dev.aleeve.atlas.client.AtlasKeyMappings;
+import dev.aleeve.atlas.api.territory.AtlasTerritory;
+import dev.aleeve.atlas.api.territory.TerritoryGroup;
+import dev.aleeve.atlas.territory.TerritoryRegistry;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import net.minecraft.ChatFormatting;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 import dev.aleeve.atlas.client.waypoint.ClientWaypoints;
 import dev.aleeve.atlas.client.waypoint.WaypointRenderer;
 import dev.aleeve.atlas.ping.ClientPings;
@@ -32,6 +41,8 @@ public final class WorldMapScreen extends Screen {
     private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
     private static final int BACKGROUND_COLOR = 0xF0101010;
     private static final int PLAYER_COLOR = 0xFFFFFFFF;
+    /// 低于该区块像素尺寸时隐藏领地名称标签（规格 §7.5 / AC-10）。
+    private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
 
     private final MapCanvas canvas;
     private final MapDimensionCache cache;
@@ -101,11 +112,152 @@ public final class WorldMapScreen extends Screen {
             }
         }
 
+        drawTerritories(graphics, mouseX, mouseY);
         drawPlayerMarker(graphics);
         drawWaypoints(graphics);
         drawPings(graphics);
         drawOverlayText(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
+    }
+
+    /// 领地覆层（规格 §7.3 / §7.5 / §7.7 / AC-10）。
+    ///
+    /// 缩小到区块像素小于标签宽度时自动隐藏名称；悬停任一区块高亮其边框并展示信息卡片。
+    private void drawTerritories(GuiGraphics graphics, int mouseX, int mouseY) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        ResourceKey<Level> dimension = minecraft.level.dimension();
+        TerritoryRegistry registry = AtlasTerritory.clientRegistry();
+        List<TerritoryGroup> groups = registry.orderedForDimension(dimension);
+        if (groups.isEmpty()) {
+            return;
+        }
+        ChunkPos hovered = chunkAtScreen(mouseX, mouseY);
+        List<TerritoryGroup> hoveredGroups = hovered == null ? List.of()
+                : registry.hitAt(dimension, hovered);
+
+        for (TerritoryGroup group : groups) {
+            int fill = withOpacity(group.themeColorRgb(), group.fillOpacity());
+            boolean highlighted = hoveredGroups.contains(group);
+            int border = highlighted ? 0xFFFFFFFF : group.borderStyle().colorArgb();
+            for (ChunkPos chunk : group.chunks()) {
+                int[] rect = chunkScreenRect(chunk);
+                if (rect == null) {
+                    continue;
+                }
+                graphics.fill(rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[3], fill);
+                drawChunkOutline(graphics, group, chunk, rect, border);
+            }
+        }
+
+        // 名称标签：仅在区块像素足够大时显示，避免缩小时标签重叠（§7.5 / AC-10）。
+        if (pixelsPerChunk >= MIN_PIXELS_FOR_LABEL) {
+            for (TerritoryGroup group : groups) {
+                TerritoryRegistry.CachedTerritory cached = registry.cached(group.territoryId());
+                if (cached == null) {
+                    continue;
+                }
+                for (TerritoryRegistry.Component component : cached.components()) {
+                    if (component.anchor() == null) {
+                        continue;
+                    }
+                    int[] rect = chunkScreenRect(component.anchor());
+                    if (rect == null) {
+                        continue;
+                    }
+                    graphics.drawString(minecraft.font, group.displayName(),
+                            rect[0] + rect[2] / 2, rect[1] + rect[3] / 2, 0xFFFFFFFF, true);
+                }
+            }
+        }
+
+        // 悬停信息卡片按 zOrder 从高到低合并展示（§7.7 第 3 条）。
+        if (!hoveredGroups.isEmpty()) {
+            List<Component> lines = new ArrayList<>();
+            for (TerritoryGroup group : hoveredGroups) {
+                lines.add(group.displayName().copy().withStyle(ChatFormatting.AQUA));
+                lines.addAll(group.tooltip());
+            }
+            drawTooltipLines(graphics, minecraft, lines, mouseX, mouseY);
+        }
+    }
+
+    /// 绘制简易信息卡片（避免依赖 1.21.11 的 tooltip 组件装配）。
+    private void drawTooltipLines(GuiGraphics graphics, Minecraft minecraft,
+            List<Component> lines, int mouseX, int mouseY) {
+        int lineHeight = 10;
+        int padding = 3;
+        int maxWidth = 0;
+        for (Component line : lines) {
+            maxWidth = Math.max(maxWidth, minecraft.font.width(line));
+        }
+        int boxWidth = maxWidth + padding * 2;
+        int boxHeight = lines.size() * lineHeight + padding * 2;
+        int x = Math.min(mouseX + 8, Math.max(0, width - boxWidth - 4));
+        int y = Math.min(mouseY + 8, Math.max(0, height - boxHeight - 4));
+        graphics.fill(x, y, x + boxWidth, y + boxHeight, 0xF0100010);
+        graphics.fill(x, y, x + boxWidth, y + 1, 0xFF5000FF);
+        graphics.fill(x, y + boxHeight - 1, x + boxWidth, y + boxHeight, 0xFF5000FF);
+        int textY = y + padding;
+        for (Component line : lines) {
+            graphics.drawString(minecraft.font, line, x + padding, textY, 0xFFFFFFFF, true);
+            textY += lineHeight;
+        }
+    }
+
+    /// 区块在屏幕上的矩形：`[x, y, width, height]`；完全不可见时返回 null。
+    private int[] chunkScreenRect(ChunkPos chunk) {
+        double centerChunkX = (chunk.x << 4) + 8.0;
+        double centerChunkZ = (chunk.z << 4) + 8.0;
+        double screenX = width / 2.0 + (centerChunkX - centerX) * pixelsPerChunk;
+        double screenY = height / 2.0 + (centerChunkZ - centerZ) * pixelsPerChunk;
+        int size = Math.max(1, Math.round(ChunkMapData.SIZE * pixelsPerChunk));
+        int x = (int) Math.round(screenX) - size / 2;
+        int y = (int) Math.round(screenY) - size / 2;
+        if (x + size < 0 || x > width || y + size < 0 || y > height) {
+            return null;
+        }
+        return new int[] { x, y, size, size };
+    }
+
+    /// 仅在领地与非领地交界处描边（规格 §7.3：内部交界不画线）。
+    private void drawChunkOutline(GuiGraphics graphics, TerritoryGroup group, ChunkPos chunk,
+            int[] rect, int color) {
+        int borderWidth = Math.max(1, Math.round(group.borderStyle().width()));
+        Set<ChunkPos> chunks = group.chunks();
+        int x = rect[0];
+        int y = rect[1];
+        int size = rect[2];
+        if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
+            graphics.fill(x, y, x + size, y + borderWidth, color);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
+            graphics.fill(x, y + size - borderWidth, x + size, y + size, color);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
+            graphics.fill(x, y, x + borderWidth, y + size, color);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
+            graphics.fill(x + size - borderWidth, y, x + size, y + size, color);
+        }
+    }
+
+    /// 鼠标位置对应的区块；在世界地图外返回 null。
+    private ChunkPos chunkAtScreen(double mouseX, double mouseY) {
+        if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
+            return null;
+        }
+        double worldX = screenToWorldX(mouseX);
+        double worldZ = screenToWorldZ(mouseY);
+        return new ChunkPos((int) Math.floor(worldX) >> 4, (int) Math.floor(worldZ) >> 4);
+    }
+
+    /// 主题色 + 填充透明度。
+    private static int withOpacity(int rgb, float opacity) {
+        int alpha = Math.round(net.minecraft.util.Mth.clamp(opacity, 0.0F, 1.0F) * 255.0F);
+        return (alpha << 24) | (rgb & 0xFFFFFF);
     }
 
     /// 世界地图上的路径点标记（规格 §5.1）。
