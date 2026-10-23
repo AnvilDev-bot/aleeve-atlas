@@ -55,9 +55,10 @@ public final class VisibilityResolverSelector {
             fallback("backend is " + backend);
             return;
         }
-        // 1.21.11 的 Blaze3d 未封装遮挡查询，GL 查询对象需由外部实现注入。
-        // 在缺少该实现时保持射线检测，并记录实际生效的实现名。
-        fallback("OpenGL occlusion query is not exposed by Blaze3d in 1.21.11");
+        // 1.21.11 的 Blaze3d 未封装遮挡查询，且投影矩阵仅存于 UBO 无法在渲染阶段读回，
+        // 代理包围盒渲染无法与 glBeginQuery / glEndQuery 边界可靠对齐（§4.2 第 5 条降级情形）。
+        fallback("occlusion query unavailable: Blaze3d exposes no query API "
+                + "and the projection matrix is UBO-only in 1.21.11");
     }
 
     /// 降级到射线检测并记录原因。
