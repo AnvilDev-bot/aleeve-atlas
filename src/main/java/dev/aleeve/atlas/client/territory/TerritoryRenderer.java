@@ -56,13 +56,17 @@ public final class TerritoryRenderer {
                         int size = Math.max(1, (int) Math.round(16.0 / blocksPerPixel));
                         return new int[] { (int) Math.round(screenX) - size / 2,
                                 (int) Math.round(screenZ) - size / 2, size };
-                    });
+                    }, circular, layout);
         }
     }
 
     /// 单个领地的覆层绘制；`projector` 把区块映射为屏幕矩形（不可见返回 null）。
+    ///
+    /// 圆形小地图下，区块矩形需与圆形求交后逐行填充，
+    /// 否则矩形角部会溢出圆形边界（规格 §2.2 圆形形态）。
     private static void renderGroup(GuiGraphics graphics, TerritoryGroup group,
-            ResourceKey<Level> dimension, ChunkProjector projector) {
+            ResourceKey<Level> dimension, ChunkProjector projector, boolean circular,
+            MinimapLayout layout) {
         if (!group.dimension().equals(dimension)) {
             return;
         }
@@ -76,7 +80,7 @@ public final class TerritoryRenderer {
             if (rect == null) {
                 continue;
             }
-            graphics.fill(rect[0], rect[1], rect[0] + rect[2], rect[1] + rect[2], fill);
+            fillClipped(graphics, rect[0], rect[1], rect[2], rect[2], fill, circular, layout);
         }
         // 边框：仅在与非本领地区块交界处绘制（规格 §7.3）。
         for (ChunkPos chunk : chunks) {
@@ -88,16 +92,45 @@ public final class TerritoryRenderer {
             int y = rect[1];
             int size = rect[2];
             if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
-                graphics.fill(x, y, x + size, y + borderWidth, border);
+                fillClipped(graphics, x, y, size, borderWidth, border, circular, layout);
             }
             if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
-                graphics.fill(x, y + size - borderWidth, x + size, y + size, border);
+                fillClipped(graphics, x, y + size - borderWidth, size, borderWidth, border,
+                        circular, layout);
             }
             if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
-                graphics.fill(x, y, x + borderWidth, y + size, border);
+                fillClipped(graphics, x, y, borderWidth, size, border, circular, layout);
             }
             if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
-                graphics.fill(x + size - borderWidth, y, x + size, y + size, border);
+                fillClipped(graphics, x + size - borderWidth, y, borderWidth, size, border,
+                        circular, layout);
+            }
+        }
+    }
+
+    /// 按圆形边界裁剪的矩形填充：圆形模式下逐行与圆求交，方形模式直接填充。
+    private static void fillClipped(GuiGraphics graphics, int x, int y, int width, int height,
+            int color, boolean circular, MinimapLayout layout) {
+        if (!circular) {
+            graphics.fill(x, y, x + width, y + height, color);
+            return;
+        }
+        double centerX = layout.x() + layout.size() / 2.0;
+        double centerZ = layout.y() + layout.size() / 2.0;
+        double radius = layout.size() / 2.0;
+        for (int row = y; row < y + height; row++) {
+            double dy = row + 0.5 - centerZ;
+            double spanSq = radius * radius - dy * dy;
+            if (spanSq <= 0.0) {
+                continue;
+            }
+            double span = Math.sqrt(spanSq);
+            int from = (int) Math.floor(centerX - span);
+            int to = (int) Math.ceil(centerX + span);
+            int left = Math.max(x, from);
+            int right = Math.min(x + width, to);
+            if (right > left) {
+                graphics.fill(left, row, right, row + 1, color);
             }
         }
     }

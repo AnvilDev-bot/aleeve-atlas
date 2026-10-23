@@ -18,8 +18,10 @@ final class DemoTerritory {
     }
 
     static void registerIfDebugging() {
-        // 仅在系统属性显式开启时注入，避免污染正常使用。
-        // 临时：验证期间默认开启（截图后恢复为系统属性开关）。
+        // 仅在系统属性显式开启时注入（Gradle -PterritoryDemo），避免污染正常使用。
+        if (!Boolean.getBoolean("aleeve_atlas.demo_territory")) {
+            return;
+        }
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
