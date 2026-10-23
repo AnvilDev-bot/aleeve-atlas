@@ -1,0 +1,7 @@
+dependencies {
+    implementation libs.anvillib.codec
+    implementation libs.anvillib.network
+    implementation libs.anvillib.config
+    implementation libs.anvillib.integration
+    implementation libs.anvillib.util
+}

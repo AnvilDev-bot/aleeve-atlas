@@ -1,0 +1,48 @@
+neoForge {
+    version = libs.versions.neoForge.get()
+
+    accessTransformers.from('src/main/resources/META-INF/accesstransformer.cfg')
+
+    interfaceInjectionData {
+        from 'src/main/resources/interface_injections.json'
+        publish file('src/main/resources/interface_injections.json')
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            clientData()
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        var isJbr = System.getProperty('java.vm.vendor').contains('JetBrains')
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            if (isJbr) {
+                jvmArgument "-XX:+AllowEnhancedClassRedefinition"
+            }
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
