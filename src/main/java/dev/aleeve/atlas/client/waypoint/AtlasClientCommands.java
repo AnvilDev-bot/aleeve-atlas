@@ -114,7 +114,8 @@ public final class AtlasClientCommands {
         }
         var file = exportDir().resolve(fileName);
         try {
-            dev.aleeve.atlas.waypoint.WaypointTransfer.exportTo(file, waypointStore.all());
+            dev.aleeve.atlas.waypoint.WaypointTransfer.exportTo(file,
+                    ClientWaypoints.allAcrossDimensions());
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_exported", file.toString()), false);
             return 1;
@@ -136,14 +137,14 @@ public final class AtlasClientCommands {
         try {
             var imported = dev.aleeve.atlas.waypoint.WaypointTransfer.importFrom(file);
             var result = dev.aleeve.atlas.waypoint.WaypointTransfer.merge(imported,
-                    waypointStore.all());
+                    ClientWaypoints.allAcrossDimensions());
+            // 按各自维度写入，跨维度导入不会串到当前维度（§11）。
             for (var waypoint : result.added()) {
-                waypointStore.upsert(waypoint);
+                ClientWaypoints.upsertInDimension(waypoint);
             }
             for (var waypoint : result.replaced()) {
-                waypointStore.upsert(waypoint);
+                ClientWaypoints.upsertInDimension(waypoint);
             }
-            waypointStore.flush();
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_imported",
                     result.added().size(), result.replaced().size()), false);

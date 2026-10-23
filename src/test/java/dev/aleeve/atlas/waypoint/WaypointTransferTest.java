@@ -41,6 +41,21 @@ class WaypointTransferTest {
     }
 
     @Test
+    void exportIncludesMultipleDimensions() throws IOException {
+        Waypoint overworld = Waypoint.create("ow", new BlockPos(1, 64, 1), Level.OVERWORLD,
+                0xFFFFFFFF);
+        Waypoint nether = Waypoint.create("nether", new BlockPos(2, 32, 2), Level.NETHER,
+                0xFFFF0000);
+        Path file = tempDir.resolve("multi.nbt");
+        WaypointTransfer.exportTo(file, List.of(overworld, nether));
+
+        List<Waypoint> imported = WaypointTransfer.importFrom(file);
+        assertEquals(2, imported.size());
+        assertTrue(imported.stream().anyMatch(w -> w.dimension().equals(Level.OVERWORLD)));
+        assertTrue(imported.stream().anyMatch(w -> w.dimension().equals(Level.NETHER)));
+    }
+
+    @Test
     void importRejectsForeignFile() throws IOException {
         Path file = tempDir.resolve("foreign.nbt");
         net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();

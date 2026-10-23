@@ -79,6 +79,43 @@ public final class ClientWaypoints {
         }
     }
 
+    /// 已加载的全部维度路径点（导入导出用，规格 §11）。
+    public static java.util.List<Waypoint> allAcrossDimensions() {
+        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+        for (WaypointStore each : STORES.values()) {
+            result.addAll(each.all());
+        }
+        return result;
+    }
+
+    /// 按维度写入路径点：自动选择或创建对应维度的存储。
+    public static void upsertInDimension(Waypoint waypoint) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return;
+        }
+        if (minecraft.level != null && waypoint.dimension().equals(minecraft.level.dimension())) {
+            // 当前维度直接写入活动存储。
+            WaypointStore current = store();
+            if (current != null) {
+                current.upsert(waypoint);
+            }
+            return;
+        }
+        // 非当前维度：打开对应维度的存储写入并立即落盘。
+        String key = serverKey(minecraft);
+        WaypointStore other = WaypointStore.open(minecraft.gameDirectory.toPath(), key,
+                waypoint.dimension());
+        other.upsert(waypoint);
+        other.flush();
+    }
+
+    /// 当前服务器标识（导入导出与离线维度写入用）。
+    static String currentServerKeyForIo() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return serverKey(minecraft);
+    }
+
     /// 在玩家当前位置新建路径点（`N` 键，规格 §8）。
     public static Waypoint createHere(String name) {
         Minecraft minecraft = Minecraft.getInstance();
