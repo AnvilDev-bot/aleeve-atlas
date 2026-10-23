@@ -88,11 +88,10 @@ public final class MapTexture {
         return source.get(ChunkPos.asLong(chunkX, chunkZ));
     }
 
-    /// 重绘阈值（像素）：中心偏移小于该值时不重绘，改由渲染偏移补偿（§12.1）。
+    /// 重绘阈值（像素）：中心偏移小于该值时不重绘（§12.1）。
     ///
-    /// 每帧按像素重绘 144×144 纹理会产生约 2 万次写入与一次完整 GPU 上传，
-    /// 代价过高；以 8 像素为阈值可把重绘频率降低一个数量级，
-    /// 期间通过 {@link #pixelOffsetX()}/{@link #pixelOffsetZ()} 让渲染端微调采样位置。
+    /// 每帧重绘整张纹理需要数万次像素写入与一次完整 GPU 上传，代价过高；
+    /// 取 1 像素可在保证纹理中心贴合玩家的同时避免每帧重绘。
     private static final int RECENTER_THRESHOLD_PIXELS = 1;
 
     /// 以玩家世界像素坐标为中心平移纹理；仅在偏移超过阈值时重绘。
@@ -113,17 +112,23 @@ public final class MapTexture {
         }
         originPixelX = targetOriginX;
         originPixelZ = targetOriginZ;
+        evictOutsideCoverage();
         redrawAll();
     }
 
-    /// 纹理中心与玩家实际位置的水平偏差（像素），供渲染端补偿。
-    public int pixelOffsetX(double worldX) {
-        return (int) Math.floor(worldX) - (originPixelX + PIXELS / 2);
-    }
-
-    /// 纹理中心与玩家实际位置的垂直偏差（像素），供渲染端补偿。
-    public int pixelOffsetZ(double worldZ) {
-        return (int) Math.floor(worldZ) - (originPixelZ + PIXELS / 2);
+    /// 丢弃已移出纹理覆盖范围的区块数据（§12.1 内存占用）。
+    ///
+    /// `source` 若只增不减，长距离跑图后每次重绘都要遍历全部历史区块，
+    /// 内存与单帧耗时随游玩时长线性增长。
+    private void evictOutsideCoverage() {
+        int originChunkX = Math.floorDiv(originPixelX, ChunkMapData.SIZE);
+        int originChunkZ = Math.floorDiv(originPixelZ, ChunkMapData.SIZE);
+        source.keySet().removeIf(key -> {
+            int chunkX = ChunkPos.getX(key);
+            int chunkZ = ChunkPos.getZ(key);
+            return chunkX < originChunkX || chunkX >= originChunkX + SLOTS
+                    || chunkZ < originChunkZ || chunkZ >= originChunkZ + SLOTS;
+        });
     }
 
     /// 清空全部内容（切换服务器或维度时调用）。

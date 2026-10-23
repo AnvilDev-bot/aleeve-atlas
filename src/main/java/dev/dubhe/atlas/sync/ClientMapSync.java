@@ -113,9 +113,6 @@ public final class ClientMapSync {
     /// 解压属于密集计算，改为在网络线程执行，避免占用渲染与逻辑帧；
     /// 解码结果通过线程安全队列交给 `tick` 写入缓存。
     public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
-        String batchKey = payload.dimensionId() + "#" + payload.batchIndex()
-                + "/" + payload.batchCount();
-        RECEIVED_BATCHES.put(batchKey, System.currentTimeMillis());
         context.enqueueWork(() -> enqueueDecoded(payload));
     }
 

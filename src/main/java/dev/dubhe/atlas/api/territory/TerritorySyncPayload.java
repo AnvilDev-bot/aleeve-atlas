@@ -20,7 +20,7 @@ import net.minecraft.world.level.ChunkPos;
 /// {@link #MAX_CHUNKS_PER_PACKET} 拆分为多个负载依次发送。
 public record TerritorySyncPayload(Action action, SyncedTerritory territory, int batchIndex,
         int batchCount) implements CustomPacketPayload {
-    /// 单包区块数上限：每区块 8 字节，128 区块约 1 KiB，远低于 1 MiB 上限。
+    /// 单包区块数上限：每区块 8 字节，4096 区块约 32 KiB，远低于 1 MiB 上限。
     public static final int MAX_CHUNKS_PER_PACKET = 4096;
 
     public static final Type<TerritorySyncPayload> TYPE =

@@ -3,7 +3,6 @@ package dev.dubhe.atlas.client;
 import dev.dubhe.atlas.sync.ClientMapSync;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.AtlasWorldMap;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
