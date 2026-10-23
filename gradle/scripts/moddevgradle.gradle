@@ -16,11 +16,18 @@ neoForge {
             if (project.hasProperty('quickPlayWorld')) {
                 programArguments.addAll '--quickPlaySingleplayer', project.property('quickPlayWorld')
             }
+            // 端到端验证用：-PquickPlayServer=<host:port> 直连专用服务器。
+            if (project.hasProperty('quickPlayServer')) {
+                programArguments.addAll '--quickPlayMultiplayer', project.property('quickPlayServer')
+            }
         }
 
         server {
             server()
             programArgument '--nogui'
+            // 固定端口便于客户端直连验证（AC-2）。
+            programArgument '--port'
+            programArgument '25599'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
