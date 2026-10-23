@@ -81,7 +81,7 @@ public final class MinimapRenderer {
             graphics.pose().translate(-centerX, -centerY);
         }
 
-        // 整张纹理铺满小地图方形：纹理中心即玩家所在位置。
+        // 整张纹理铺满小地图方形：纹理中心即玩家所在位置（偏移 <1 像素）。
         graphics.blit(mapPipeline, texture.textureId(), x, y, 0.0F, 0.0F,
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);

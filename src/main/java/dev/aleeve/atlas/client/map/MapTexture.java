@@ -77,17 +77,42 @@ public final class MapTexture {
         return source.get(ChunkPos.asLong(chunkX, chunkZ));
     }
 
-    /// 以玩家世界像素坐标为中心平移纹理（仅移动 1 像素以上时重绘）。
+    /// 重绘阈值（像素）：中心偏移小于该值时不重绘，改由渲染偏移补偿（§12.1）。
+    ///
+    /// 每帧按像素重绘 144×144 纹理会产生约 2 万次写入与一次完整 GPU 上传，
+    /// 代价过高；以 8 像素为阈值可把重绘频率降低一个数量级，
+    /// 期间通过 {@link #pixelOffsetX()}/{@link #pixelOffsetZ()} 让渲染端微调采样位置。
+    private static final int RECENTER_THRESHOLD_PIXELS = 1;
+
+    /// 以玩家世界像素坐标为中心平移纹理；仅在偏移超过阈值时重绘。
     public void centerOn(double worldX, double worldZ) {
         int targetOriginX = (int) Math.floor(worldX) - PIXELS / 2;
         int targetOriginZ = (int) Math.floor(worldZ) - PIXELS / 2;
-        if (centered && targetOriginX == originPixelX && targetOriginZ == originPixelZ) {
+        if (!centered) {
+            originPixelX = targetOriginX;
+            originPixelZ = targetOriginZ;
+            centered = true;
+            redrawAll();
+            return;
+        }
+        int driftX = Math.abs(targetOriginX - originPixelX);
+        int driftZ = Math.abs(targetOriginZ - originPixelZ);
+        if (driftX < RECENTER_THRESHOLD_PIXELS && driftZ < RECENTER_THRESHOLD_PIXELS) {
             return;
         }
         originPixelX = targetOriginX;
         originPixelZ = targetOriginZ;
-        centered = true;
         redrawAll();
+    }
+
+    /// 纹理中心与玩家实际位置的水平偏差（像素），供渲染端补偿。
+    public int pixelOffsetX(double worldX) {
+        return (int) Math.floor(worldX) - (originPixelX + PIXELS / 2);
+    }
+
+    /// 纹理中心与玩家实际位置的垂直偏差（像素），供渲染端补偿。
+    public int pixelOffsetZ(double worldZ) {
+        return (int) Math.floor(worldZ) - (originPixelZ + PIXELS / 2);
     }
 
     /// 清空全部内容（切换服务器或维度时调用）。
