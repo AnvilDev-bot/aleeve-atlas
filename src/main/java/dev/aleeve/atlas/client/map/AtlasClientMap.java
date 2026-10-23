@@ -62,12 +62,24 @@ public final class AtlasClientMap {
         ticksSinceFlush = 0;
     }
 
-    /// 创建地图管理器并同步领地锚点权重配置（规格 §9.1 territory.anchorWeight）。
-    private static void initManager() {
-        manager = new ClientMapManager();
+    /// 配置重载时同步领地锚点权重（规格 §11 配置热重载）。
+    @SubscribeEvent
+    public static void onConfigReload(
+            net.neoforged.fml.event.config.ModConfigEvent.Reloading event) {
+        applyAnchorWeight();
+    }
+
+    /// 把 `territory.anchorWeight` 应用到领地注册表（规格 §9.1）。
+    private static void applyAnchorWeight() {
         float lambda = (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
                 0.3, 0.5);
         AtlasTerritory.clientRegistry().setAnchorLambda(lambda);
+    }
+
+    /// 创建地图管理器并同步领地锚点权重配置（规格 §9.1 territory.anchorWeight）。
+    private static void initManager() {
+        manager = new ClientMapManager();
+        applyAnchorWeight();
         DemoTerritory.registerIfDebugging();
     }
 }
