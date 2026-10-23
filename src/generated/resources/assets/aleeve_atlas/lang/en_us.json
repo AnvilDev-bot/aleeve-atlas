@@ -104,6 +104,7 @@
   "aleeve_atlas.configuration.waypoint.tooltip": "Waypoint settings.",
   "aleeve_atlas.hud.light": "Light: %s",
   "aleeve_atlas.message.death_point_added": "Death point recorded",
+  "aleeve_atlas.message.ping_channel_duplicate": "Ping Wheel detected while channel mode is AUTO; depending on its settings pings may be broadcast twice.",
   "aleeve_atlas.message.ping_received": "%s sent a ping",
   "aleeve_atlas.message.server_unsupported": "Server support component is not installed.",
   "aleeve_atlas.message.territory_demo_added": "Demo territory added",

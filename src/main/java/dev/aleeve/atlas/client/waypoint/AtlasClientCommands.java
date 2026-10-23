@@ -90,6 +90,14 @@ public final class AtlasClientCommands {
         }
         player.displayClientMessage(Component.literal(
                 dev.aleeve.atlas.client.profiling.AtlasProfiling.minimapSummary()), false);
+        // 标点通道诊断：确认是否存在与外部模组重复广播的风险（§3.2.2）。
+        player.displayClientMessage(Component.literal(
+                dev.aleeve.atlas.ping.PingChannelPolicy.describe()), false);
+        if (dev.aleeve.atlas.ping.PingChannelPolicy.duplicateRisk()) {
+            player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.ping_channel_duplicate"),
+                    false);
+        }
         dev.aleeve.atlas.client.profiling.AtlasProfiling.reset();
         return 1;
     }
