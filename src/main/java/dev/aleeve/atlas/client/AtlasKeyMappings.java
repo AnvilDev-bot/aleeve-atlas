@@ -35,14 +35,6 @@ public final class AtlasKeyMappings {
             GLFW.GLFW_KEY_N,
             CATEGORY);
 
-    public static final KeyMapping PING = new KeyMapping(
-            "key.aleeve_atlas.ping",
-            KeyConflictContext.IN_GAME,
-            KeyModifier.NONE,
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_B,
-            CATEGORY);
-
     private AtlasKeyMappings() {
     }
 
@@ -51,6 +43,6 @@ public final class AtlasKeyMappings {
         event.registerCategory(CATEGORY);
         event.register(OPEN_WORLD_MAP);
         event.register(NEW_WAYPOINT);
-        event.register(PING);
+
     }
 }

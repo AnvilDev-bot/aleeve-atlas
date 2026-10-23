@@ -18,16 +18,15 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("key.category.aleeve_atlas.main", "Aleeve Atlas");
         add("key.aleeve_atlas.open_world_map", "Open World Map");
         add("key.aleeve_atlas.new_waypoint", "New Waypoint");
-        add("key.aleeve_atlas.ping", "Map Ping");
 
         add("aleeve_atlas.message.world_map_pending", "World map is not implemented yet.");
         add("aleeve_atlas.message.waypoint_pending", "Waypoints are not implemented yet.");
-        add("aleeve_atlas.message.ping_pending", "Pings are not implemented yet.");
         add("aleeve_atlas.message.server_unsupported",
                 "Server support component is not installed.");
 
         add("aleeve_atlas.hud.light", "Light: %s");
 
+        add("aleeve_atlas.message.ping_received", "%s sent a ping");
         add("aleeve_atlas.waypoint.default_name", "Waypoint");
         add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
         add("aleeve_atlas.message.death_point_added", "Death point recorded");

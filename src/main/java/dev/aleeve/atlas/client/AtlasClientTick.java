@@ -5,6 +5,7 @@ import dev.aleeve.atlas.AtlasSession;
 import dev.aleeve.atlas.client.map.AtlasWorldMap;
 import dev.aleeve.atlas.client.waypoint.ClientWaypoints;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
+import dev.aleeve.atlas.ping.ClientPings;
 import dev.aleeve.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -23,7 +24,12 @@ public final class AtlasClientTick {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.screen != null) {
+        if (minecraft.player == null) {
+            return;
+        }
+        // 标点由外部模组经 API 注入，本模组只负责生命周期推进与渲染（规格 §3.2.2）。
+        ClientPings.tick();
+        if (minecraft.screen != null) {
             return;
         }
         while (AtlasKeyMappings.OPEN_WORLD_MAP.consumeClick()) {
@@ -39,19 +45,6 @@ public final class AtlasClientTick {
                                 waypoint.pos().getZ()).withStyle(ChatFormatting.GREEN),
                         true);
             }
-        }
-        while (AtlasKeyMappings.PING.consumeClick()) {
-            if (!AtlasSession.synchronizedMode()) {
-                minecraft.player.displayClientMessage(
-                        Component.translatable("aleeve_atlas.message.server_unsupported")
-                                .withStyle(ChatFormatting.GRAY),
-                        true);
-                continue;
-            }
-            minecraft.player.displayClientMessage(
-                    Component.translatable("aleeve_atlas.message.ping_pending")
-                            .withStyle(ChatFormatting.YELLOW),
-                    true);
         }
     }
 

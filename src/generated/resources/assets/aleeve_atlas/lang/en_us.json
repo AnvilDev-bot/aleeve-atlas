@@ -104,7 +104,7 @@
   "aleeve_atlas.configuration.waypoint.tooltip": "Waypoint settings.",
   "aleeve_atlas.hud.light": "Light: %s",
   "aleeve_atlas.message.death_point_added": "Death point recorded",
-  "aleeve_atlas.message.ping_pending": "Pings are not implemented yet.",
+  "aleeve_atlas.message.ping_received": "%s sent a ping",
   "aleeve_atlas.message.server_unsupported": "Server support component is not installed.",
   "aleeve_atlas.message.waypoint_created": "Waypoint created at %s, %s, %s",
   "aleeve_atlas.message.waypoint_pending": "Waypoints are not implemented yet.",
@@ -135,6 +135,5 @@
   "anvillib.configuration.enum.dev.aleeve.atlas.config.waypoint_send_policy.manual_sync": "Manual Sync",
   "key.aleeve_atlas.new_waypoint": "New Waypoint",
   "key.aleeve_atlas.open_world_map": "Open World Map",
-  "key.aleeve_atlas.ping": "Map Ping",
   "key.category.aleeve_atlas.main": "Aleeve Atlas"
 }
