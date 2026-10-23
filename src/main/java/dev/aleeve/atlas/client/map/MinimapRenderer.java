@@ -63,11 +63,25 @@ public final class MinimapRenderer {
         int size = layout.size();
 
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
-        // 整张纹理铺满小地图方形：纹理中心即玩家所在位置。
-        // 圆形形态由片元着色器丢弃圆外像素，圆外不渲染任何内容。
+        LocalPlayer player = minecraft.player;
+        // 北向锁定：地图固定北朝上、箭头随视角转；
+        // 视角随动：地图绕中心旋转到玩家朝向、箭头固定朝上（规格 §2.2）。
+        float rotationDegrees = config.minimap.lockNorth ? 0.0F : -player.getYRot();
+        float centerX = x + size / 2.0F;
+        float centerY = y + size / 2.0F;
+
         RenderPipeline mapPipeline = circular
                 ? AtlasRenderPipelines.MINIMAP_CIRCLE
                 : RenderPipelines.GUI_TEXTURED;
+
+        graphics.pose().pushMatrix();
+        if (rotationDegrees != 0.0F) {
+            graphics.pose().translate(centerX, centerY);
+            graphics.pose().rotate((float) Math.toRadians(rotationDegrees));
+            graphics.pose().translate(-centerX, -centerY);
+        }
+
+        // 整张纹理铺满小地图方形：纹理中心即玩家所在位置。
         graphics.blit(mapPipeline, texture.textureId(), x, y, 0.0F, 0.0F,
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);
@@ -79,11 +93,10 @@ public final class MinimapRenderer {
         WaypointRenderer.renderOnMinimap(graphics, layout, circular);
         PingRenderer.renderOnMinimap(graphics, layout, circular);
         RadarRenderer.render(graphics, config, layout, minecraft);
+        graphics.pose().popMatrix();
 
-        // 叠加层：边框与玩家朝向箭头由着色器绘制。
-        LocalPlayer player = minecraft.player;
-        float yaw = config.minimap.lockNorth ? 0.0F : player.getYRot();
-        int tint = encodeOverlayTint(yaw, circular);
+        // 叠加层（边框与箭头）不参与地图旋转：箭头固定朝上表示玩家前进方向。
+        int tint = encodeOverlayTint(0.0F, circular);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 
