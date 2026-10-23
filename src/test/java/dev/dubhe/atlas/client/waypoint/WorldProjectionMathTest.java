@@ -2,20 +2,23 @@ package dev.dubhe.atlas.client.waypoint;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 import org.junit.jupiter.api.Test;
 
-/// 世界坐标投影的数学部分测试（不依赖游戏运行时）。
+/// 世界坐标投影的数学验证（不依赖游戏运行时）。
 ///
-/// 直接验证 JOML 投影流程的正确性：给定相机位于原点朝 -Z，
-/// 正前方目标应投影到屏幕中心附近，背后目标应被拒绝。
+/// `WorldProjection.project` 依赖客户端相机实例，无法在单元测试中构造；
+/// 此处验证其依赖的 JOML 透视投影性质，确保朝向与偏移方向符合预期。
 class WorldProjectionMathTest {
+    private static final float FOV_RADIANS = (float) Math.toRadians(70.0);
+    private static final float ASPECT = 16.0F / 9.0F;
+
     @Test
     void targetAheadOfCameraProjectsNearCenter() {
-        // 相机在原点、无旋转；投影矩阵为 70° FOV、16:9 宽高比。
-        org.joml.Matrix4f projection = new org.joml.Matrix4f().perspective(
-                (float) Math.toRadians(70.0), 16.0F / 9.0F, 0.05F, 1000.0F);
+        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
         // 目标位于相机正前方 10 格（视空间 -Z）。
-        org.joml.Vector4f clip = new org.joml.Vector4f(0.0F, 0.0F, -10.0F, 1.0F);
+        Vector4f clip = new Vector4f(0.0F, 0.0F, -10.0F, 1.0F);
         projection.transform(clip);
 
         float ndcX = clip.x / clip.w;
@@ -25,21 +28,21 @@ class WorldProjectionMathTest {
     }
 
     @Test
-    void targetBehindCameraIsRejected() {
-        // 视空间 z >= 0 即位于相机后方，实现中直接拒绝。
-        org.joml.Vector4f behind = new org.joml.Vector4f(0.0F, 0.0F, 5.0F, 1.0F);
-        assertTrue(behind.z >= 0.0F, "后方目标必须被过滤器拒绝");
+    void offAxisTargetMovesAwayFromCenter() {
+        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
+        Vector4f clip = new Vector4f(5.0F, 0.0F, -10.0F, 1.0F);
+        projection.transform(clip);
+        float ndcX = clip.x / clip.w;
+        assertTrue(ndcX > 0.3F, "偏右目标应明显偏离中心，实际 " + ndcX);
     }
 
     @Test
-    void offAxisTargetMovesAwayFromCenter() {
-        org.joml.Matrix4f projection = new org.joml.Matrix4f().perspective(
-                (float) Math.toRadians(70.0), 16.0F / 9.0F, 0.05F, 1000.0F);
-        org.joml.Vector4f clip = new org.joml.Vector4f(5.0F, 0.0F, -10.0F, 1.0F);
-        projection.transform(clip);
-        float ndcX = clip.x / clip.w;
-        // 核心性质：偏右目标投影为正且明显偏离中心。
-        assertTrue(ndcX > 0.0F, "偏右目标应投影到屏幕右半侧，实际 " + ndcX);
-        assertTrue(ndcX > 0.3F, "偏离中心应足够明显，实际 " + ndcX);
+    void targetBehindCameraHasNonPositiveClipW() {
+        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
+        Vector4f behind = new Vector4f(0.0F, 0.0F, 5.0F, 1.0F);
+        projection.transform(behind);
+        // 透视投影的 w 分量为 -z_view，故视空间 z 为正（相机后方）时 w 为负；
+        // `project` 据此判定目标不在视野前方并返回空结果。
+        assertTrue(behind.w < 0.0F, "后方目标变换后裁剪 w 应为负，实际 " + behind.w);
     }
 }

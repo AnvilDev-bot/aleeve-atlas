@@ -78,16 +78,32 @@ public record MapPingData(
                 tag.getStringOr("dimension", "minecraft:overworld"),
                 new Vec3(tag.getDoubleOr("x", 0.0), tag.getDoubleOr("y", 0.0),
                         tag.getDoubleOr("z", 0.0)),
-                target.isEmpty() ? null : UUID.fromString(target),
+                target.isEmpty() ? null : parseUuid(target, null),
                 parseIcon(tag.getStringOr("icon", PingIcon.NORMAL.name())),
                 tag.getLongOr("createdAt", 0L),
                 tag.getLongOr("lifetime", DEFAULT_LIFETIME_MILLIS));
+    }
+
+    /// 解析 UUID 字符串；格式非法时返回回退值并记录日志。
+    ///
+    /// 标点数据损坏不应中断整批读取，因此单条失败按回退值处理。
+    private static UUID parseUuid(String raw, UUID fallback) {
+        if (raw == null || raw.isEmpty()) {
+            return fallback;
+        }
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException e) {
+            LOGGER.debug("Invalid UUID {} in ping data, using fallback", raw);
+            return fallback;
+        }
     }
 
     private static PingIcon parseIcon(String raw) {
         try {
             return PingIcon.valueOf(raw);
         } catch (IllegalArgumentException e) {
+            LOGGER.debug("Unknown ping icon {}, falling back to NORMAL", raw);
             return PingIcon.NORMAL;
         }
     }
