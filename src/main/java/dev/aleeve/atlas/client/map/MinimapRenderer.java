@@ -3,6 +3,7 @@ package dev.aleeve.atlas.client.map;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.client.radar.RadarRenderer;
+import dev.aleeve.atlas.client.territory.TerritoryRenderer;
 import dev.aleeve.atlas.client.waypoint.WaypointRenderer;
 import dev.aleeve.atlas.ping.PingRenderer;
 import dev.aleeve.atlas.config.AtlasClientConfig;
@@ -70,6 +71,9 @@ public final class MinimapRenderer {
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);
 
+        // 领地覆层在地图之上、路径点/雷达之下（规格 §7.3）。
+        TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
+
         // 路径点与实体雷达标记绘制在地图之上、边框与箭头之下（规格 §5.1 / §6）。
         WaypointRenderer.renderOnMinimap(graphics, layout, circular);
         PingRenderer.renderOnMinimap(graphics, layout, circular);
@@ -82,6 +86,7 @@ public final class MinimapRenderer {
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 
+        TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular);
         drawInfo(graphics, config, minecraft, size, x, y);
     }
 

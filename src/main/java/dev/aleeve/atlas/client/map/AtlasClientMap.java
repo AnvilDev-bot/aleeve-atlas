@@ -1,6 +1,9 @@
 package dev.aleeve.atlas.client.map;
 
 import dev.aleeve.atlas.AleeveAtlas;
+import dev.aleeve.atlas.api.territory.AtlasTerritory;
+import dev.aleeve.atlas.config.AtlasClientConfigs;
+import dev.aleeve.atlas.config.ConfigBounds;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -22,9 +25,9 @@ public final class AtlasClientMap {
 
     public static ClientMapManager manager() {
         if (manager == null) {
-            var minecraft = Minecraft.getInstance();
+            Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.level != null && minecraft.player != null) {
-                manager = new ClientMapManager();
+                initManager();
             }
         }
         return manager;
@@ -32,12 +35,12 @@ public final class AtlasClientMap {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        var minecraft = Minecraft.getInstance();
+        Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return;
         }
         if (manager == null) {
-            manager = new ClientMapManager();
+            initManager();
         }
         manager.tick(minecraft.level);
         if (++ticksSinceFlush >= FLUSH_INTERVAL_TICKS) {
@@ -54,5 +57,13 @@ public final class AtlasClientMap {
             manager = null;
         }
         ticksSinceFlush = 0;
+    }
+
+    /// 创建地图管理器并同步领地锚点权重配置（规格 §9.1 territory.anchorWeight）。
+    private static void initManager() {
+        manager = new ClientMapManager();
+        float lambda = ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
+                0.3F, 0.5F);
+        AtlasTerritory.clientRegistry().setAnchorLambda(lambda);
     }
 }
