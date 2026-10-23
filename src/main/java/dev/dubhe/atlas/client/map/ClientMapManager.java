@@ -57,10 +57,11 @@ public final class ClientMapManager {
         }
         String serverKey = serverKey(minecraft);
         MapDimensionCache cache = cacheFor(minecraft, serverKey, level.dimension());
-        if (caveCache == null) {
-            caveCache = caveCacheFor(minecraft, serverKey, level.dimension());
-        }
         if (!serverKey.equals(currentServerKey) || !level.dimension().equals(currentDimension)) {
+            // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据（§11）。
+            if (caveCache != null) {
+                caveCache.flush();
+            }
             currentServerKey = serverKey;
             currentDimension = level.dimension();
             caveCache = caveCacheFor(minecraft, serverKey, level.dimension());
@@ -113,6 +114,8 @@ public final class ClientMapManager {
                 }
             }
         }
+        // 合并本 tick 的像素改动，只上传一次纹理（§12.1）。
+        texture.flushDirty();
         if (sampled > 0 && !loggedFirstSample) {
             loggedFirstSample = true;
             LOGGER.info("First map sample written: {} chunk(s) around {},{}, cache dir {}",

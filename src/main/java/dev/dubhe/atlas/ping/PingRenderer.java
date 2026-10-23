@@ -1,6 +1,8 @@
 package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.config.AtlasClientConfig;
+import dev.dubhe.atlas.team.TeamProviders;
+import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.MinimapShape;
 import java.util.List;
@@ -28,6 +30,10 @@ public final class PingRenderer {
             if (!ping.dimensionId().equals(dimension)) {
                 continue;
             }
+            // 非同队玩家发起的标点按服务端下发的可见性策略过滤（§4.1）。
+            if (!visibleByPolicy(minecraft, ping)) {
+                continue;
+            }
             double screenX = layout.worldToScreenX(ping.position().x);
             double screenZ = layout.worldToScreenZ(ping.position().z);
             if (!layout.contains(screenX, screenZ, circular)) {
@@ -35,6 +41,32 @@ public final class PingRenderer {
             }
             drawPing(graphics, screenX, screenZ, ping);
         }
+    }
+
+    /// 按非同队玩家可见性策略判定标点是否可绘制。
+    ///
+    /// 同队玩家与本地发起的标点始终可见；非同队玩家在 `NEVER` 下隐藏，
+    /// `VISIBLE_ONLY` 下需通过可见性判定。
+    static boolean visibleByPolicy(Minecraft minecraft, MapPingData ping) {
+        if (minecraft.player == null || ping.senderId() == null) {
+            return true;
+        }
+        if (ping.senderId().equals(minecraft.player.getUUID())) {
+            return true;
+        }
+        if (TeamProviders.active().sameTeam(minecraft.player.getUUID(), ping.senderId())) {
+            return true;
+        }
+        return switch (AtlasSession.nonTeamVisibility()) {
+            case NEVER -> false;
+            case ALWAYS -> true;
+            case VISIBLE_ONLY -> {
+                var sender = minecraft.level == null ? null
+                        : minecraft.level.getPlayerByUUID(ping.senderId());
+                // 发送者实体不在客户端可见范围内时视为不可见。
+                yield sender != null && minecraft.player.hasLineOfSight(sender);
+            }
+        };
     }
 
     /// 在世界地图上绘制活动标点（屏幕坐标由调用方换算）。

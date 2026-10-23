@@ -25,6 +25,9 @@ public final class MapTexture {
     public static final int PIXELS = SLOTS * ChunkMapData.SIZE;
 
     private final Identifier textureId;
+    /// 是否存在待上传的像素改动。
+    private boolean dirty;
+
     private final DynamicTexture texture;
     private final NativeImage image;
     /// 以区块坐标索引的已采样数据。
@@ -63,12 +66,20 @@ public final class MapTexture {
         return initialized;
     }
 
-    /// 放入一个区块数据（放入后立即重绘受影响的纹理区域）。
+    /// 放入一个区块数据；仅重绘该区块区域，上传延后到 `flushDirty`（§12.1）。
     public void putChunk(ChunkMapData data) {
         source.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data);
         if (initialized && centered) {
             drawChunk(data);
+            dirty = true;
+        }
+    }
+
+    /// 若有脏区块则上传一次纹理（每 tick 末尾调用）。
+    public void flushDirty() {
+        if (dirty && initialized) {
             upload();
+            dirty = false;
         }
     }
 

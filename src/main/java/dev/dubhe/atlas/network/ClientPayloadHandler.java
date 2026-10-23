@@ -26,8 +26,13 @@ public final class ClientPayloadHandler {
                     payload.protocolVersion(), AleeveAtlas.PROTOCOL_VERSION);
             return;
         }
-        AtlasSession.onServerHandshake(payload.maxRadarDistance(), payload.nonTeamVisibility());
-        LOGGER.info("Entered synchronized mode (sync enabled: {})", payload.syncEnabled());
+        AtlasSession.onServerHandshake(payload.maxRadarDistance(), payload.nonTeamVisibility(),
+                payload.syncEnabled());
+        if (payload.syncEnabled()) {
+            LOGGER.info("Entered synchronized mode");
+        } else {
+            LOGGER.info("Server has sync disabled, staying in standalone mode");
+        }
     }
 
     @SubscribeEvent

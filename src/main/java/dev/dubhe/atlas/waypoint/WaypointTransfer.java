@@ -32,6 +32,7 @@ public final class WaypointTransfer {
     /// 导出路径点到指定文件。
     public static void exportTo(Path file, Iterable<Waypoint> waypoints) throws IOException {
         CompoundTag root = new CompoundTag();
+        root.putString("type", ROOT);
         root.putInt("format", FORMAT_VERSION);
         root.put("waypoints", Waypoint.saveAll(waypoints));
         if (file.getParent() != null) {
@@ -41,9 +42,11 @@ public final class WaypointTransfer {
     }
 
     /// 从文件导入路径点；返回导入的条目列表。
+    ///
+    /// 按 `type` 字段严格校验文件来源，避免误导入任意 NBT 文件。
     public static List<Waypoint> importFrom(Path file) throws IOException {
         CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
-        if (!root.contains(ROOT) && !root.contains("waypoints")) {
+        if (!ROOT.equals(root.getStringOr("type", ""))) {
             throw new IOException("Not a waypoint export file: " + file);
         }
         ListTag list = root.getListOrEmpty("waypoints");

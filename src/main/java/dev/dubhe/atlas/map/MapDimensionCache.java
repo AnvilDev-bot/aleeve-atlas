@@ -38,6 +38,8 @@ public final class MapDimensionCache {
         long key = ChunkPos.asLong(chunkX, chunkZ);
         ChunkMapData cached = chunks.get(key);
         if (cached != null) {
+            // 内存命中也要刷新所属区域的 LRU 顺序，避免热点区域被误淘汰（§12.1）。
+            loadedRegions.get(ChunkPos.asLong(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT));
             return Optional.of(cached);
         }
         RegionFile region = regionFor(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT);
