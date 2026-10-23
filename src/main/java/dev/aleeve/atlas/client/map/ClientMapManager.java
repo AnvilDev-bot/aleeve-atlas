@@ -2,6 +2,7 @@ package dev.aleeve.atlas.client.map;
 
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.map.ChunkMapData;
+import dev.aleeve.atlas.map.CaveMode;
 import dev.aleeve.atlas.map.ChunkMapSampler;
 import dev.aleeve.atlas.map.MapDimensionCache;
 import dev.aleeve.atlas.storage.AtlasPaths;
@@ -32,6 +33,8 @@ public final class ClientMapManager {
 
     private final MapTexture texture = new MapTexture(AleeveAtlas.id("minimap"));
     private final Map<String, MapDimensionCache> caches = new HashMap<>();
+    /// 洞穴分层缓存：与地表缓存并行存在，切回地表时立即恢复（§2.1）。
+    private MapDimensionCache caveCache;
     private String currentServerKey;
     private ResourceKey<Level> currentDimension;
     private boolean textureRegistered;
@@ -54,14 +57,20 @@ public final class ClientMapManager {
         }
         String serverKey = serverKey(minecraft);
         MapDimensionCache cache = cacheFor(minecraft, serverKey, level.dimension());
+        if (caveCache == null) {
+            caveCache = caveCacheFor(minecraft, serverKey, level.dimension());
+        }
         if (!serverKey.equals(currentServerKey) || !level.dimension().equals(currentDimension)) {
             currentServerKey = serverKey;
             currentDimension = level.dimension();
+            caveCache = caveCacheFor(minecraft, serverKey, level.dimension());
             texture.clearAll();
         }
 
         ChunkPos center = minecraft.player.chunkPosition();
         texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
+        // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式（§2.1）。
+        boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
 
         int sampled = 0;
         int radius = VIEW_CHUNK_RADIUS;
@@ -73,17 +82,32 @@ public final class ClientMapManager {
                     }
                     int chunkX = center.x + dx;
                     int chunkZ = center.z + dz;
-                    Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
-                    if (existing.isPresent()) {
-                        texture.putChunk(existing.get());
+                    // 洞穴模式使用独立的分层缓存，避免覆盖地表数据（§2.1）。
+                    Integer layerTop = caveMode
+                            ? minecraft.player.blockPosition().getY() + 8
+                            : null;
+                    if (!caveMode) {
+                        Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
+                        if (existing.isPresent()) {
+                            texture.putChunk(existing.get());
+                            continue;
+                        }
+                    } else if (caveCache.get(chunkX, chunkZ).isPresent()) {
+                        texture.putChunk(caveCache.get(chunkX, chunkZ).get());
                         continue;
                     }
-                    ChunkMapData sampledData = ChunkMapSampler.sample(level, new ChunkPos(chunkX, chunkZ));
+                    ChunkMapData sampledData = ChunkMapSampler.sample(level,
+                            new ChunkPos(chunkX, chunkZ), layerTop);
                     if (sampledData == null) {
                         continue;
                     }
                     sampledData.setVersion(System.currentTimeMillis());
-                    cache.put(sampledData);
+                    // 分层数据写入独立缓存，不污染地表地图（§2.1）。
+                    if (caveMode) {
+                        caveCache.put(sampledData);
+                    } else {
+                        cache.put(sampledData);
+                    }
                     texture.putChunk(sampledData);
                     sampled++;
                 }
@@ -128,6 +152,13 @@ public final class ClientMapManager {
             Path dir = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
             return new MapDimensionCache(dir);
         });
+    }
+
+    /// 洞穴分层缓存目录：在地表层目录下加 `_cave` 后缀区分（§2.1 / §11）。
+    private MapDimensionCache caveCacheFor(Minecraft minecraft, String serverKey,
+            ResourceKey<Level> dimension) {
+        Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
+        return new MapDimensionCache(base.resolveSibling(base.getFileName() + "_cave"));
     }
 
     private static Path gameDir(Minecraft minecraft) {

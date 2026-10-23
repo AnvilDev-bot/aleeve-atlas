@@ -19,13 +19,23 @@ public final class ChunkMapSampler {
 
     /// 采样一个已加载区块；区块未加载时返回 {@code null}。
     public static ChunkMapData sample(Level level, ChunkPos pos) {
+        return sample(level, pos, null);
+    }
+
+    /// 按指定起始高度采样（规格 §2.1 洞穴分层模式）。
+    ///
+    /// `layerTopY` 为 {@code null} 时从世界顶部向下扫描（地表模式）；
+    /// 指定高度时仅扫描该高度以下（洞穴模式），使地图反映玩家所在层级的结构。
+    public static ChunkMapData sample(Level level, ChunkPos pos, Integer layerTopY) {
         LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
         if (chunk == null) {
             return null;
         }
         ChunkMapData data = new ChunkMapData(pos.x, pos.z);
         int minY = level.getMinY();
-        int topY = level.getMaxY() - 1;
+        int topY = layerTopY == null
+                ? level.getMaxY() - 1
+                : Math.min(layerTopY, level.getMaxY() - 1);
         int baseX = pos.getMinBlockX();
         int baseZ = pos.getMinBlockZ();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
