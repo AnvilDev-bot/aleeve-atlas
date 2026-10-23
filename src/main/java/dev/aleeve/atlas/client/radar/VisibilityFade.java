@@ -14,13 +14,22 @@ import net.minecraft.world.entity.Entity;
 public final class VisibilityFade {
     /// 实体 UUID → 最近一次可见的时间戳（毫秒）。
     private static final Map<UUID, Long> LAST_SEEN = new HashMap<>();
+    /// 每 N 次判定触发一次清理，避免调用方忘记维护。
+    private static final int PRUNE_INTERVAL = 600;
+    private static int pruneCounter;
 
     private VisibilityFade() {
     }
 
     /// 记录一次可见；由可见性判定成功后调用。
+    ///
+    /// 内部按固定周期清理过期条目，避免调用方遗漏导致映射无界增长（§12.1）。
     public static void markSeen(Entity entity) {
         LAST_SEEN.put(entity.getUUID(), System.currentTimeMillis());
+        if (++pruneCounter >= PRUNE_INTERVAL) {
+            pruneCounter = 0;
+            prune();
+        }
     }
 
     /// 当前应使用的不透明度（0.0 ~ 1.0）。

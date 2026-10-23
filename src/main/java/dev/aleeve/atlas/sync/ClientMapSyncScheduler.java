@@ -67,5 +67,8 @@ public final class ClientMapSyncScheduler {
         ticksSinceReport = 0;
         reportedOnce = false;
         ClientMapSync.clear();
+        // 清理跨会话残留的雷达渐隐与标点状态（§12.1 内存占用）。
+        dev.aleeve.atlas.client.radar.VisibilityFade.clear();
+        dev.aleeve.atlas.ping.ClientPings.clear();
     }
 }
