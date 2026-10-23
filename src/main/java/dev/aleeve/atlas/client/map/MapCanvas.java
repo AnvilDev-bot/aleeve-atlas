@@ -17,7 +17,10 @@ import org.slf4j.LoggerFactory;
 public final class MapCanvas {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapcanvas");
     /// 画布覆盖的区块数（每边）。
-    public static final int CHUNKS_PER_SIDE = 33;
+    ///
+    /// 取 65：在最小区块像素尺寸（1 px/区块）下仍可覆盖 1040 像素的视口宽度，
+    /// 避免缩小地图时出现大片空白；内存占用约 1040² × 4 ≈ 4.3 MB（规格 §2.3 / §12.1）。
+    public static final int CHUNKS_PER_SIDE = 65;
     /// 画布边长（像素）。
     public static final int PIXELS = CHUNKS_PER_SIDE * ChunkMapData.SIZE;
 
