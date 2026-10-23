@@ -106,6 +106,8 @@
   "aleeve_atlas.message.death_point_added": "Death point recorded",
   "aleeve_atlas.message.ping_received": "%s sent a ping",
   "aleeve_atlas.message.server_unsupported": "Server support component is not installed.",
+  "aleeve_atlas.message.territory_demo_added": "Demo territory added",
+  "aleeve_atlas.message.territory_demo_cleared": "Demo territory cleared",
   "aleeve_atlas.message.waypoint_accept": "[Accept]",
   "aleeve_atlas.message.waypoint_created": "Waypoint created at %s, %s, %s",
   "aleeve_atlas.message.waypoint_ignore": "[Ignore]",
