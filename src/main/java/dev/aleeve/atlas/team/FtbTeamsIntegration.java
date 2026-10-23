@@ -155,6 +155,7 @@ public final class FtbTeamsIntegration {
                 Object instance = invokeStatic(type, "getInstance");
                 return instance != null ? instance : invokeStatic(type, "api");
             } catch (Throwable t) {
+                LOGGER.debug("FTB Teams API unavailable: {}", t.toString());
                 return null;
             }
         }
@@ -174,6 +175,7 @@ public final class FtbTeamsIntegration {
             try {
                 return target.getClass().getMethod(name, parameterTypes).invoke(target, args);
             } catch (Throwable t) {
+                LOGGER.debug("FTB Teams method {} failed: {}", name, t.toString());
                 return null;
             }
         }
@@ -185,6 +187,7 @@ public final class FtbTeamsIntegration {
             try {
                 return target.getClass().getMethod(name).invoke(target);
             } catch (Throwable t) {
+                LOGGER.debug("FTB Teams method {} failed: {}", name, t.toString());
                 return null;
             }
         }
@@ -193,6 +196,7 @@ public final class FtbTeamsIntegration {
             try {
                 return type.getMethod(name).invoke(null);
             } catch (Throwable t) {
+                LOGGER.debug("FTB Teams static method {} failed: {}", name, t.toString());
                 return null;
             }
         }

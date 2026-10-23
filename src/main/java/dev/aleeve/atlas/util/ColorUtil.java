@@ -2,6 +2,8 @@ package dev.aleeve.atlas.util;
 
 /// 颜色解析工具（规格 §6.2：玩家可自定义 HEX 配色）。
 public final class ColorUtil {
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/util");
     private ColorUtil() {
     }
 

@@ -44,4 +44,24 @@ public final class MinimapPingAPI {
     public static void removePing(UUID pingId) {
         ClientPings.remove(pingId);
     }
+
+    /// 注册绑定实体的标点：位置随目标实体移动（规格 §3.2.1 可选绑定目标实体）。
+    ///
+    /// 用于玩家把标点打在移动的生物或玩家身上的场景；实体离开视野或消失后标点按生命周期过期。
+    public static MapPingData registerEntityPing(UUID targetEntityId, String dimensionId,
+            MapPingData.PingIcon icon, UUID senderId, String senderName, int teamColorArgb) {
+        MapPingData ping = new MapPingData(
+                UUID.randomUUID(),
+                senderId,
+                senderName,
+                teamColorArgb,
+                dimensionId,
+                Vec3.ZERO,
+                targetEntityId,
+                icon,
+                System.currentTimeMillis(),
+                MapPingData.DEFAULT_LIFETIME_MILLIS);
+        ClientPings.upsert(ping);
+        return ping;
+    }
 }

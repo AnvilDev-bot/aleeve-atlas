@@ -9,6 +9,8 @@ import java.util.zip.Inflater;
 ///
 /// 采用 Deflate 压缩 `16 × 16` 的 ARGB 像素数组，通常可将每区块压缩到约 1 KiB。
 public final class ChunkPixelCodec {
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/map/codec");
     private ChunkPixelCodec() {
     }
 
@@ -103,6 +105,7 @@ public final class ChunkPixelCodec {
             }
             return colors;
         } catch (DataFormatException e) {
+            LOGGER.warn("Failed to decompress chunk pixels, returning blank chunk", e);
             return new int[ChunkMapData.PIXELS];
         } finally {
             inflater.end();

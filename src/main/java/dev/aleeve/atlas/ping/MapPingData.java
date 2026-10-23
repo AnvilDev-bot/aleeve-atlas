@@ -22,6 +22,10 @@ public record MapPingData(
         long lifetimeMillis) {
 
     /// 标点图标类型（规格 §3.2.1：普通标记、危险警告、集合、物资）。
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/ping");
+
+    /// 标点图标类型（规格 §3.2.1）。
     public enum PingIcon {
         NORMAL,
         DANGER,
