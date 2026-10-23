@@ -70,6 +70,35 @@ public final class ClientWaypoints {
         return waypoint;
     }
 
+    /// 新增路径点（自动同步策略下发往服务端，规格 §5.2）。
+    public static void add(Waypoint waypoint) {
+        WaypointStore waypointStore = store();
+        if (waypointStore == null) {
+            return;
+        }
+        waypointStore.upsert(waypoint);
+        if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
+                == dev.aleeve.atlas.config.WaypointSendPolicy.AUTO_SYNC) {
+            share(waypoint);
+        }
+    }
+
+    /// 某维度的全部启用路径点（世界地图展示用，不按玩家距离过滤）。
+    public static java.util.List<Waypoint> waypointsFor(
+            net.minecraft.resources.ResourceKey<Level> dimension) {
+        WaypointStore waypointStore = store();
+        if (waypointStore == null) {
+            return java.util.List.of();
+        }
+        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+        for (Waypoint waypoint : waypointStore.all()) {
+            if (waypoint.enabled() && waypoint.dimension().equals(dimension)) {
+                result.add(waypoint);
+            }
+        }
+        return result;
+    }
+
     /// 把路径点分享给在线队友（规格 §5.2 手动同步）。
     public static void share(Waypoint waypoint) {
         if (!AtlasSession.synchronizedMode()) {
