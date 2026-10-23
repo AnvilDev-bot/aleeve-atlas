@@ -18,8 +18,9 @@ final class DemoTerritory {
     }
 
     static void registerIfDebugging() {
-        // 仅在系统属性显式开启时注入（Gradle -PterritoryDemo），避免污染正常使用。
-        if (!Boolean.getBoolean("aleeve_atlas.demo_territory")) {
+        // 仅在显式开启时注入：系统属性或环境变量均可（环境变量不受 Gradle 配置缓存影响）。
+        if (!Boolean.getBoolean("aleeve_atlas.demo_territory")
+                && System.getenv("ALEEVE_ATLAS_DEMO_TERRITORY") == null) {
             return;
         }
 
