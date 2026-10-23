@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.api.territory.AtlasTerritory;
+import dev.aleeve.atlas.api.territory.BorderStyle;
 import dev.aleeve.atlas.territory.SimpleTerritory;
 import java.util.HashSet;
 import java.util.Set;
@@ -24,6 +25,7 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientCommands {
     private static final String DEMO_ID = "aleeve_atlas_demo";
+    private static final String DEMO_OVERLAY_ID = "aleeve_atlas_demo_overlay";
 
     private AtlasClientCommands() {
     }
@@ -201,6 +203,18 @@ public final class AtlasClientCommands {
 
         AtlasTerritory.client().upsertTerritory(SimpleTerritory.of(DEMO_ID, dimension, chunks,
                 Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
+
+        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍（§7.7 第 2 条）。
+        Set<ChunkPos> overlay = new HashSet<>();
+        for (int dx = 1; dx <= 3; dx++) {
+            for (int dz = 1; dz <= 3; dz++) {
+                overlay.add(new ChunkPos(baseX + dx, baseZ + dz));
+            }
+        }
+        AtlasTerritory.client().upsertTerritory(new SimpleTerritory(DEMO_OVERLAY_ID, dimension,
+                overlay, Component.translatable("aleeve_atlas.territory.demo_overlay_name"),
+                0xFFAA33, 0.55F, BorderStyle.ofTheme(0xFFAA33), java.util.List.of(), 10));
+
         player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.territory_demo_added"), true);
         return 1;
@@ -208,6 +222,7 @@ public final class AtlasClientCommands {
 
     private static int clear(CommandSourceStack source) {
         AtlasTerritory.client().removeTerritory(DEMO_ID);
+        AtlasTerritory.client().removeTerritory(DEMO_OVERLAY_ID);
         var player = source.getPlayer();
         if (player != null) {
             player.displayClientMessage(

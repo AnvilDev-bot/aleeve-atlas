@@ -13,6 +13,7 @@ import net.minecraft.world.level.ChunkPos;
 /// 构造一个含内孔洞与外飞地的领地，覆盖连通分量拆分、轮廓描边与标签锚点场景。
 final class DemoTerritory {
     private static final String ID = "demo_territory";
+    private static final String OVERLAY_ID = "demo_territory_overlay";
 
     private DemoTerritory() {
     }
@@ -51,5 +52,18 @@ final class DemoTerritory {
         AtlasTerritory.client().upsertTerritory(SimpleTerritory.of(ID,
                 minecraft.level.dimension(), chunks,
                 Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
+
+        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍（§7.7 第 2 条）。
+        Set<ChunkPos> overlay = new HashSet<>();
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                overlay.add(new ChunkPos(baseX + dx, baseZ + dz));
+            }
+        }
+        AtlasTerritory.client().upsertTerritory(new SimpleTerritory(OVERLAY_ID,
+                minecraft.level.dimension(), overlay,
+                Component.translatable("aleeve_atlas.territory.demo_overlay_name"), 0xFFAA33,
+                0.55F, dev.aleeve.atlas.api.territory.BorderStyle.ofTheme(0xFFAA33),
+                java.util.List.of(), 10));
     }
 }

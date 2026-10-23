@@ -235,8 +235,8 @@ public final class WorldMapScreen extends Screen {
                 // 裁剪到视口内，避免超出屏幕的无效填充。
                 int left = Math.max(0, x);
                 int top = Math.max(0, y);
-                int right = Math.min(width, x + width);
-                int bottom = Math.min(height, y + height);
+                int right = Math.min(this.width, x + width);
+                int bottom = Math.min(this.height, y + height);
                 if (right > left && bottom > top) {
                     graphics.fill(left, top, right, bottom, fill);
                 }

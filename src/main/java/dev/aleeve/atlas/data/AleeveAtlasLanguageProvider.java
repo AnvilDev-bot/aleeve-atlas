@@ -43,6 +43,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.territory_demo_added", "Demo territory added");
         add("aleeve_atlas.message.territory_demo_cleared", "Demo territory cleared");
         add("aleeve_atlas.territory.demo_name", "Demo Territory");
+        add("aleeve_atlas.territory.demo_overlay_name", "Overlay Territory");
         add("aleeve_atlas.message.ping_channel_duplicate",
                 "Ping Wheel detected while channel mode is AUTO; depending on its settings pings may be broadcast twice.");
         add("aleeve_atlas.territory.border.solid", "Solid");

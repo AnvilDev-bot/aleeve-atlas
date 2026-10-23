@@ -124,6 +124,7 @@
   "aleeve_atlas.radar.category.friendly": "友善生物",
   "aleeve_atlas.radar.category.item": "掉落物",
   "aleeve_atlas.radar.category.misc": "其他实体",  "aleeve_atlas.territory.demo_name": "演示领地",
+  "aleeve_atlas.territory.demo_overlay_name": "叠加领地",
   "aleeve_atlas.screen.waypoint_list": "路径点",
   "aleeve_atlas.screen.waypoint_list.show": "显示",
   "aleeve_atlas.screen.waypoint_list.hide": "隐藏",
