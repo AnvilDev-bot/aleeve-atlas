@@ -49,6 +49,7 @@ final class DemoTerritory {
         chunks.add(new ChunkPos(baseX + 5, baseZ + 5));
 
         AtlasTerritory.client().upsertTerritory(SimpleTerritory.of(ID,
-                minecraft.level.dimension(), chunks, Component.literal("演示领地"), 0x33AAFF));
+                minecraft.level.dimension(), chunks,
+                Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
     }
 }

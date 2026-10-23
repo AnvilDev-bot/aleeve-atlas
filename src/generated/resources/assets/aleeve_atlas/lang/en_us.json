@@ -134,6 +134,7 @@
   "aleeve_atlas.screen.world_map.hint": "Drag to pan, scroll to zoom, ESC or M to close",
   "aleeve_atlas.screen.world_map.share_team": "Share to Team",
   "aleeve_atlas.screen.world_map.share_team.tip": "Share the nearest waypoint with your team",
+  "aleeve_atlas.territory.demo_name": "Demo Territory",
   "aleeve_atlas.waypoint.default_name": "Waypoint",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_left": "Bottom Left",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_right": "Bottom Right",

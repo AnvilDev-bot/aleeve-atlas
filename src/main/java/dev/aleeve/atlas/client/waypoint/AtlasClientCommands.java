@@ -192,7 +192,7 @@ public final class AtlasClientCommands {
         chunks.add(new ChunkPos(baseX - 2, baseZ - 3));
 
         AtlasTerritory.client().upsertTerritory(SimpleTerritory.of(DEMO_ID, dimension, chunks,
-                Component.literal("Demo Territory"), 0x33AAFF));
+                Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
         player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.territory_demo_added"), true);
         return 1;

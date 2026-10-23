@@ -42,6 +42,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.territory_left", "Left %s");
         add("aleeve_atlas.message.territory_demo_added", "Demo territory added");
         add("aleeve_atlas.message.territory_demo_cleared", "Demo territory cleared");
+        add("aleeve_atlas.territory.demo_name", "Demo Territory");
         add("aleeve_atlas.screen.waypoint_list", "Waypoints");
         add("aleeve_atlas.screen.waypoint_list.show", "Show");
         add("aleeve_atlas.screen.waypoint_list.hide", "Hide");
