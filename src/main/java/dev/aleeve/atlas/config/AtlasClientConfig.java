@@ -1,5 +1,6 @@
 package dev.aleeve.atlas.config;
 
+import dev.aleeve.atlas.AleeveAtlas;
 import dev.anvilcraft.lib.v2.config.CollapsibleObject;
 import dev.anvilcraft.lib.v2.config.Comment;
 import dev.anvilcraft.lib.v2.config.Config;
@@ -7,7 +8,8 @@ import net.neoforged.fml.config.ModConfig;
 
 /// 客户端配置（规格 §9.1，`aleeve_atlas-client.toml`）。
 ///
-/// 字段均为 public 非 static 非 final，由 AnvilLib `ConfigManager` 反射绑定。
+/// 本类只在物理客户端加载：实例由 {@link AtlasClientConfigs#CONFIG} 持有，
+/// 专用服务端不会解析本类。
 @Config(name = "aleeve_atlas", type = ModConfig.Type.CLIENT)
 public class AtlasClientConfig {
     @CollapsibleObject

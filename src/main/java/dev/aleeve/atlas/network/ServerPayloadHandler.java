@@ -1,7 +1,8 @@
 package dev.aleeve.atlas.network;
 
 import dev.aleeve.atlas.AleeveAtlas;
-import dev.aleeve.atlas.config.AtlasServerConfigs;
+import dev.aleeve.atlas.config.AtlasServerConfig;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -21,10 +22,10 @@ public final class ServerPayloadHandler {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
-        var config = AtlasServerConfigs.get();
+        var config = AleeveAtlas.CONFIG;
         PacketDistributor.sendToPlayer(player,
                 new HandshakePayload(AleeveAtlas.PROTOCOL_VERSION, config.sync.enabled,
                         config.radar.maxRadarDistance));

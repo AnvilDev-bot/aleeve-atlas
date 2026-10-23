@@ -3,22 +3,18 @@ package dev.aleeve.atlas.config;
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.anvilcraft.lib.v2.config.ConfigManager;
 
-/// 客户端配置实例持有者（规格 §9.1）。
+/// 客户端配置持有者（规格 §9.1）。
 ///
-/// 本类只在物理客户端被引用；`ConfigManager.register` 每次调用都会新建对象，故注册一次并缓存。
+/// 只在物理客户端被引用：静态字段在类初始化时完成注册，由 `@Mod` 构造期按 Dist 触发。
 public final class AtlasClientConfigs {
-    private static AtlasClientConfig instance;
+    /// 客户端配置实例（规格 §9.1）。
+    public static final AtlasClientConfig CONFIG =
+            ConfigManager.register(AleeveAtlas.MOD_ID, AtlasClientConfig::new);
 
     private AtlasClientConfigs() {
     }
 
-    public static void register() {
-        if (instance == null) {
-            instance = ConfigManager.register(AleeveAtlas.MOD_ID, AtlasClientConfig::new);
-        }
-    }
-
-    public static AtlasClientConfig get() {
-        return instance;
+    /// 触发本类静态初始化，从而完成配置注册。
+    public static void load() {
     }
 }

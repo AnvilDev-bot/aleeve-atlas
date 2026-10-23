@@ -2,6 +2,7 @@ package dev.aleeve.atlas.client;
 
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.AtlasSession;
+import dev.aleeve.atlas.config.AtlasClientConfig;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
@@ -51,12 +52,8 @@ public final class AtlasClientTick {
         }
     }
 
-    /// 供后续 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
+    /// 供 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
     public static float minimapScale() {
-        var config = AtlasClientConfigs.get();
-        if (config == null) {
-            return 1.0F;
-        }
-        return ConfigBounds.clamp(config.minimap.scale, 0.5F, 4.0F);
+        return ConfigBounds.clamp(AtlasClientConfigs.CONFIG.minimap.scale, 0.5F, 4.0F);
     }
 }

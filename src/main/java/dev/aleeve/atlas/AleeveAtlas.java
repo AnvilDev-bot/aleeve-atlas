@@ -1,6 +1,9 @@
 package dev.aleeve.atlas;
 
-import dev.aleeve.atlas.config.AtlasServerConfigs;
+import dev.aleeve.atlas.config.AtlasClientConfigs;
+import dev.aleeve.atlas.config.AtlasServerConfig;
+import dev.anvilcraft.lib.v2.config.ConfigManager;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -13,19 +16,18 @@ public final class AleeveAtlas {
     /// 网络协议版本，握手包据此判定双端兼容性（规格 §10）。
     public static final String PROTOCOL_VERSION = "1";
 
+    /// 服务端配置（规格 §9.2）。在 `@Mod` 类加载时注册，此时 `ModList` 已就绪。
+    public static final AtlasServerConfig CONFIG =
+            ConfigManager.register(MOD_ID, AtlasServerConfig::new);
+
     public AleeveAtlas(IEventBus modEventBus, ModContainer modContainer) {
-        AtlasServerConfigs.get();
         if (FMLEnvironment.getDist().isClient()) {
-            registerClientConfig();
+            // 客户端配置只在物理客户端加载，保证专用服务端不解析客户端配置类。
+            AtlasClientConfigs.load();
         }
     }
 
-    /// 客户端专属注册通过独立方法隔离，保证专用服务端不解析客户端配置类。
-    private static void registerClientConfig() {
-        dev.aleeve.atlas.config.AtlasClientConfigs.register();
-    }
-
-    public static net.minecraft.resources.Identifier id(String path) {
-        return net.minecraft.resources.Identifier.fromNamespaceAndPath(MOD_ID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
     }
 }
