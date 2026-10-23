@@ -69,7 +69,13 @@ public final class RadarRenderer {
                     continue;
                 }
                 if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY) {
-                    if (VisibilityGate.isVisible(level, player, entity)) {
+                    // CPU 前置剔除：隐身无护甲或位于视锥体外时直接判不可见（§4.2 第 1 条）。
+                    if (VisibilityPreFilter.shouldCull(player, entity)) {
+                        opacity = VisibilityFade.opacity(entity);
+                        if (opacity <= 0.0F) {
+                            continue;
+                        }
+                    } else if (VisibilityGate.isVisible(level, player, entity)) {
                         VisibilityFade.markSeen(entity);
                     } else {
                         // 被遮挡后按渐隐期衰减，避免标点高频闪烁（§4.2 第 4 条）。
