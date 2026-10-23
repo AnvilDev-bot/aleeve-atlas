@@ -120,6 +120,11 @@ public final class ClientMapManager {
         }
     }
 
+    /// 释放小地图动态纹理（断开连接时调用，避免 GPU 纹理泄漏）。
+    public void releaseTexture() {
+        texture.close();
+    }
+
     public MapTexture texture() {
         return texture;
     }

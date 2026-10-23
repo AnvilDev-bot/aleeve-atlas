@@ -54,8 +54,11 @@ public final class AtlasClientMap {
         if (manager != null) {
             manager.flush();
             manager.clear();
+            // 释放动态纹理，避免重连时残留 GPU 纹理占用显存（规格 §12.1）。
+            manager.releaseTexture();
             manager = null;
         }
+        AtlasWorldMap.release();
         ticksSinceFlush = 0;
     }
 
