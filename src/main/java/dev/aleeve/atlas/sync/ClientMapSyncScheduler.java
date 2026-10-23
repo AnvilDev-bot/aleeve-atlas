@@ -62,6 +62,22 @@ public final class ClientMapSyncScheduler {
         reset();
     }
 
+    /// 队友入队后立即重报摘要，让新成员尽快获得已有地图（§3.3 / §3.1）。
+    @SubscribeEvent
+    public static void onTeamChanged(
+            dev.aleeve.atlas.api.team.TeamMembershipChangedEvent event) {
+        if (event.change() != dev.aleeve.atlas.api.team.TeamMembershipChangedEvent.Change.JOINED) {
+            return;
+        }
+        if (!AtlasSession.synchronizedMode()) {
+            return;
+        }
+        ClientMapSync.reportLocalDigest();
+        ticksSinceReport = 0;
+        LOGGER.debug("Re-reported map digest after {} joined team {}",
+                event.playerId(), event.teamId());
+    }
+
     private static void reset() {
         ticksSinceLogin = 0;
         ticksSinceReport = 0;

@@ -25,4 +25,13 @@ public interface TeamProvider {
 
     /// 队伍颜色（ARGB），无队伍时返回白色。
     int teamColor(String teamId);
+
+    /// 主动推送队伍变更（规格 §3.1 监听入队/退队）。
+    ///
+    /// 原版计分板无变更回调，由 {@link TeamMembershipWatcher} 轮询检测；
+    /// 外部队伍实现若具备事件源，应调用本方法以降低延迟。
+    default void reportMembershipChange(UUID playerId, String teamId,
+            dev.aleeve.atlas.api.team.TeamMembershipChangedEvent.Change change) {
+        TeamMembershipWatcher.notifyChange(playerId, teamId, change);
+    }
 }
