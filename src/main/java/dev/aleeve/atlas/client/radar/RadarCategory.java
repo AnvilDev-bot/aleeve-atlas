@@ -14,6 +14,12 @@ public enum RadarCategory {
     ITEM,
     MISC;
 
+    /// 类别的玩家可见名称（规格 §12.3 实体类别名需纳入语言文件）。
+    public net.minecraft.network.chat.Component displayName() {
+        return net.minecraft.network.chat.Component.translatable(
+                "aleeve_atlas.radar.category." + name().toLowerCase(java.util.Locale.ROOT));
+    }
+
     /// 判定一个实体属于哪一类雷达标记；不参与雷达的实体返回 {@code null}。
     public static RadarCategory classify(Entity entity) {
         if (entity instanceof Player) {

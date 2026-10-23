@@ -43,6 +43,13 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.territory_demo_added", "Demo territory added");
         add("aleeve_atlas.message.territory_demo_cleared", "Demo territory cleared");
         add("aleeve_atlas.territory.demo_name", "Demo Territory");
+        add("aleeve_atlas.territory.border.solid", "Solid");
+        add("aleeve_atlas.territory.border.dashed", "Dashed");
+        add("aleeve_atlas.radar.category.player", "Players");
+        add("aleeve_atlas.radar.category.hostile", "Hostile");
+        add("aleeve_atlas.radar.category.friendly", "Friendly");
+        add("aleeve_atlas.radar.category.item", "Items");
+        add("aleeve_atlas.radar.category.misc", "Misc");
         add("aleeve_atlas.screen.waypoint_list", "Waypoints");
         add("aleeve_atlas.screen.waypoint_list.show", "Show");
         add("aleeve_atlas.screen.waypoint_list.hide", "Hide");

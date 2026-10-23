@@ -8,6 +8,13 @@ package dev.aleeve.atlas.api.territory;
 public record BorderStyle(int colorArgb, float width, boolean dashed) {
     public static final BorderStyle DEFAULT = new BorderStyle(0xFFFFFFFF, 1.0F, false);
 
+    /// 边框样式的玩家可见名称（规格 §12.3 边框样式名需纳入语言文件）。
+    public net.minecraft.network.chat.Component displayName() {
+        String key = dashed ? "aleeve_atlas.territory.border.dashed"
+                : "aleeve_atlas.territory.border.solid";
+        return net.minecraft.network.chat.Component.translatable(key);
+    }
+
     /// 以主题色生成默认边框。
     public static BorderStyle ofTheme(int themeColorRgb) {
         return new BorderStyle(0xFF000000 | (themeColorRgb & 0xFFFFFF), 1.0F, false);
