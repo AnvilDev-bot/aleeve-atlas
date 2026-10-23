@@ -30,6 +30,9 @@ public final class ClientWaypoints {
     private static WaypointStore store;
     private static int ticksSinceFlush;
     private static String currentServerKey;
+    /// 按「服务器 + 维度」缓存的存储实例（规格 §11 维度隔离）。
+    private static final java.util.Map<String, WaypointStore> STORES =
+            new java.util.HashMap<>();
     /// 待玩家确认的队友路径点（手动接受策略）。
     private static final java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> PENDING =
             new java.util.concurrent.ConcurrentHashMap<>();
@@ -41,25 +44,39 @@ public final class ClientWaypoints {
         return PENDING;
     }
 
-    /// 当前路径点存储；未连接时返回 {@code null}。
+    /// 当前维度对应的路径点存储；未连接时返回 {@code null}。
+    ///
+    /// 每个维度独立文件（规格 §11），切换维度时自动切换存储实例。
     public static WaypointStore store() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return null;
         }
         String key = serverKey(minecraft);
-        if (store == null || !key.equals(currentServerKey)) {
-            if (store != null) {
-                store.flush();
-            }
-            store = WaypointStore.open(minecraft.gameDirectory.toPath(), key);
+        if (!key.equals(currentServerKey)) {
+            flushAll();
             currentServerKey = key;
-            AtlasClientConfig config = AtlasClientConfigs.CONFIG;
-            if (!config.waypoint.keepDeathPoints) {
-                store.pruneDeathPoints();
+            STORES.clear();
+        }
+        String dimensionId = minecraft.level.dimension().identifier().toString();
+        WaypointStore cached = STORES.get(dimensionId);
+        if (cached == null) {
+            cached = WaypointStore.open(minecraft.gameDirectory.toPath(), key,
+                    minecraft.level.dimension());
+            STORES.put(dimensionId, cached);
+            if (!AtlasClientConfigs.CONFIG.waypoint.keepDeathPoints) {
+                cached.pruneDeathPoints();
             }
         }
-        return store;
+        store = cached;
+        return cached;
+    }
+
+    /// 落盘全部维度的存储。
+    private static void flushAll() {
+        for (WaypointStore each : STORES.values()) {
+            each.flush();
+        }
     }
 
     /// 在玩家当前位置新建路径点（`N` 键，规格 §8）。
@@ -166,16 +183,17 @@ public final class ClientWaypoints {
         }
         if (++ticksSinceFlush >= FLUSH_INTERVAL_TICKS) {
             ticksSinceFlush = 0;
-            store.flush();
+            flushAll();
         }
     }
 
     private static void flushAndClose() {
-        if (store != null) {
-            store.flush();
-            store.clear();
-            store = null;
+        flushAll();
+        for (WaypointStore each : STORES.values()) {
+            each.clear();
         }
+        STORES.clear();
+        store = null;
         currentServerKey = null;
         ticksSinceFlush = 0;
     }
@@ -187,8 +205,7 @@ public final class ClientWaypoints {
         if (minecraft.player == null || minecraft.level == null || waypointStore == null) {
             return java.util.List.of();
         }
-        return waypointStore.visibleIn(minecraft.level.dimension(), minecraft.player.getX(),
-                minecraft.player.getZ());
+        return waypointStore.visibleIn(minecraft.player.getX(), minecraft.player.getZ());
     }
 
     private static String serverKey(Minecraft minecraft) {
