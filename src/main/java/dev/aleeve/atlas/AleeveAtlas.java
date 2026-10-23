@@ -2,6 +2,7 @@ package dev.aleeve.atlas;
 
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.AtlasServerConfig;
+import dev.aleeve.atlas.team.AtlasIntegrations;
 import dev.anvilcraft.lib.v2.config.ConfigManager;
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
@@ -25,6 +26,8 @@ public final class AleeveAtlas {
             // 客户端配置只在物理客户端加载，保证专用服务端不解析客户端配置类。
             AtlasClientConfigs.load();
         }
+        // 扫描并加载可选模组集成（FTB Teams 等），未安装时自动跳过（§3.1）。
+        AtlasIntegrations.initialize();
     }
 
     public static Identifier id(String path) {

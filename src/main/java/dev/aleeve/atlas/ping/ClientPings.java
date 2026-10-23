@@ -50,7 +50,8 @@ public final class ClientPings {
         ACTIVE.removeIf(existing -> existing.pingId().equals(ping.pingId()));
         ACTIVE.add(ping);
         NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, true));
-        if (AtlasSession.synchronizedMode()) {
+        // 通道复用策略决定是否由本模组广播，避免与外部标点模组重复发送（§3.2.2）。
+        if (AtlasSession.synchronizedMode() && PingChannelPolicy.shouldBroadcast()) {
             ClientPacketDistributor.sendToServer(new PingPayload(ping));
         }
         return ping;
