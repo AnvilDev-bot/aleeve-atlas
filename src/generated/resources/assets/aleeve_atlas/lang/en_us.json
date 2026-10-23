@@ -107,6 +107,8 @@
   "aleeve_atlas.message.server_unsupported": "Server support component is not installed.",
   "aleeve_atlas.message.waypoint_pending": "Waypoints are not implemented yet.",
   "aleeve_atlas.message.world_map_pending": "World map is not implemented yet.",
+  "aleeve_atlas.screen.world_map": "World Map",
+  "aleeve_atlas.screen.world_map.hint": "Drag to pan, scroll to zoom, ESC or M to close",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_left": "Bottom Left",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_right": "Bottom Right",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.custom": "Custom",

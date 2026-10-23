@@ -2,7 +2,7 @@ package dev.aleeve.atlas.client;
 
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.AtlasSession;
-import dev.aleeve.atlas.config.AtlasClientConfig;
+import dev.aleeve.atlas.client.map.AtlasWorldMap;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
@@ -26,10 +26,7 @@ public final class AtlasClientTick {
             return;
         }
         while (AtlasKeyMappings.OPEN_WORLD_MAP.consumeClick()) {
-            minecraft.player.displayClientMessage(
-                    Component.translatable("aleeve_atlas.message.world_map_pending")
-                            .withStyle(ChatFormatting.YELLOW),
-                    true);
+            AtlasWorldMap.open();
         }
         while (AtlasKeyMappings.NEW_WAYPOINT.consumeClick()) {
             minecraft.player.displayClientMessage(
