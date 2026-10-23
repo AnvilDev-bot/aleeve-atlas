@@ -91,7 +91,7 @@ public final class ClientMapSync {
             return;
         }
         // 按服务端配置的带宽上限与间隔限流，避免堵塞实时包（§9.2 / §12.1）。
-        BUDGET.beginTick();
+        // 单 tick 计数由 `tick` 统一重置，此处不再重复重置，否则同 tick 内多批差异各自计数。
         // 差异回传给摘要发送者（由服务端按 targetPlayer 精确路由）。
         java.util.UUID target = payload.senderId();
         for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas,
@@ -127,8 +127,10 @@ public final class ClientMapSync {
         }
     }
 
-    /// 每个客户端 tick 调用：限速写入缓存（规格 §12.1 分帧写入）。
+    /// 每个客户端 tick 调用：重置发送预算并限速写入缓存（规格 §12.1）。
     public static void tick() {
+        // 每 tick 重置单 tick 发包计数，避免同一 tick 内多批差异各自计数（§12.1）。
+        BUDGET.beginTick();
         if (WRITE_QUEUE.isEmpty()) {
             return;
         }
