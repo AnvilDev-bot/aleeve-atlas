@@ -5,6 +5,7 @@ import dev.aleeve.atlas.client.map.MinimapLayout;
 import dev.aleeve.atlas.config.AtlasClientConfig;
 import dev.aleeve.atlas.config.ConfigBounds;
 import dev.aleeve.atlas.config.MinimapShape;
+import dev.aleeve.atlas.config.NonTeamVisibility;
 import dev.aleeve.atlas.config.RadarDisplayMode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -45,6 +46,8 @@ public final class RadarRenderer {
         // 服务端下发的最大雷达距离优先于客户端配置（规格 §4.2）。
         int maxDistance = AtlasSession.maxRadarDistance();
         double maxDistanceSq = (double) maxDistance * maxDistance;
+        // 非同队玩家可见性策略由服务端下发（规格 §4.1）。
+        NonTeamVisibility nonTeamPolicy = AtlasSession.nonTeamVisibility();
 
         for (Entity entity : level.entitiesForRendering()) {
             if (entity == player || entity.isRemoved()) {
@@ -57,6 +60,16 @@ public final class RadarRenderer {
             if (category == null
                     || !RadarStyle.visible(config.radar.categories, category)) {
                 continue;
+            }
+            // 前置逻辑剔除 + 可见性判定（规格 §4.2 第 1、5 条）。
+            if (category == RadarCategory.PLAYER && !RadarStyle.isTeammate(entity)) {
+                if (nonTeamPolicy == NonTeamVisibility.NEVER) {
+                    continue;
+                }
+                if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY
+                        && !VisibilityGate.isVisible(level, player, entity)) {
+                    continue;
+                }
             }
             double screenX = layout.worldToScreenX(entity.getX());
             double screenZ = layout.worldToScreenZ(entity.getZ());

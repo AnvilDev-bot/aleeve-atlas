@@ -26,7 +26,7 @@ public final class ClientPayloadHandler {
                     payload.protocolVersion(), AleeveAtlas.PROTOCOL_VERSION);
             return;
         }
-        AtlasSession.onServerHandshake(payload.maxRadarDistance());
+        AtlasSession.onServerHandshake(payload.maxRadarDistance(), payload.nonTeamVisibility());
         LOGGER.info("Entered synchronized mode (sync enabled: {})", payload.syncEnabled());
     }
 

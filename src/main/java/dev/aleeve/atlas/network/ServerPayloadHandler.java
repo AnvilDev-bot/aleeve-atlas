@@ -28,7 +28,7 @@ public final class ServerPayloadHandler {
         var config = AleeveAtlas.CONFIG;
         PacketDistributor.sendToPlayer(player,
                 new HandshakePayload(AleeveAtlas.PROTOCOL_VERSION, config.sync.enabled,
-                        config.radar.maxRadarDistance));
+                        config.radar.maxRadarDistance, config.radar.nonTeamPlayerVisibility));
         LOGGER.debug("Sent handshake to {}", player.getGameProfile().name());
     }
 }
