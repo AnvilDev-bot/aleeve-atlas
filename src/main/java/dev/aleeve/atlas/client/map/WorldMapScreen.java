@@ -287,7 +287,8 @@ public final class WorldMapScreen extends Screen {
 
     /// 领地名称标签（规格 §7.5）。在组件渲染之后调用，确保标签位于最上层。
     ///
-    /// 缩放到区块像素不足阈值时隐藏标签，仅保留色块（AC-10）。
+    /// 逐个连通分量比较其屏幕像素面积与名称文本宽度：面积不足以容纳文本时隐藏标签，
+    /// 仅保留色块，避免大量飞地标签相互重叠（AC-10）。
     private void drawTerritoryLabels(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || pixelsPerChunk < MIN_PIXELS_FOR_LABEL) {
@@ -303,8 +304,14 @@ public final class WorldMapScreen extends Screen {
             if (cached == null) {
                 continue;
             }
+            int textWidth = minecraft.font.width(group.displayName());
             for (TerritoryRegistry.Component component : cached.components()) {
                 if (component.anchor() == null) {
+                    continue;
+                }
+                // 分量屏幕宽度不足文本宽度时隐藏标签（§7.5）。
+                if (component.chunks().size() * pixelsPerChunk * pixelsPerChunk
+                        < textWidth * 8.0F) {
                     continue;
                 }
                 // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见（§7.5）。
@@ -316,7 +323,6 @@ public final class WorldMapScreen extends Screen {
                     continue;
                 }
                 // 名称标签带深色背景框，避免在浅色地形上难以辨认（§7.5）。
-                int textWidth = minecraft.font.width(group.displayName());
                 int tx = rect[0] + rect[2] / 2 - textWidth / 2;
                 int ty = rect[1] + rect[3] / 2 - 4;
                 graphics.fill(tx - 2, ty - 2, tx + textWidth + 2, ty + 10, 0xB0000000);
