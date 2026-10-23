@@ -16,6 +16,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /// 客户端路径点管理器（规格 §5.1）。
@@ -121,29 +122,35 @@ public final class ClientWaypoints {
                 new WaypointSyncPayload(WaypointSyncPayload.Action.DELETE, waypoint));
     }
 
-    /// 记录玩家死亡位置，供复活后生成死亡点。
+    /// 记录玩家死亡位置，供复活后生成死亡点（规格 §5.1）。
+    ///
+    /// 使用客户端专属的 `ClientPlayerNetworkEvent.Clone`：服务端的 `PlayerEvent.Clone`
+    /// 不会在客户端触发，此前订阅错误导致死亡点功能实际不可用。
     @SubscribeEvent
-    public static void onPlayerClone(net.neoforged.neoforge.event.entity.player.PlayerEvent.Clone event) {
-        // 仅在客户端侧记录：客户端玩家实体重建时保留死亡坐标。
-        if (!event.isWasDeath()) {
+    public static void onPlayerClone(ClientPlayerNetworkEvent.Clone event) {
+        var oldPlayer = event.getOldPlayer();
+        if (oldPlayer == null || oldPlayer.level() == null) {
             return;
         }
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.level == null) {
+        // 仅当旧玩家确实死亡（生命值归零）时记录，避免维度切换误触发。
+        if (oldPlayer.getHealth() > 0.0F) {
             return;
         }
         WaypointStore waypointStore = store();
         if (waypointStore == null) {
             return;
         }
-        Waypoint death = Waypoint.deathPoint(minecraft.player.blockPosition(),
-                minecraft.level.dimension());
+        Waypoint death = Waypoint.deathPoint(oldPlayer.blockPosition(),
+                oldPlayer.level().dimension());
         waypointStore.upsert(death);
         if (!AtlasClientConfigs.CONFIG.waypoint.keepDeathPoints) {
             waypointStore.pruneDeathPoints();
         }
-        Minecraft.getInstance().player.displayClientMessage(
-                Component.translatable("aleeve_atlas.message.death_point_added"), true);
+        var newPlayer = event.getNewPlayer();
+        if (newPlayer != null) {
+            newPlayer.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.death_point_added"), true);
+        }
     }
 
     @SubscribeEvent
@@ -153,7 +160,7 @@ public final class ClientWaypoints {
 
     /// 周期性落盘：仅在异常退出或崩溃时仍能保留路径点（规格 §11 数据可靠性）。
     @SubscribeEvent
-    public static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+    public static void onClientTick(ClientTickEvent.Post event) {
         if (store == null) {
             return;
         }
