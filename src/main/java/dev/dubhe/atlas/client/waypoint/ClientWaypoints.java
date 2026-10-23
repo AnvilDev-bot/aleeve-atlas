@@ -219,7 +219,8 @@ public final class ClientWaypoints {
         }
         Waypoint death = Waypoint.deathPoint(oldPlayer.blockPosition(),
                 oldPlayer.level().dimension());
-        waypointStore.upsert(death);
+        // 死亡点按自身维度写入：在下界死亡、复活回主世界时不会写错文件（§5.1 / §11）。
+        upsertInDimension(death);
         if (!AtlasClientConfigs.CONFIG.waypoint.keepDeathPoints) {
             waypointStore.pruneDeathPoints();
         }

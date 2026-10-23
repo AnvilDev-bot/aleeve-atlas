@@ -73,6 +73,7 @@ public record Waypoint(
         tag.putInt("visible", visibleDistance);
         tag.putBoolean("death", deathPoint);
         tag.putString("source", sourcePlayer);
+        tag.putBoolean("shareable", shareable);
         return tag;
     }
 

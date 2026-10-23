@@ -32,7 +32,8 @@ public final class AtlasPayloads {
 
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION);
+        // `optional()` 返回副本而非修改当前实例，必须接收返回值。
+        PayloadRegistrar registrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION).optional();
 
         // 握手：服务端在玩家登录后下发，含协同模式与可见性锁定项（§1/§4.1）。
         registrar.playToClient(HandshakePayload.TYPE, HandshakePayload.STREAM_CODEC,
@@ -64,7 +65,5 @@ public final class AtlasPayloads {
         // 领地下发：服务端 API 推送、客户端重组后写入注册表（§7.1）。
         registrar.playToClient(TerritorySyncPayload.TYPE, TerritorySyncPayload.STREAM_CODEC,
                 ClientTerritorySync::handle);
-
-        registrar.optional();
     }
 }

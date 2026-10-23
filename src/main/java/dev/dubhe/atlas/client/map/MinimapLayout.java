@@ -23,10 +23,12 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         }
         float scale = (float) ConfigBounds.clamp(config.minimap.scale,
                 0.5, 4.0);
-        int size = Math.round(BASE_SIZE * scale);
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
         int margin = 6;
+        // 尺寸不得超过短边可用空间，否则四角定位会算出负坐标（§2.2）。
+        int maxSize = Math.max(BASE_SIZE / 2, Math.min(screenWidth, screenHeight) - margin * 2);
+        int size = Math.min(Math.round(BASE_SIZE * scale), maxSize);
         int[] origin = switch (config.minimap.position) {
             case TOP_LEFT -> new int[] { margin, margin };
             case TOP_RIGHT -> new int[] { screenWidth - size - margin, margin };
@@ -37,6 +39,9 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
                     clamp(config.minimap.offsetX, 0, Math.max(0, screenWidth - size)),
                     clamp(config.minimap.offsetY, 0, Math.max(0, screenHeight - size)) };
         };
+        // 统一钳制到屏幕内，避免负数或溢出（§2.2）。
+        origin[0] = clamp(origin[0], 0, Math.max(0, screenWidth - size));
+        origin[1] = clamp(origin[1], 0, Math.max(0, screenHeight - size));
         return new MinimapLayout(origin[0], origin[1], size, player.getX(), player.getZ());
     }
 

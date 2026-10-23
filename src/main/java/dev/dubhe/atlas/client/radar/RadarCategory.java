@@ -35,8 +35,11 @@ public enum RadarCategory {
             if (category == MobCategory.MONSTER) {
                 return HOSTILE;
             }
+            // 极小型环境生物独立分类，可由配置单独过滤（§6.2）。
+            if (category == MobCategory.AMBIENT) {
+                return AMBIENT;
+            }
             if (category == MobCategory.CREATURE
-                    || category == MobCategory.AMBIENT
                     || category == MobCategory.WATER_CREATURE
                     || category == MobCategory.WATER_AMBIENT
                     || category == MobCategory.UNDERGROUND_WATER_CREATURE) {

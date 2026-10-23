@@ -88,7 +88,7 @@ public final class WaypointListScreen extends Screen {
                                     ? "aleeve_atlas.screen.waypoint_list.public"
                                     : "aleeve_atlas.screen.waypoint_list.private"),
                             button -> toggleShareable(waypoint))
-                    .bounds(buttonX + (BUTTON_WIDTH + 4) * 3, y, BUTTON_WIDTH, 20).build();
+                    .bounds(buttonX + (BUTTON_WIDTH + 4) * 2, y, BUTTON_WIDTH, 20).build();
             addRenderableWidget(privacy);
 
             Button delete = Button.builder(

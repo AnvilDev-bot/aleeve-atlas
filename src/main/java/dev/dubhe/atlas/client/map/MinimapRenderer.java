@@ -97,8 +97,10 @@ public final class MinimapRenderer {
         RadarRenderer.render(graphics, config, layout, minecraft);
         graphics.pose().popMatrix();
 
-        // 叠加层（边框与箭头）不参与地图旋转：箭头固定朝上表示玩家前进方向。
-        int tint = encodeOverlayTint(0.0F, circular);
+        // 叠加层（边框与箭头）不参与地图旋转：
+        // 北向锁定时地图固定、箭头随视角转；视角随动时地图已旋转、箭头固定朝上（§2.2）。
+        float arrowYaw = config.minimap.lockNorth ? player.getYRot() : 0.0F;
+        int tint = encodeOverlayTint(arrowYaw, circular);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 

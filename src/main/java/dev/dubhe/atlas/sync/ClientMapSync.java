@@ -2,6 +2,7 @@ package dev.dubhe.atlas.sync;
 
 import dev.dubhe.atlas.client.map.AtlasClientMap;
 import dev.dubhe.atlas.client.map.ClientMapManager;
+import dev.dubhe.atlas.client.map.WorldMapScreen;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.ChunkPixelCodec;
 import dev.dubhe.atlas.map.MapDimensionCache;
@@ -150,10 +151,9 @@ public final class ClientMapSync {
             }
             ChunkMapData data = new ChunkMapData(pending.chunk().chunkX(),
                     pending.chunk().chunkZ());
-            // 颜色与高度一并还原，保证接收方地图的地表高度可用（§3.3）。
-            int[][] decoded = ChunkPixelCodec.decompressWithHeights(pending.chunk().pixels());
-            int[] colors = decoded[0];
-            int[] heights = decoded[1];
+            // 颜色与高度已在网络线程解压，此处直接写入，避免重复解压（§3.3 / §10）。
+            int[] colors = pending.colors();
+            int[] heights = pending.heights();
             for (int index = 0; index < colors.length && index < ChunkMapData.PIXELS; index++) {
                 data.setPixel(index % ChunkMapData.SIZE, index / ChunkMapData.SIZE,
                         colors[index], heights[index]);
@@ -161,6 +161,10 @@ public final class ClientMapSync {
             data.setVersion(pending.chunk().version());
             cache.put(data);
             written++;
+        }
+        if (written > 0) {
+            // 队友同步来的区块写入后刷新已打开的世界地图（§3.3）。
+            WorldMapScreen.onMapDataChanged();
         }
     }
 

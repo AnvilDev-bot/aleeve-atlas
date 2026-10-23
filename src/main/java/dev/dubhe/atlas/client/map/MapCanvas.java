@@ -84,6 +84,9 @@ public final class MapCanvas {
                     ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
                     if (data != null) {
                         drawChunk(data, dx * ChunkMapData.SIZE, dz * ChunkMapData.SIZE);
+                    } else {
+                        // 未探索且未被队友同步的区块绘制网格底纹（§2.3）。
+                        drawUnexplored(dx * ChunkMapData.SIZE, dz * ChunkMapData.SIZE);
                     }
                 }
             }
