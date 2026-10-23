@@ -14,23 +14,26 @@ import org.slf4j.LoggerFactory;
 
 /// 小地图像素纹理（规格 §2.1 / §2.2）。
 ///
-/// 以「区块槽位」方式维护一张固定大小的纹理：槽位 (slotX, slotZ) 对应世界区块
-/// `(originChunkX + slotX, originChunkZ + slotZ)`。当玩家跨越窗口边界时整体平移槽位内容，
-/// 仅在区块数据更新时重绘对应 16×16 区域，避免每帧重采样（规格 §12.1 性能要求）。
+/// 纹理固定覆盖 {@link #COVERED_BLOCKS} 见方的世界范围，且**玩家始终位于纹理中心**：
+/// 玩家移动时按像素平移纹理内容，因此 HUD 直接用整张纹理绘制，UV 恒为 `[0, 1]`，
+/// 圆形遮罩与边框可由片元着色器按 UV 解析式判定（无需每帧逐行填充）。
 public final class MapTexture {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/maptexture");
-    /// 纹理包含的区块数（每边）；9 → 144×144 像素。
+    /// 纹理覆盖的区块数（每边）。
     public static final int SLOTS = 9;
+    /// 纹理边长（像素），等于覆盖的方块数。
     public static final int PIXELS = SLOTS * ChunkMapData.SIZE;
 
     private final Identifier textureId;
     private final DynamicTexture texture;
     private final NativeImage image;
-    private final ChunkMapData[][] slots = new ChunkMapData[SLOTS][SLOTS];
+    /// 以区块坐标索引的已采样数据。
     private final Map<Long, ChunkMapData> source = new HashMap<>();
-    private int originChunkX;
-    private int originChunkZ;
+    /// 纹理左上角对应的世界像素坐标。
+    private int originPixelX;
+    private int originPixelZ;
     private boolean initialized;
+    private boolean centered;
 
     public MapTexture(Identifier textureId) {
         this.textureId = textureId;
@@ -48,41 +51,25 @@ public final class MapTexture {
         return textureId;
     }
 
-    public int originChunkX() {
-        return originChunkX;
+    public int originPixelX() {
+        return originPixelX;
     }
 
-    public int originChunkZ() {
-        return originChunkZ;
+    public int originPixelZ() {
+        return originPixelZ;
     }
 
-    /// 以给定区块为中心重排窗口原点（若已居中则不变）。
-    public void ensureCentered(int centerChunkX, int centerChunkZ) {
-        int half = SLOTS / 2;
-        int targetOriginX = centerChunkX - half;
-        int targetOriginZ = centerChunkZ - half;
-        if (targetOriginX == originChunkX && targetOriginZ == originChunkZ) {
-            return;
-        }
-        int shiftX = targetOriginX - originChunkX;
-        int shiftZ = targetOriginZ - originChunkZ;
-        shiftSlots(shiftX, shiftZ);
-        originChunkX = targetOriginX;
-        originChunkZ = targetOriginZ;
-        redrawAll();
+    public boolean ready() {
+        return initialized;
     }
 
-    /// 放入一个区块数据（放入后立即重绘其槽位）。
+    /// 放入一个区块数据（放入后立即重绘受影响的纹理区域）。
     public void putChunk(ChunkMapData data) {
-        int slotX = data.chunkX() - originChunkX;
-        int slotZ = data.chunkZ() - originChunkZ;
         source.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data);
-        if (slotX < 0 || slotX >= SLOTS || slotZ < 0 || slotZ >= SLOTS) {
-            return;
+        if (initialized && centered) {
+            drawChunk(data);
+            upload();
         }
-        slots[slotX][slotZ] = data;
-        drawChunk(slotX, slotZ, data);
-        upload();
     }
 
     /// 查询已缓存的区块数据。
@@ -90,70 +77,60 @@ public final class MapTexture {
         return source.get(ChunkPos.asLong(chunkX, chunkZ));
     }
 
-    public boolean ready() {
-        return initialized;
+    /// 以玩家世界像素坐标为中心平移纹理（仅移动 1 像素以上时重绘）。
+    public void centerOn(double worldX, double worldZ) {
+        int targetOriginX = (int) Math.floor(worldX) - PIXELS / 2;
+        int targetOriginZ = (int) Math.floor(worldZ) - PIXELS / 2;
+        if (centered && targetOriginX == originPixelX && targetOriginZ == originPixelZ) {
+            return;
+        }
+        originPixelX = targetOriginX;
+        originPixelZ = targetOriginZ;
+        centered = true;
+        redrawAll();
     }
 
-    /// 清空全部槽位与缓存（切换服务器或维度时调用）。
+    /// 清空全部内容（切换服务器或维度时调用）。
     public void clearAll() {
-        for (int slotX = 0; slotX < SLOTS; slotX++) {
-            for (int slotZ = 0; slotZ < SLOTS; slotZ++) {
-                slots[slotX][slotZ] = null;
-                clearChunk(slotX, slotZ);
-            }
-        }
         source.clear();
-        originChunkX = 0;
-        originChunkZ = 0;
+        centered = false;
+        fill(MapPalette.TRANSPARENT);
         upload();
-    }
-
-    private void shiftSlots(int shiftX, int shiftZ) {
-        ChunkMapData[][] next = new ChunkMapData[SLOTS][SLOTS];
-        for (int slotX = 0; slotX < SLOTS; slotX++) {
-            for (int slotZ = 0; slotZ < SLOTS; slotZ++) {
-                int srcX = slotX + shiftX;
-                int srcZ = slotZ + shiftZ;
-                if (srcX >= 0 && srcX < SLOTS && srcZ >= 0 && srcZ < SLOTS) {
-                    next[slotX][slotZ] = slots[srcX][srcZ];
-                }
-            }
-        }
-        for (int slotX = 0; slotX < SLOTS; slotX++) {
-            System.arraycopy(next[slotX], 0, slots[slotX], 0, SLOTS);
-        }
     }
 
     private void redrawAll() {
-        for (int slotX = 0; slotX < SLOTS; slotX++) {
-            for (int slotZ = 0; slotZ < SLOTS; slotZ++) {
-                ChunkMapData data = slots[slotX][slotZ];
-                if (data != null) {
-                    drawChunk(slotX, slotZ, data);
-                } else {
-                    clearChunk(slotX, slotZ);
-                }
-            }
+        fill(MapPalette.TRANSPARENT);
+        for (ChunkMapData data : source.values()) {
+            drawChunk(data);
         }
         upload();
     }
 
-    private void drawChunk(int slotX, int slotZ, ChunkMapData data) {
-        int baseX = slotX * ChunkMapData.SIZE;
-        int baseZ = slotZ * ChunkMapData.SIZE;
+    /// 把一个区块的 16×16 像素写入纹理中对应的位置（可能部分或全部在纹理外）。
+    private void drawChunk(ChunkMapData data) {
+        int chunkPixelX = data.chunkX() * ChunkMapData.SIZE;
+        int chunkPixelZ = data.chunkZ() * ChunkMapData.SIZE;
+        int baseX = chunkPixelX - originPixelX;
+        int baseZ = chunkPixelZ - originPixelZ;
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
+            int y = baseZ + localZ;
+            if (y < 0 || y >= PIXELS) {
+                continue;
+            }
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-                setPixel(baseX + localX, baseZ + localZ, data.colorAt(localX, localZ));
+                int x = baseX + localX;
+                if (x < 0 || x >= PIXELS) {
+                    continue;
+                }
+                setPixel(x, y, data.colorAt(localX, localZ));
             }
         }
     }
 
-    private void clearChunk(int slotX, int slotZ) {
-        int baseX = slotX * ChunkMapData.SIZE;
-        int baseZ = slotZ * ChunkMapData.SIZE;
-        for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
-            for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-                setPixel(baseX + localX, baseZ + localZ, MapPalette.TRANSPARENT);
+    private void fill(int argb) {
+        for (int y = 0; y < PIXELS; y++) {
+            for (int x = 0; x < PIXELS; x++) {
+                setPixel(x, y, argb);
             }
         }
     }
@@ -167,10 +144,9 @@ public final class MapTexture {
     }
 
     private void upload() {
-        if (!initialized) {
-            return;
+        if (initialized) {
+            texture.upload();
         }
-        texture.upload();
     }
 
     public void close() {

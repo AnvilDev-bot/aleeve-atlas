@@ -60,7 +60,7 @@ public final class ClientMapManager {
         }
 
         ChunkPos center = minecraft.player.chunkPosition();
-        texture.ensureCentered(center.x, center.z);
+        texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
 
         int sampled = 0;
         int radius = VIEW_CHUNK_RADIUS;
