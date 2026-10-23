@@ -34,34 +34,34 @@ side = "BOTH"
 [[dependencies."${mod_id}"]]
 modId = "anvillib_config"
 type = "required"
-versionRange = "[2.0.0,)"
+versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "anvillib_codec"
 type = "required"
-versionRange = "[2.0.0,)"
+versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "anvillib_network"
 type = "required"
-versionRange = "[2.0.0,)"
+versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "anvillib_integration"
 type = "required"
-versionRange = "[2.0.0,)"
+versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
 modId = "anvillib_util"
 type = "required"
-versionRange = "[2.0.0,)"
+versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"

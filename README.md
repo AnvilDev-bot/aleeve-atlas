@@ -50,6 +50,11 @@ AtlasTerritory.client().upsertTerritory(
 | `/aleeve_atlas waypoint accept\|ignore <id>` | 手动接受策略下的路径点确认 |
 | `/aleeve_atlas territory demo\|clear` | 注册/清除演示领地（含孔洞与飞地，便于验收） |
 
+## 依赖
+
+本模组依赖 **AnvilLib**（≥ 2.0.0）的 `config` / `codec` / `network` / `integration` / `util` 五个模块，
+请一并安装对应 Minecraft 1.21.11 版本。
+
 ## 环境要求
 
 - JDK 21（Gradle 工具链自动解析，亦可通过 foojay 自动下载）
