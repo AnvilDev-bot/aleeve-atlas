@@ -23,6 +23,10 @@ public final class MapCanvas {
     public static final int CHUNKS_PER_SIDE = 65;
     /// 画布边长（像素）。
     public static final int PIXELS = CHUNKS_PER_SIDE * ChunkMapData.SIZE;
+    /// 未探索区域底色（接近纯黑，保持低干扰）。
+    private static final int UNEXPLORED_BASE_COLOR = 0xFF0A0A0A;
+    /// 未探索区域网格线颜色。
+    private static final int UNEXPLORED_GRID_COLOR = 0xFF1E1E1E;
 
     private final DynamicTexture texture;
     private final NativeImage image;
@@ -86,6 +90,17 @@ public final class MapCanvas {
         }
         if (initialized) {
             texture.upload();
+        }
+    }
+
+    /// 未探索区块底纹：深色底加每 4 像素的网格线，与已探索地形形成明确区分。
+    private void drawUnexplored(int baseX, int baseZ) {
+        for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
+            for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
+                boolean line = (localX & 3) == 0 || (localZ & 3) == 0;
+                setPixel(baseX + localX, baseZ + localZ,
+                        line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
+            }
         }
     }
 
