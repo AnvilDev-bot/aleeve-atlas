@@ -63,6 +63,12 @@ public final class ChunkMapSampler {
                         MapColor mapColor = state.getMapColor(level, cursor);
                         argb = MapPalette.colorOf(mapColor,
                                 MapPalette.brightnessForHeight(y, SEA_LEVEL));
+                        // 植被类方块按生物群系染色（§2.1 地形渲染要素）。
+                        argb = MapPalette.tintWithBiome(argb, state, level, cursor,
+                                level.getBiome(cursor));
+                        // 地表光照阴影：按方块光照与天光调整明暗（§2.1）。
+                        int light = level.getMaxLocalRawBrightness(cursor.above());
+                        argb = MapPalette.applyLighting(argb, light);
                     }
                     break;
                 }
