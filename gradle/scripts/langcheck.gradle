@@ -1,0 +1,48 @@
+import groovy.json.JsonSlurper
+
+// 语言文件键集一致性校验（规格 §12.3 / 验收标准 AC-11）。
+// en_us 由 datagen 生成，zh_cn 为人工维护源文件，两者键集必须完全一致。
+def enUsFile = layout.projectDirectory.file("src/generated/resources/assets/aleeve_atlas/lang/en_us.json").asFile
+def zhCnFile = layout.projectDirectory.file("src/main/resources/assets/aleeve_atlas/lang/zh_cn.json").asFile
+
+tasks.register('checkLangKeys') {
+    group = 'verification'
+    description = 'Verifies that en_us.json (datagen) and zh_cn.json have exactly the same key set.'
+
+    inputs.file(zhCnFile).withPropertyName('zhCn')
+    if (enUsFile.exists()) {
+        inputs.file(enUsFile).withPropertyName('enUs')
+    }
+
+    doLast {
+        if (!enUsFile.exists()) {
+            throw new GradleException(
+                    "Missing ${enUsFile}. Run './gradlew runData' before this check (AC-11).")
+        }
+        if (!zhCnFile.exists()) {
+            throw new GradleException("Missing ${zhCnFile}.")
+        }
+        def enUs = new JsonSlurper().parse(enUsFile) as Map
+        def zhCn = new JsonSlurper().parse(zhCnFile) as Map
+
+        def missingInZh = enUs.keySet() - zhCn.keySet()
+        def extraInZh = zhCn.keySet() - enUs.keySet()
+        if (!missingInZh.isEmpty() || !extraInZh.isEmpty()) {
+            def message = new StringBuilder("Language key sets differ between en_us and zh_cn.\n")
+            if (!missingInZh.isEmpty()) {
+                message << '\nMissing in zh_cn:\n'
+                missingInZh.sort().each { message << "  - ${it}\n" }
+            }
+            if (!extraInZh.isEmpty()) {
+                message << '\nExtra in zh_cn:\n'
+                extraInZh.sort().each { message << "  - ${it}\n" }
+            }
+            throw new GradleException(message.toString())
+        }
+        logger.lifecycle("Language key sets match (${enUs.size()} keys).")
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'checkLangKeys'
+}

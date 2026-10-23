@@ -1,0 +1,62 @@
+package dev.aleeve.atlas.client;
+
+import dev.aleeve.atlas.AleeveAtlas;
+import dev.aleeve.atlas.AtlasSession;
+import dev.aleeve.atlas.config.AtlasClientConfigs;
+import dev.aleeve.atlas.config.ConfigBounds;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+
+/// 客户端 tick 入口（规格 §8）：在 `ClientTickEvent.Post` 中 while 消费键位。
+@EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
+public final class AtlasClientTick {
+    private AtlasClientTick() {
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.screen != null) {
+            return;
+        }
+        while (AtlasKeyMappings.OPEN_WORLD_MAP.consumeClick()) {
+            minecraft.player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.world_map_pending")
+                            .withStyle(ChatFormatting.YELLOW),
+                    true);
+        }
+        while (AtlasKeyMappings.NEW_WAYPOINT.consumeClick()) {
+            minecraft.player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.waypoint_pending")
+                            .withStyle(ChatFormatting.YELLOW),
+                    true);
+        }
+        while (AtlasKeyMappings.PING.consumeClick()) {
+            if (!AtlasSession.synchronizedMode()) {
+                minecraft.player.displayClientMessage(
+                        Component.translatable("aleeve_atlas.message.server_unsupported")
+                                .withStyle(ChatFormatting.GRAY),
+                        true);
+                continue;
+            }
+            minecraft.player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.ping_pending")
+                            .withStyle(ChatFormatting.YELLOW),
+                    true);
+        }
+    }
+
+    /// 供后续 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
+    public static float minimapScale() {
+        var config = AtlasClientConfigs.get();
+        if (config == null) {
+            return 1.0F;
+        }
+        return ConfigBounds.clamp(config.minimap.scale, 0.5F, 4.0F);
+    }
+}
