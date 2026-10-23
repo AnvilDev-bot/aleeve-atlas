@@ -23,7 +23,11 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 /// 负责按服务器标识打开/切换路径点存储、新建路径点、记录死亡点，并在退出时落盘。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class ClientWaypoints {
+    /// 定期落盘间隔（tick）。
+    private static final int FLUSH_INTERVAL_TICKS = 200;
+
     private static WaypointStore store;
+    private static int ticksSinceFlush;
     private static String currentServerKey;
     /// 待玩家确认的队友路径点（手动接受策略）。
     private static final java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> PENDING =
@@ -144,12 +148,29 @@ public final class ClientWaypoints {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        flushAndClose();
+    }
+
+    /// 周期性落盘：仅在异常退出或崩溃时仍能保留路径点（规格 §11 数据可靠性）。
+    @SubscribeEvent
+    public static void onClientTick(net.neoforged.neoforge.client.event.ClientTickEvent.Post event) {
+        if (store == null) {
+            return;
+        }
+        if (++ticksSinceFlush >= FLUSH_INTERVAL_TICKS) {
+            ticksSinceFlush = 0;
+            store.flush();
+        }
+    }
+
+    private static void flushAndClose() {
         if (store != null) {
             store.flush();
             store.clear();
             store = null;
         }
         currentServerKey = null;
+        ticksSinceFlush = 0;
     }
 
     /// 供世界地图界面显示的路径点集合。
