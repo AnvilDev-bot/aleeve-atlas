@@ -25,6 +25,7 @@ public final class RadarRenderer {
     /// 标记半径（GUI 像素）。
     private static final int DOT_RADIUS = 2;
     private static final int HEAD_SIZE = 8;
+    private static final int ICON_SIZE = 8;
 
     private RadarRenderer() {
     }
@@ -88,6 +89,11 @@ public final class RadarRenderer {
                 drawPlayerHead(graphics, entity, screenX, screenZ);
                 continue;
             }
+            // 图标模式下生物使用刷怪蛋图标（规格 §6.1：使用对应具体图像）。
+            if (showIcons && category != RadarCategory.ITEM
+                    && drawEntityIcon(graphics, entity, screenX, screenZ)) {
+                continue;
+            }
             int color = applyOpacity(
                     RadarStyle.color(config.radar.categories, category, entity), opacity);
             drawDot(graphics, screenX, screenZ, color);
@@ -111,6 +117,20 @@ public final class RadarRenderer {
         int outline = 0xC0000000;
         graphics.fill(x - DOT_RADIUS, z - DOT_RADIUS, x + DOT_RADIUS, z - DOT_RADIUS + 1, outline);
         graphics.fill(x - DOT_RADIUS, z + DOT_RADIUS - 1, x + DOT_RADIUS, z + DOT_RADIUS, outline);
+    }
+
+    /// 生物图标：用刷怪蛋物品图标表示实体类型；无对应刷怪蛋时返回 false 由调用方回退圆点。
+    private static boolean drawEntityIcon(GuiGraphics graphics, Entity entity, double screenX,
+            double screenZ) {
+        net.minecraft.world.item.SpawnEggItem egg =
+                net.minecraft.world.item.SpawnEggItem.byId(entity.getType());
+        if (egg == null) {
+            return false;
+        }
+        int x = (int) Math.round(screenX) - ICON_SIZE / 2;
+        int z = (int) Math.round(screenZ) - ICON_SIZE / 2;
+        graphics.renderItem(new net.minecraft.world.item.ItemStack(egg), x, z);
+        return true;
     }
 
     /// 玩家皮肤头像：基础层 + 帽子层（规格 §6.3）。
