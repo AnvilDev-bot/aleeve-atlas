@@ -35,6 +35,8 @@ public final class MapCanvas {
     private int originChunkX;
     private int originChunkZ;
     private boolean initialized;
+    /// 是否已按某个原点完成过一次定位；未定位时不能做像素搬移。
+    private boolean positioned;
 
     public MapCanvas(Identifier textureId) {
         this.textureId = textureId;
@@ -64,40 +66,118 @@ public final class MapCanvas {
     }
 
     /// 以给定区块为中心的视野重建画布；视野未变化时直接返回。
+    ///
+    /// 原点小幅平移时复用已有像素并只补绘新进入边界的条带，
+    /// 避免拖拽过程中每次都遍历全部区块（§12.1）。
     public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache) {
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
-        if (initialized && targetX == originChunkX && targetZ == originChunkZ) {
+        if (positioned && targetX == originChunkX && targetZ == originChunkZ) {
             return;
+        }
+        long startedAt = System.nanoTime();
+        // 仅当已有画布内容且位移在覆盖范围内时才复用像素，首次定位与大幅跳转走全量重绘。
+        boolean scrolled = positioned
+                && Math.abs(targetX - originChunkX) < CHUNKS_PER_SIDE
+                && Math.abs(targetZ - originChunkZ) < CHUNKS_PER_SIDE
+                && (targetX != originChunkX || targetZ != originChunkZ);
+        if (scrolled) {
+            shiftOrigin(targetX, targetZ, cache);
+        } else {
+            originChunkX = targetX;
+            originChunkZ = targetZ;
+            redraw(cache);
+            positioned = true;
+        }
+        AtlasProfiling.recordCanvas(System.nanoTime() - startedAt);
+    }
+
+    /// 平移到新原点：先把重叠区域按区块粒度搬移，再补绘边缘条带。
+    private void shiftOrigin(int targetX, int targetZ, MapDimensionCache cache) {
+        int shiftChunksX = targetX - originChunkX;
+        int shiftChunksZ = targetZ - originChunkZ;
+        int shiftPixelsX = shiftChunksX * ChunkMapData.SIZE;
+        int shiftPixelsZ = shiftChunksZ * ChunkMapData.SIZE;
+        // 按行搬运重叠区域；遍历顺序与搬移方向相反，避免覆盖尚未读取的像素。
+        int[] rowOrder = CanvasScroll.safeOrder(PIXELS, shiftPixelsZ);
+        int[] colOrder = CanvasScroll.safeOrder(PIXELS, shiftPixelsX);
+        for (int row : rowOrder) {
+            int sourceRow = row - shiftPixelsZ;
+            for (int col : colOrder) {
+                int sourceCol = col - shiftPixelsX;
+                image.setPixel(col, row, image.getPixel(sourceCol, sourceRow));
+            }
         }
         originChunkX = targetX;
         originChunkZ = targetZ;
-        redraw(cache);
+        drawEdgeStrips(cache, shiftChunksX, shiftChunksZ);
+        if (initialized) {
+            texture.upload();
+        }
+    }
+
+    /// 补绘因平移而新进入视野的边缘条带。
+    private void drawEdgeStrips(MapDimensionCache cache, int shiftChunksX, int shiftChunksZ) {
+        if (cache == null) {
+            return;
+        }
+        // 横向条带：左或右边缘的若干列。
+        if (shiftChunksX != 0) {
+            int firstDx = shiftChunksX > 0 ? CHUNKS_PER_SIDE - shiftChunksX : 0;
+            int count = Math.abs(shiftChunksX);
+            for (int i = 0; i < count; i++) {
+                int dx = firstDx + i;
+                for (int dz = 0; dz < CHUNKS_PER_SIDE; dz++) {
+                    redrawChunk(dx, dz, cache);
+                }
+            }
+        }
+        // 纵向条带：上或下边缘的若干行，跳过已由横向条带覆盖的角落。
+        if (shiftChunksZ != 0) {
+            int firstDz = shiftChunksZ > 0 ? CHUNKS_PER_SIDE - shiftChunksZ : 0;
+            int count = Math.abs(shiftChunksZ);
+            for (int i = 0; i < count; i++) {
+                int dz = firstDz + i;
+                for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
+                    if (shiftChunksX != 0) {
+                        int firstDx = shiftChunksX > 0 ? CHUNKS_PER_SIDE - shiftChunksX : 0;
+                        if (dx >= firstDx && dx < firstDx + Math.abs(shiftChunksX)) {
+                            continue;
+                        }
+                    }
+                    redrawChunk(dx, dz, cache);
+                }
+            }
+        }
+    }
+
+    /// 按画布局部坐标重绘单个区块槽位。
+    private void redrawChunk(int dx, int dz, MapDimensionCache cache) {
+        int chunkX = originChunkX + dx;
+        int chunkZ = originChunkZ + dz;
+        int baseX = dx * ChunkMapData.SIZE;
+        int baseZ = dz * ChunkMapData.SIZE;
+        ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
+        if (data != null) {
+            drawChunk(data, baseX, baseZ);
+        } else {
+            // 未探索且未被队友同步的区块绘制网格底纹（§2.3）。
+            drawUnexplored(baseX, baseZ);
+        }
     }
 
     private void redraw(MapDimensionCache cache) {
-        long startedAt = System.nanoTime();
         fill(MapPalette.TRANSPARENT);
         if (cache != null) {
             for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
                 for (int dz = 0; dz < CHUNKS_PER_SIDE; dz++) {
-                    int chunkX = originChunkX + dx;
-                    int chunkZ = originChunkZ + dz;
-                    ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
-                    if (data != null) {
-                        drawChunk(data, dx * ChunkMapData.SIZE, dz * ChunkMapData.SIZE);
-                    } else {
-                        // 未探索且未被队友同步的区块绘制网格底纹（§2.3）。
-                        drawUnexplored(dx * ChunkMapData.SIZE, dz * ChunkMapData.SIZE);
-                    }
+                    redrawChunk(dx, dz, cache);
                 }
             }
         }
         if (initialized) {
             texture.upload();
         }
-        // 记录画布重绘耗时，供 §12.1 性能验收核对。
-        AtlasProfiling.recordCanvas(System.nanoTime() - startedAt);
     }
 
     /// 未探索区块底纹：深色底加每 4 像素的网格线，与已探索地形形成明确区分。
@@ -145,6 +225,8 @@ public final class MapCanvas {
             LOGGER.warn("Failed to release world map canvas", e);
         } finally {
             initialized = false;
+            // 关闭后画布内容失效，重新打开时必须走全量重绘（§12.1）。
+            positioned = false;
         }
     }
 }
