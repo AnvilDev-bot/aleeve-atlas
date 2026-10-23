@@ -43,6 +43,15 @@ public final class AtlasClientCommands {
                                         .executes(context -> confirm(context.getSource(),
                                                 StringArgumentType.getString(context, "id"),
                                                 false)))))
+                .then(Commands.literal("waypoint")
+                        .then(Commands.literal("export")
+                                .then(Commands.argument("file", StringArgumentType.string())
+                                        .executes(context -> exportWaypoints(context.getSource(),
+                                                StringArgumentType.getString(context, "file")))))
+                        .then(Commands.literal("import")
+                                .then(Commands.argument("file", StringArgumentType.string())
+                                        .executes(context -> importWaypoints(context.getSource(),
+                                                StringArgumentType.getString(context, "file"))))))
                 .then(Commands.literal("territory")
                         .then(Commands.literal("demo")
                                 .executes(context -> demo(context.getSource())))
@@ -59,6 +68,62 @@ public final class AtlasClientCommands {
         }
         ClientWaypointSync.confirm(id, accepted);
         return 1;
+    }
+
+    /// 导出当前路径点到文件（规格 §11）。
+    private static int exportWaypoints(CommandSourceStack source, String fileName) {
+        var waypointStore = ClientWaypoints.store();
+        var player = source.getPlayer();
+        if (waypointStore == null || player == null) {
+            return 0;
+        }
+        var file = exportDir().resolve(fileName);
+        try {
+            dev.aleeve.atlas.waypoint.WaypointTransfer.exportTo(file, waypointStore.all());
+            player.displayClientMessage(Component.translatable(
+                    "aleeve_atlas.message.waypoint_exported", file.toString()), false);
+            return 1;
+        } catch (java.io.IOException e) {
+            player.displayClientMessage(Component.translatable(
+                    "aleeve_atlas.message.waypoint_export_failed"), false);
+            return 0;
+        }
+    }
+
+    /// 从文件导入路径点并合并（规格 §11）。
+    private static int importWaypoints(CommandSourceStack source, String fileName) {
+        var waypointStore = ClientWaypoints.store();
+        var player = source.getPlayer();
+        if (waypointStore == null || player == null) {
+            return 0;
+        }
+        var file = exportDir().resolve(fileName);
+        try {
+            var imported = dev.aleeve.atlas.waypoint.WaypointTransfer.importFrom(file);
+            var result = dev.aleeve.atlas.waypoint.WaypointTransfer.merge(imported,
+                    waypointStore.all());
+            for (var waypoint : result.added()) {
+                waypointStore.upsert(waypoint);
+            }
+            for (var waypoint : result.replaced()) {
+                waypointStore.upsert(waypoint);
+            }
+            waypointStore.flush();
+            player.displayClientMessage(Component.translatable(
+                    "aleeve_atlas.message.waypoint_imported",
+                    result.added().size(), result.replaced().size()), false);
+            return 1;
+        } catch (java.io.IOException e) {
+            player.displayClientMessage(Component.translatable(
+                    "aleeve_atlas.message.waypoint_import_failed"), false);
+            return 0;
+        }
+    }
+
+    /// 导入导出目录：客户端游戏目录下的 `aleeve_atlas_exports`（规格 §11）。
+    private static java.nio.file.Path exportDir() {
+        return net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath()
+                .resolve("aleeve_atlas_exports");
     }
 
     /// 注册一个含飞地与内孔洞的演示领地，用于验证 §7.2/§7.3（AC-8）。
