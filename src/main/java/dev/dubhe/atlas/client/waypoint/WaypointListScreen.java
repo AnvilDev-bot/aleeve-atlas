@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.config.WaypointSendPolicy;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
@@ -138,7 +140,7 @@ public final class WaypointListScreen extends Screen {
         }
         store.remove(waypoint.id());
         if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
-                == dev.dubhe.atlas.config.WaypointSendPolicy.AUTO_SYNC) {
+                == WaypointSendPolicy.AUTO_SYNC) {
             ClientWaypoints.shareDelete(waypoint);
         }
         reloadEntries();

@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client;
 
+import dev.dubhe.atlas.sync.ClientMapSync;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.AtlasWorldMap;
@@ -30,7 +32,7 @@ public final class AtlasClientTick {
         // 标点由外部模组经 API 注入，本模组只负责生命周期推进与渲染（规格 §3.2.2）。
         ClientPings.tick();
         // 地图增量分片按 tick 限速写入本地缓存（规格 §3.3 / §12.1）。
-        dev.dubhe.atlas.sync.ClientMapSync.tick();
+        ClientMapSync.tick();
         if (minecraft.screen != null) {
             return;
         }

@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.radar;
 
+import dev.dubhe.atlas.map.MapPalette;
+
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
@@ -134,7 +136,7 @@ public final class RadarRenderer {
     private static int applyHeightShade(int argb, double deltaY) {
         double ratio = 1.0 + Math.max(-0.3, Math.min(0.3, deltaY / 64.0));
         int percent = (int) Math.round(ratio * 100.0);
-        return dev.dubhe.atlas.map.MapPalette.scale(argb, percent);
+        return MapPalette.scale(argb, percent);
     }
 
     /// 同队玩家圆点外层描边为队伍颜色。

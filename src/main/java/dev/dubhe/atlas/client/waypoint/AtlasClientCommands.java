@@ -1,5 +1,11 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.client.profiling.AtlasProfiling;
+import dev.dubhe.atlas.ping.ClientPings;
+import dev.dubhe.atlas.ping.MapPingData;
+import dev.dubhe.atlas.ping.PingChannelPolicy;
+import dev.dubhe.atlas.waypoint.WaypointTransfer;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.dubhe.atlas.AleeveAtlas;
@@ -79,8 +85,8 @@ public final class AtlasClientCommands {
             return 0;
         }
         var target = player.position().add(player.getViewVector(1.0F).scale(12.0));
-        var ping = dev.dubhe.atlas.ping.ClientPings.createLocal(target,
-                dev.dubhe.atlas.ping.MapPingData.PingIcon.NORMAL);
+        var ping = ClientPings.createLocal(target,
+                MapPingData.PingIcon.NORMAL);
         return ping == null ? 0 : 1;
     }
 
@@ -91,16 +97,16 @@ public final class AtlasClientCommands {
             return 0;
         }
         player.displayClientMessage(Component.literal(
-                dev.dubhe.atlas.client.profiling.AtlasProfiling.minimapSummary()), false);
+                AtlasProfiling.minimapSummary()), false);
         // 标点通道诊断：确认是否存在与外部模组重复广播的风险（§3.2.2）。
         player.displayClientMessage(Component.literal(
-                dev.dubhe.atlas.ping.PingChannelPolicy.describe()), false);
-        if (dev.dubhe.atlas.ping.PingChannelPolicy.duplicateRisk()) {
+                PingChannelPolicy.describe()), false);
+        if (PingChannelPolicy.duplicateRisk()) {
             player.displayClientMessage(
                     Component.translatable("aleeve_atlas.message.ping_channel_duplicate"),
                     false);
         }
-        dev.dubhe.atlas.client.profiling.AtlasProfiling.reset();
+        AtlasProfiling.reset();
         return 1;
     }
 
@@ -124,7 +130,7 @@ public final class AtlasClientCommands {
         }
         var file = exportDir().resolve(fileName);
         try {
-            dev.dubhe.atlas.waypoint.WaypointTransfer.exportTo(file,
+            WaypointTransfer.exportTo(file,
                     ClientWaypoints.allAcrossDimensions());
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_exported", file.toString()), false);
@@ -145,8 +151,8 @@ public final class AtlasClientCommands {
         }
         var file = exportDir().resolve(fileName);
         try {
-            var imported = dev.dubhe.atlas.waypoint.WaypointTransfer.importFrom(file);
-            var result = dev.dubhe.atlas.waypoint.WaypointTransfer.merge(imported,
+            var imported = WaypointTransfer.importFrom(file);
+            var result = WaypointTransfer.merge(imported,
                     ClientWaypoints.allAcrossDimensions());
             // 按各自维度写入，跨维度导入不会串到当前维度（§11）。
             for (var waypoint : result.added()) {

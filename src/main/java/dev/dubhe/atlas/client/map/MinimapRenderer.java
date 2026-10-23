@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
+import dev.dubhe.atlas.client.profiling.AtlasProfiling;
+
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.client.radar.RadarRenderer;
@@ -103,7 +105,7 @@ public final class MinimapRenderer {
         TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular);
         drawInfo(graphics, config, minecraft, size, x, y);
         // 记录渲染耗时，供 §12.1 性能验收读取。
-        dev.dubhe.atlas.client.profiling.AtlasProfiling.recordMinimap(
+        AtlasProfiling.recordMinimap(
                 System.nanoTime() - startedAt);
     }
 

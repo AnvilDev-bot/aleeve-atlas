@@ -1,5 +1,8 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.config.WaypointSendPolicy;
+import dev.dubhe.atlas.storage.ServerKey;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
@@ -157,7 +160,7 @@ public final class ClientWaypoints {
         }
         waypointStore.upsert(waypoint);
         if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
-                == dev.dubhe.atlas.config.WaypointSendPolicy.AUTO_SYNC) {
+                == WaypointSendPolicy.AUTO_SYNC) {
             share(waypoint);
         }
     }
@@ -266,7 +269,7 @@ public final class ClientWaypoints {
     }
 
     private static String serverKey(Minecraft minecraft) {
-        return dev.dubhe.atlas.storage.ServerKey.resolve(minecraft);
+        return ServerKey.resolve(minecraft);
     }
 
     /// 维度键工具（供其他模块复用）。

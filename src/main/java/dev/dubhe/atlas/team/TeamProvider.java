@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.team;
 
+import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
+
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
@@ -31,7 +33,7 @@ public interface TeamProvider {
     /// 原版计分板无变更回调，由 {@link TeamMembershipWatcher} 轮询检测；
     /// 外部队伍实现若具备事件源，应调用本方法以降低延迟。
     default void reportMembershipChange(UUID playerId, String teamId,
-            dev.dubhe.atlas.api.team.TeamMembershipChangedEvent.Change change) {
+            TeamMembershipChangedEvent.Change change) {
         TeamMembershipWatcher.notifyChange(playerId, teamId, change);
     }
 }

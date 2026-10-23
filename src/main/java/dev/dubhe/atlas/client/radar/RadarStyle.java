@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.radar;
 
+import dev.dubhe.atlas.team.TeamProviders;
+
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.util.ColorUtil;
 import net.minecraft.client.Minecraft;
@@ -49,7 +51,7 @@ public final class RadarStyle {
                 || player == minecraft.player) {
             return false;
         }
-        return dev.dubhe.atlas.team.TeamProviders.active()
+        return TeamProviders.active()
                 .sameTeam(minecraft.player.getUUID(), player.getUUID());
     }
 

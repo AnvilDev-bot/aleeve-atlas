@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.territory;
 
+import dev.dubhe.atlas.api.territory.BorderStyle;
+
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.api.territory.TerritoryOverlayApi;
 import java.util.ArrayList;
@@ -156,7 +158,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         }
 
         @Override
-        public dev.dubhe.atlas.api.territory.BorderStyle borderStyle() {
+        public BorderStyle borderStyle() {
             return delegate.borderStyle();
         }
 

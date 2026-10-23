@@ -1,7 +1,11 @@
 package dev.dubhe.atlas.sync;
 
+import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
+import dev.dubhe.atlas.client.radar.VisibilityFade;
+import dev.dubhe.atlas.ping.ClientPings;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -65,8 +69,8 @@ public final class ClientMapSyncScheduler {
     /// 队友入队后立即重报摘要，让新成员尽快获得已有地图（§3.3 / §3.1）。
     @SubscribeEvent
     public static void onTeamChanged(
-            dev.dubhe.atlas.api.team.TeamMembershipChangedEvent event) {
-        if (event.change() != dev.dubhe.atlas.api.team.TeamMembershipChangedEvent.Change.JOINED) {
+            TeamMembershipChangedEvent event) {
+        if (event.change() != TeamMembershipChangedEvent.Change.JOINED) {
             return;
         }
         if (!AtlasSession.synchronizedMode()) {
@@ -84,7 +88,7 @@ public final class ClientMapSyncScheduler {
         reportedOnce = false;
         ClientMapSync.clear();
         // 清理跨会话残留的雷达渐隐与标点状态（§12.1 内存占用）。
-        dev.dubhe.atlas.client.radar.VisibilityFade.clear();
-        dev.dubhe.atlas.ping.ClientPings.clear();
+        VisibilityFade.clear();
+        ClientPings.clear();
     }
 }

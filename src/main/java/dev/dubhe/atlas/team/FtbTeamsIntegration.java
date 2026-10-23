@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.team;
 
+import dev.dubhe.atlas.AleeveAtlas;
+
 import dev.anvilcraft.lib.v2.integration.Integration;
 import dev.anvilcraft.lib.v2.integration.IntegrationType;
 import java.util.ArrayList;
@@ -31,7 +33,7 @@ public final class FtbTeamsIntegration {
 
     /// FTB Teams 的队伍数据在客户端侧可用，因此在此触发一次选择刷新。
     public void applyClient() {
-        TeamProviders.select(dev.dubhe.atlas.AleeveAtlas.CONFIG.team.provider);
+        TeamProviders.select(AleeveAtlas.CONFIG.team.provider);
     }
 
     /// FTB Teams 队伍适配实现。

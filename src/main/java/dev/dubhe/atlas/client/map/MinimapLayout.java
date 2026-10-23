@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
+import dev.dubhe.atlas.config.ConfigBounds;
+
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -19,7 +21,7 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         if (player == null) {
             return null;
         }
-        float scale = (float) dev.dubhe.atlas.config.ConfigBounds.clamp(config.minimap.scale,
+        float scale = (float) ConfigBounds.clamp(config.minimap.scale,
                 0.5, 4.0);
         int size = Math.round(BASE_SIZE * scale);
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
