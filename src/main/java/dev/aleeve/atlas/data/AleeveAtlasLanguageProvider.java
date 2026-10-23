@@ -35,6 +35,8 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
         add("aleeve_atlas.message.death_point_added", "Death point recorded");
 
+        add("aleeve_atlas.message.territory_entered", "Entered %s");
+        add("aleeve_atlas.message.territory_left", "Left %s");
         add("aleeve_atlas.message.territory_demo_added", "Demo territory added");
         add("aleeve_atlas.message.territory_demo_cleared", "Demo territory cleared");
         add("aleeve_atlas.screen.world_map.share_team", "Share to Team");
