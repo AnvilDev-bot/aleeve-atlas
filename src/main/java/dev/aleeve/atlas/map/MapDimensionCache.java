@@ -21,9 +21,14 @@ public final class MapDimensionCache {
     private static final int REGION_SHIFT = 5;
     private static final int REGION_SIZE = 1 << REGION_SHIFT;
 
+    /// 同时驻留的区域文件上限；超出时淘汰最久未用的已保存区域（规格 §12.1 内存占用）。
+    private static final int MAX_LOADED_REGIONS = 32;
+
     private final Path dimensionDir;
     private final Map<Long, ChunkMapData> chunks = new HashMap<>();
-    private final Map<Long, RegionFile> loadedRegions = new HashMap<>();
+    /// 访问顺序即 LRU 顺序。
+    private final Map<Long, RegionFile> loadedRegions = new java.util.LinkedHashMap<>(16, 0.75F,
+            true);
 
     public MapDimensionCache(Path dimensionDir) {
         this.dimensionDir = dimensionDir;
@@ -80,8 +85,36 @@ public final class MapDimensionCache {
 
     private RegionFile regionFor(int regionX, int regionZ) {
         long key = ChunkPos.asLong(regionX, regionZ);
-        return loadedRegions.computeIfAbsent(key,
-                ignored -> new RegionFile(dimensionDir.resolve("r." + regionX + "." + regionZ + ".nbt")));
+        RegionFile existing = loadedRegions.get(key);
+        if (existing != null) {
+            return existing;
+        }
+        evictRegionsIfNeeded();
+        RegionFile created = new RegionFile(
+                dimensionDir.resolve("r." + regionX + "." + regionZ + ".nbt"));
+        loadedRegions.put(key, created);
+        return created;
+    }
+
+    /// 超过驻留上限时淘汰最久未用的区域文件（淘汰前先落盘）。
+    private void evictRegionsIfNeeded() {
+        while (loadedRegions.size() >= MAX_LOADED_REGIONS) {
+            java.util.Iterator<Map.Entry<Long, RegionFile>> iterator =
+                    loadedRegions.entrySet().iterator();
+            if (!iterator.hasNext()) {
+                return;
+            }
+            Map.Entry<Long, RegionFile> eldest = iterator.next();
+            RegionFile region = eldest.getValue();
+            if (region.dirty) {
+                region.save();
+            }
+            iterator.remove();
+            // 同时释放该区域内的区块缓存，避免区块对象无限堆积。
+            for (ChunkMapData data : region.entries.values()) {
+                chunks.remove(ChunkPos.asLong(data.chunkX(), data.chunkZ()));
+            }
+        }
     }
 
     /// 区域文件：32×32 区块的集合。
