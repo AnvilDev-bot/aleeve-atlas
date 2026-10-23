@@ -110,6 +110,26 @@ public final class ClientWaypoints {
         other.flush();
     }
 
+    /// 按维度和 ID 删除路径点（跨维度同步删除用，§11）。
+    public static boolean removeInDimension(Waypoint waypoint) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return false;
+        }
+        if (minecraft.level != null && waypoint.dimension().equals(minecraft.level.dimension())) {
+            WaypointStore current = store();
+            return current != null && current.remove(waypoint.id());
+        }
+        String key = serverKey(minecraft);
+        WaypointStore other = WaypointStore.open(minecraft.gameDirectory.toPath(), key,
+                waypoint.dimension());
+        boolean removed = other.remove(waypoint.id());
+        if (removed) {
+            other.flush();
+        }
+        return removed;
+    }
+
     /// 当前服务器标识（导入导出与离线维度写入用）。
     static String currentServerKeyForIo() {
         Minecraft minecraft = Minecraft.getInstance();

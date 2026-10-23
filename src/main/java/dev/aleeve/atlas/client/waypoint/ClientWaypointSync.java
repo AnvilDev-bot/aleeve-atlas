@@ -4,7 +4,6 @@ import dev.aleeve.atlas.api.waypoint.WaypointReceivedEvent;
 import dev.aleeve.atlas.config.AtlasClientConfig;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.waypoint.Waypoint;
-import dev.aleeve.atlas.waypoint.WaypointStore;
 import dev.aleeve.atlas.waypoint.WaypointSyncPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -35,14 +34,15 @@ public final class ClientWaypointSync {
     }
 
     private static void accept(Waypoint waypoint, WaypointSyncPayload.Action action) {
-        WaypointStore store = ClientWaypoints.store();
-        if (store == null) {
+        if (ClientWaypoints.store() == null) {
             return;
         }
         if (action == WaypointSyncPayload.Action.DELETE) {
-            store.remove(waypoint.id());
+            // 按路径点自身维度删除，跨维度同步删除同样生效（§11）。
+            ClientWaypoints.removeInDimension(waypoint);
         } else {
-            store.upsert(waypoint);
+            // 按路径点自身维度写入，跨维度分享不会落到当前维度（§11）。
+            ClientWaypoints.upsertInDimension(waypoint);
         }
         NeoForge.EVENT_BUS.post(new WaypointReceivedEvent(waypoint, true));
         notify(Component.translatable("aleeve_atlas.message.waypoint_received",
