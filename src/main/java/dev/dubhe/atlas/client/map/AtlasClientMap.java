@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /// 客户端地图管理器的生命周期与调度（规格 §2.1）。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientMap {
-    /// 定期落盘间隔（tick），避免异常退出丢失已探索数据。
+    /// 定期写入磁盘的间隔（tick），避免异常退出丢失已探索数据。
     private static final int FLUSH_INTERVAL_TICKS = 200;
 
     private static ClientMapManager manager;

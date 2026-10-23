@@ -105,7 +105,7 @@ public final class WaypointStore {
         }
     }
 
-    /// 落盘。
+    /// 写入磁盘。
     public void flush() {
         if (!dirty) {
             return;

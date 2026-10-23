@@ -24,10 +24,10 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 /// 客户端路径点管理器（规格 §5.1）。
 ///
-/// 负责按服务器标识打开/切换路径点存储、新建路径点、记录死亡点，并在退出时落盘。
+/// 负责按服务器标识打开/切换路径点存储、新建路径点、记录死亡点，并在退出时写入磁盘。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class ClientWaypoints {
-    /// 定期落盘间隔（tick）。
+    /// 定期写入磁盘的间隔（tick）。
     private static final int FLUSH_INTERVAL_TICKS = 200;
 
     private static WaypointStore store;
@@ -75,7 +75,7 @@ public final class ClientWaypoints {
         return cached;
     }
 
-    /// 落盘全部维度的存储。
+    /// 把全部维度的存储写入磁盘。
     private static void flushAll() {
         for (WaypointStore each : STORES.values()) {
             each.flush();
@@ -105,7 +105,7 @@ public final class ClientWaypoints {
             }
             return;
         }
-        // 非当前维度：打开对应维度的存储写入并立即落盘。
+        // 非当前维度：打开对应维度的存储写入并立即写入磁盘。
         String key = serverKey(minecraft);
         WaypointStore other = WaypointStore.open(minecraft.gameDirectory.toPath(), key,
                 waypoint.dimension());
@@ -235,7 +235,7 @@ public final class ClientWaypoints {
         flushAndClose();
     }
 
-    /// 周期性落盘：仅在异常退出或崩溃时仍能保留路径点（规格 §11 数据可靠性）。
+    /// 周期性写入磁盘：仅在异常退出或崩溃时仍能保留路径点（规格 §11 数据可靠性）。
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (store == null) {

@@ -52,7 +52,7 @@ public final class WaypointTransfer {
 
     /// 把导入的路径点合并进入现有集合（按 ID 覆盖）。
     ///
-    /// 返回新建的 `WaypointStore` 需要落盘的条目；调用方负责 `upsert` 与 `flush`。
+    /// 返回新建的 `WaypointStore` 中需要写入磁盘的条目；调用方负责 `upsert` 与 `flush`。
     public static MergeResult merge(List<Waypoint> imported, Iterable<Waypoint> existing) {
         Map<UUID, Waypoint> byId = new LinkedHashMap<>();
         for (Waypoint waypoint : existing) {

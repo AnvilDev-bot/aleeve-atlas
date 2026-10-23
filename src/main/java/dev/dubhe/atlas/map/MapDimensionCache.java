@@ -57,7 +57,7 @@ public final class MapDimensionCache {
         region.dirty = true;
     }
 
-    /// 已缓存的区块数量（含未落盘）。
+    /// 已缓存的区块数量（含尚未写入磁盘的）。
     public int loadedCount() {
         return chunks.size();
     }
@@ -96,9 +96,11 @@ public final class MapDimensionCache {
         return created;
     }
 
-    /// 超过驻留上限时淘汰最久未用的区域文件（淘汰前先落盘）。
+    /// 超过驻留上限时淘汰最久未用的区域文件（淘汰前先写入磁盘）。
+    ///
+    /// 调用发生在插入新区域之前，故以 `>` 判定，使驻留数量可达 `MAX_LOADED_REGIONS`。
     private void evictRegionsIfNeeded() {
-        while (loadedRegions.size() >= MAX_LOADED_REGIONS) {
+        while (loadedRegions.size() > MAX_LOADED_REGIONS - 1) {
             java.util.Iterator<Map.Entry<Long, RegionFile>> iterator =
                     loadedRegions.entrySet().iterator();
             if (!iterator.hasNext()) {

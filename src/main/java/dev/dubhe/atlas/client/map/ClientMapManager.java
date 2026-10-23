@@ -142,7 +142,7 @@ public final class ClientMapManager {
         for (MapDimensionCache cache : caches.values()) {
             cache.flush();
         }
-        // 洞穴分层缓存独立于地表缓存，必须一并落盘（规格 §2.1 / §11）。
+        // 洞穴分层缓存独立于地表缓存，必须一并写入磁盘（规格 §2.1 / §11）。
         if (caveCache != null) {
             caveCache.flush();
         }
