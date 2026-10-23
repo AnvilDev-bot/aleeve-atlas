@@ -130,8 +130,6 @@
   "aleeve_atlas.message.waypoint_shared_team": "已分享路径点：%s",  "aleeve_atlas.screen.world_map": "世界地图",
   "aleeve_atlas.screen.world_map.hint": "拖拽平移，滚轮缩放，ESC 或 M 关闭",
   "aleeve_atlas.message.server_unsupported": "当前服务器未安装服务端支持组件。",
-  "aleeve_atlas.message.waypoint_pending": "路径点功能尚未实现。",
-  "aleeve_atlas.message.world_map_pending": "世界地图功能尚未实现。",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_left": "左下",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.bottom_right": "右下",
   "anvillib.configuration.enum.dev.aleeve.atlas.config.minimap_position.custom": "自定义",

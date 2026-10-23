@@ -19,8 +19,6 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("key.aleeve_atlas.open_world_map", "Open World Map");
         add("key.aleeve_atlas.new_waypoint", "New Waypoint");
 
-        add("aleeve_atlas.message.world_map_pending", "World map is not implemented yet.");
-        add("aleeve_atlas.message.waypoint_pending", "Waypoints are not implemented yet.");
         add("aleeve_atlas.message.server_unsupported",
                 "Server support component is not installed.");
 
