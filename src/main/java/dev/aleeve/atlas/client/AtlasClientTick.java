@@ -3,6 +3,7 @@ package dev.aleeve.atlas.client;
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.AtlasSession;
 import dev.aleeve.atlas.client.map.AtlasWorldMap;
+import dev.aleeve.atlas.client.waypoint.ClientWaypoints;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
@@ -29,10 +30,15 @@ public final class AtlasClientTick {
             AtlasWorldMap.open();
         }
         while (AtlasKeyMappings.NEW_WAYPOINT.consumeClick()) {
-            minecraft.player.displayClientMessage(
-                    Component.translatable("aleeve_atlas.message.waypoint_pending")
-                            .withStyle(ChatFormatting.YELLOW),
-                    true);
+            var waypoint = ClientWaypoints.createHere(Component.translatable(
+                    "aleeve_atlas.waypoint.default_name").getString());
+            if (waypoint != null) {
+                minecraft.player.displayClientMessage(
+                        Component.translatable("aleeve_atlas.message.waypoint_created",
+                                waypoint.pos().getX(), waypoint.pos().getY(),
+                                waypoint.pos().getZ()).withStyle(ChatFormatting.GREEN),
+                        true);
+            }
         }
         while (AtlasKeyMappings.PING.consumeClick()) {
             if (!AtlasSession.synchronizedMode()) {

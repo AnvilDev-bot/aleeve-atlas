@@ -3,6 +3,7 @@ package dev.aleeve.atlas.client.map;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.aleeve.atlas.AleeveAtlas;
 import dev.aleeve.atlas.client.radar.RadarRenderer;
+import dev.aleeve.atlas.client.waypoint.WaypointRenderer;
 import dev.aleeve.atlas.config.AtlasClientConfig;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
 import dev.aleeve.atlas.config.MinimapShape;
@@ -68,7 +69,8 @@ public final class MinimapRenderer {
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);
 
-        // 实体雷达标记绘制在地图之上、边框与箭头之下（规格 §6）。
+        // 路径点与实体雷达标记绘制在地图之上、边框与箭头之下（规格 §5.1 / §6）。
+        WaypointRenderer.renderOnMinimap(graphics, layout, circular);
         RadarRenderer.render(graphics, config, layout, minecraft);
 
         // 叠加层：边框与玩家朝向箭头由着色器绘制。

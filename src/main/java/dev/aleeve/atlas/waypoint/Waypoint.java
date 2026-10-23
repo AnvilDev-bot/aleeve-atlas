@@ -1,0 +1,111 @@
+package dev.aleeve.atlas.waypoint;
+
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+
+/// 路径点数据（规格 §5.1）。
+///
+/// 属性：名称、三维坐标、所属维度、颜色与图标标识、启用状态、可见距离，
+/// 以及"是否为死亡点"与跨客户端同步所需的稳定 UUID。
+public record Waypoint(
+        UUID id,
+        String name,
+        BlockPos pos,
+        ResourceKey<Level> dimension,
+        int colorArgb,
+        String icon,
+        boolean enabled,
+        int visibleDistance,
+        boolean deathPoint,
+        String sourcePlayer) {
+
+    public static final String DEFAULT_ICON = "default";
+    public static final int DEFAULT_VISIBLE_DISTANCE = 256;
+
+    /// 新建一个普通路径点。
+    public static Waypoint create(String name, BlockPos pos, ResourceKey<Level> dimension,
+            int colorArgb) {
+        return new Waypoint(UUID.randomUUID(), name, pos, dimension, colorArgb, DEFAULT_ICON,
+                true, DEFAULT_VISIBLE_DISTANCE, false, "");
+    }
+
+    /// 新建死亡点（规格 §5.1）。
+    public static Waypoint deathPoint(BlockPos pos, ResourceKey<Level> dimension) {
+        return new Waypoint(UUID.randomUUID(), "death", pos, dimension, 0xFFFF5555,
+                "death", true, DEFAULT_VISIBLE_DISTANCE, true, "");
+    }
+
+    public Waypoint withName(String newName) {
+        return new Waypoint(id, newName, pos, dimension, colorArgb, icon, enabled, visibleDistance,
+                deathPoint, sourcePlayer);
+    }
+
+    public Waypoint withEnabled(boolean newEnabled) {
+        return new Waypoint(id, name, pos, dimension, colorArgb, icon, newEnabled,
+                visibleDistance, deathPoint, sourcePlayer);
+    }
+
+    public Waypoint withSource(String source) {
+        return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
+                deathPoint, source);
+    }
+
+    public CompoundTag save() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("id", id.toString());
+        tag.putString("name", name);
+        tag.putLong("pos", pos.asLong());
+        tag.putString("dim", dimension.identifier().toString());
+        tag.putInt("color", colorArgb);
+        tag.putString("icon", icon);
+        tag.putBoolean("enabled", enabled);
+        tag.putInt("visible", visibleDistance);
+        tag.putBoolean("death", deathPoint);
+        tag.putString("source", sourcePlayer);
+        return tag;
+    }
+
+    /// 读取路径点时需要维度键的解析函数。
+    public static Waypoint load(CompoundTag tag,
+            java.util.function.Function<String, ResourceKey<Level>> dimensionResolver) {
+        String dim = tag.getStringOr("dim", "minecraft:overworld");
+        return new Waypoint(
+                UUID.fromString(tag.getStringOr("id", UUID.randomUUID().toString())),
+                tag.getStringOr("name", "waypoint"),
+                BlockPos.of(tag.getLongOr("pos", 0L)),
+                dimensionResolver.apply(dim),
+                tag.getIntOr("color", 0xFFFFFFFF),
+                tag.getStringOr("icon", DEFAULT_ICON),
+                tag.getBooleanOr("enabled", true),
+                tag.getIntOr("visible", DEFAULT_VISIBLE_DISTANCE),
+                tag.getBooleanOr("death", false),
+                tag.getStringOr("source", ""));
+    }
+
+    /// 序列化路径点列表。
+    public static ListTag saveAll(Iterable<Waypoint> waypoints) {
+        ListTag list = new ListTag();
+        for (Waypoint waypoint : waypoints) {
+            list.add(waypoint.save());
+        }
+        return list;
+    }
+
+    /// 从 `ListTag` 读取路径点列表。
+    public static java.util.List<Waypoint> loadAll(ListTag list,
+            java.util.function.Function<String, ResourceKey<Level>> dimensionResolver) {
+        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            Tag tag = list.get(i);
+            if (tag instanceof CompoundTag compound) {
+                result.add(load(compound, dimensionResolver));
+            }
+        }
+        return result;
+    }
+}

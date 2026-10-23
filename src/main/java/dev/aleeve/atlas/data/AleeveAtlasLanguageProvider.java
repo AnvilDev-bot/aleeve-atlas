@@ -28,6 +28,10 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
 
         add("aleeve_atlas.hud.light", "Light: %s");
 
+        add("aleeve_atlas.waypoint.default_name", "Waypoint");
+        add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
+        add("aleeve_atlas.message.death_point_added", "Death point recorded");
+
         add("aleeve_atlas.screen.world_map", "World Map");
         add("aleeve_atlas.screen.world_map.hint",
                 "Drag to pan, scroll to zoom, ESC or M to close");
