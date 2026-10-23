@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.team;
 
+import net.minecraft.world.entity.player.Player;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -79,7 +81,7 @@ public final class VanillaTeamProvider implements TeamProvider {
         if (level == null) {
             return null;
         }
-        net.minecraft.world.entity.player.Player player = level.getPlayerByUUID(playerId);
+        Player player = level.getPlayerByUUID(playerId);
         return player == null ? null : player.getTeam();
     }
 }

@@ -1,15 +1,21 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import net.minecraft.resources.ResourceKey;
+
 import dev.dubhe.atlas.config.WaypointSendPolicy;
 import dev.dubhe.atlas.storage.ServerKey;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.waypoint.WaypointStore;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
@@ -34,16 +40,16 @@ public final class ClientWaypoints {
     private static int ticksSinceFlush;
     private static String currentServerKey;
     /// 按「服务器 + 维度」缓存的存储实例（规格 §11 维度隔离）。
-    private static final java.util.Map<String, WaypointStore> STORES =
-            new java.util.HashMap<>();
+    private static final Map<String, WaypointStore> STORES =
+            new HashMap<>();
     /// 待玩家确认的队友路径点（手动接受策略）。
-    private static final java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> PENDING =
-            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<UUID, ClientWaypointSync.PendingWaypoint> PENDING =
+            new ConcurrentHashMap<>();
 
     private ClientWaypoints() {
     }
 
-    public static java.util.Map<java.util.UUID, ClientWaypointSync.PendingWaypoint> pending() {
+    public static Map<UUID, ClientWaypointSync.PendingWaypoint> pending() {
         return PENDING;
     }
 
@@ -83,8 +89,8 @@ public final class ClientWaypoints {
     }
 
     /// 已加载的全部维度路径点（导入导出用，规格 §11）。
-    public static java.util.List<Waypoint> allAcrossDimensions() {
-        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+    public static List<Waypoint> allAcrossDimensions() {
+        List<Waypoint> result = new ArrayList<>();
         for (WaypointStore each : STORES.values()) {
             result.addAll(each.all());
         }
@@ -166,13 +172,13 @@ public final class ClientWaypoints {
     }
 
     /// 某维度的全部启用路径点（世界地图展示用，不按玩家距离过滤）。
-    public static java.util.List<Waypoint> waypointsFor(
-            net.minecraft.resources.ResourceKey<Level> dimension) {
+    public static List<Waypoint> waypointsFor(
+            ResourceKey<Level> dimension) {
         WaypointStore waypointStore = store();
         if (waypointStore == null) {
-            return java.util.List.of();
+            return List.of();
         }
-        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+        List<Waypoint> result = new ArrayList<>();
         for (Waypoint waypoint : waypointStore.all()) {
             if (waypoint.enabled() && waypoint.dimension().equals(dimension)) {
                 result.add(waypoint);
@@ -260,11 +266,11 @@ public final class ClientWaypoints {
     }
 
     /// 供世界地图界面显示的路径点集合。
-    public static java.util.List<Waypoint> visibleWaypoints() {
+    public static List<Waypoint> visibleWaypoints() {
         Minecraft minecraft = Minecraft.getInstance();
         WaypointStore waypointStore = store();
         if (minecraft.player == null || minecraft.level == null || waypointStore == null) {
-            return java.util.List.of();
+            return List.of();
         }
         return waypointStore.visibleIn(minecraft.player.getX(), minecraft.player.getZ());
     }
@@ -274,7 +280,7 @@ public final class ClientWaypoints {
     }
 
     /// 维度键工具（供其他模块复用）。
-    public static net.minecraft.resources.ResourceKey<Level> dimension() {
+    public static ResourceKey<Level> dimension() {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.level == null ? Level.OVERWORLD : minecraft.level.dimension();
     }

@@ -2,7 +2,6 @@ package dev.dubhe.atlas.client.waypoint;
 
 import dev.dubhe.atlas.config.WaypointSendPolicy;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.waypoint.Waypoint;
@@ -15,7 +14,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 

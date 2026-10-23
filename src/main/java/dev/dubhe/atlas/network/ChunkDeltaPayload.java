@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.network;
 
+import java.util.UUID;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 /// 每片携带若干区块的压缩像素数据；接收端按 `batchIndex/batchCount` 逐片写入本地缓存，
 /// 分帧处理以避免接收端帧率骤降（规格 §12.1）。
 public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
-        int batchIndex, int batchCount, java.util.UUID targetPlayer)
+        int batchIndex, int batchCount, UUID targetPlayer)
         implements CustomPacketPayload {
     /// 单包区块数上限：每区块 16×16 像素压缩后约 1 KiB，取 128 区块留足余量。
     public static final int MAX_CHUNKS_PER_PACKET = 128;
@@ -46,7 +48,7 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         String dimension = buf.readUtf(256);
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
-                        java.util.UUID target = buf.readBoolean() ? buf.readUUID() : null;
+                        UUID target = buf.readBoolean() ? buf.readUUID() : null;
                         int size = buf.readVarInt();
                         List<ChunkData> chunks = new ArrayList<>(size);
                         for (int i = 0; i < size; i++) {
@@ -58,7 +60,7 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
 
     /// 把区块数据切分为符合体积上限的分片。
     public static List<ChunkDeltaPayload> split(String dimensionId, List<ChunkData> chunks,
-            java.util.UUID targetPlayer) {
+            UUID targetPlayer) {
         List<ChunkDeltaPayload> packets = new ArrayList<>();
         int total = Math.max(1, (chunks.size() + MAX_CHUNKS_PER_PACKET - 1)
                 / MAX_CHUNKS_PER_PACKET);

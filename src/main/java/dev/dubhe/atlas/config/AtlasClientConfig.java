@@ -1,6 +1,5 @@
 package dev.dubhe.atlas.config;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import dev.anvilcraft.lib.v2.config.CollapsibleObject;
 import dev.anvilcraft.lib.v2.config.Comment;
 import dev.anvilcraft.lib.v2.config.Config;

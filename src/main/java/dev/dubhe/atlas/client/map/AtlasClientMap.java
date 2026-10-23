@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
+import net.neoforged.fml.event.config.ModConfigEvent;
+
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
@@ -65,7 +67,7 @@ public final class AtlasClientMap {
     /// 配置重载时同步领地锚点权重（规格 §11 配置热重载）。
     @SubscribeEvent
     public static void onConfigReload(
-            net.neoforged.fml.event.config.ModConfigEvent.Reloading event) {
+            ModConfigEvent.Reloading event) {
         applyAnchorWeight();
     }
 

@@ -1,11 +1,15 @@
 package dev.dubhe.atlas.client.radar;
 
+import java.util.HashSet;
+import java.util.Set;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
+
 import dev.dubhe.atlas.map.MapPalette;
 
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
-import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.config.NonTeamVisibility;
 import dev.dubhe.atlas.config.RadarDisplayMode;
@@ -55,7 +59,7 @@ public final class RadarRenderer {
                 || (playerListDown && config.radar.hybridExpandAllIcons);
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         // 本次绘制已占用的掉落物格位，用于密集合并（§6.2）。
-        java.util.Set<Long> itemDots = new java.util.HashSet<>();
+        Set<Long> itemDots = new HashSet<>();
 
         // 服务端下发的最大雷达距离优先于客户端配置（规格 §4.2）。
         int maxDistance = AtlasSession.maxRadarDistance();
@@ -186,14 +190,14 @@ public final class RadarRenderer {
     /// 生物图标：用刷怪蛋物品图标表示实体类型；无对应刷怪蛋时返回 false 由调用方回退圆点。
     private static boolean drawEntityIcon(GuiGraphics graphics, Entity entity, double screenX,
             double screenZ) {
-        net.minecraft.world.item.SpawnEggItem egg =
-                net.minecraft.world.item.SpawnEggItem.byId(entity.getType());
+        SpawnEggItem egg =
+                SpawnEggItem.byId(entity.getType());
         if (egg == null) {
             return false;
         }
         int x = (int) Math.round(screenX) - ICON_SIZE / 2;
         int z = (int) Math.round(screenZ) - ICON_SIZE / 2;
-        graphics.renderItem(new net.minecraft.world.item.ItemStack(egg), x, z);
+        graphics.renderItem(new ItemStack(egg), x, z);
         return true;
     }
 

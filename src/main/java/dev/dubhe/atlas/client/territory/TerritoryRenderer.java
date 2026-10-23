@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.client.territory;
 
-import dev.dubhe.atlas.AleeveAtlas;
+import java.util.HashMap;
+
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.client.map.MinimapLayout;
@@ -118,7 +119,7 @@ public final class TerritoryRenderer {
 
     /// 统计每个区块命中的最高 `zOrder`（规格 §7.7 第 2 条）。
     private static Map<ChunkPos, Integer> topZOrderByChunk(List<TerritoryGroup> groups) {
-        Map<ChunkPos, Integer> top = new java.util.HashMap<>();
+        Map<ChunkPos, Integer> top = new HashMap<>();
         for (TerritoryGroup group : groups) {
             for (ChunkPos chunk : group.chunks()) {
                 top.merge(chunk, group.zOrder(), Math::max);

@@ -1,7 +1,6 @@
 package dev.dubhe.atlas.client.waypoint;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import java.util.List;
 import net.minecraft.ChatFormatting;

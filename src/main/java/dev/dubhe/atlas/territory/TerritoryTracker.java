@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.territory;
 
+import java.util.Objects;
+
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import java.util.List;
 import net.minecraft.resources.ResourceKey;
@@ -32,7 +34,7 @@ public final class TerritoryTracker {
             int chunkZ) {
         TerritoryGroup next = resolveAt(registry, dimension, chunkX, chunkZ);
         String nextId = next == null ? null : next.territoryId();
-        if (java.util.Objects.equals(nextId, currentTerritoryId)) {
+        if (Objects.equals(nextId, currentTerritoryId)) {
             return null;
         }
         String previousId = currentTerritoryId;

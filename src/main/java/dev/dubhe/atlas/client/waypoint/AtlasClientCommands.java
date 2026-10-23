@@ -1,5 +1,10 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import java.nio.file.Path;
+import java.util.List;
+import net.minecraft.client.Minecraft;
+
 import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
@@ -45,8 +50,8 @@ public final class AtlasClientCommands {
     }
 
     /// 组装命令树。
-    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> build(
-            com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> root) {
+    private static LiteralArgumentBuilder<CommandSourceStack> build(
+            LiteralArgumentBuilder<CommandSourceStack> root) {
         return root
                 .then(Commands.literal("waypoint")
                         .then(Commands.literal("accept")
@@ -173,8 +178,8 @@ public final class AtlasClientCommands {
     }
 
     /// 导入导出目录：客户端游戏目录下的 `aleeve_atlas_exports`（规格 §11）。
-    private static java.nio.file.Path exportDir() {
-        return net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath()
+    private static Path exportDir() {
+        return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("aleeve_atlas_exports");
     }
 
@@ -219,7 +224,7 @@ public final class AtlasClientCommands {
         }
         AtlasTerritory.client().upsertTerritory(new SimpleTerritory(DEMO_OVERLAY_ID, dimension,
                 overlay, Component.translatable("aleeve_atlas.territory.demo_overlay_name"),
-                0xFFAA33, 0.55F, BorderStyle.ofTheme(0xFFAA33), java.util.List.of(), 10));
+                0xFFAA33, 0.55F, BorderStyle.ofTheme(0xFFAA33), List.of(), 10));
 
         player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.territory_demo_added"), true);

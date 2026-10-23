@@ -1,5 +1,11 @@
 package dev.dubhe.atlas.map;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.LevelReader;
+
 import net.minecraft.world.level.material.MapColor;
 
 /// 地图像素取色（规格 §2.1：地形渲染要素）。
@@ -54,13 +60,13 @@ public final class MapPalette {
     /// 植被类方块按生物群系染色（规格 §2.1 地形渲染要素）。
     ///
     /// 仅对草地、树叶等植被方块生效；其它方块原样返回。
-    public static int tintWithBiome(int argb, net.minecraft.world.level.block.state.BlockState state,
-            net.minecraft.world.level.LevelReader level, net.minecraft.core.BlockPos pos,
-            net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome) {
+    public static int tintWithBiome(int argb, BlockState state,
+            LevelReader level, BlockPos pos,
+            Holder<Biome> biome) {
         var color = state.getBlock().defaultMapColor();
-        if (color != net.minecraft.world.level.material.MapColor.GRASS
-                && color != net.minecraft.world.level.material.MapColor.PLANT
-                && color != net.minecraft.world.level.material.MapColor.COLOR_GREEN) {
+        if (color != MapColor.GRASS
+                && color != MapColor.PLANT
+                && color != MapColor.COLOR_GREEN) {
             return argb;
         }
         int tint = biome.value().getGrassColor(pos.getX(), pos.getZ());

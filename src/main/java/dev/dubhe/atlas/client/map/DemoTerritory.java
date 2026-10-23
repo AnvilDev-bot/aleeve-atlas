@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
+import java.util.List;
+
 import dev.dubhe.atlas.api.territory.BorderStyle;
 
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
@@ -66,6 +68,6 @@ final class DemoTerritory {
                 minecraft.level.dimension(), overlay,
                 Component.translatable("aleeve_atlas.territory.demo_overlay_name"), 0xFFAA33,
                 0.55F, BorderStyle.ofTheme(0xFFAA33),
-                java.util.List.of(), 10));
+                List.of(), 10));
     }
 }

@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.visibility;
 
+import java.util.Locale;
+
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.dubhe.atlas.client.radar.VisibilityGate;
@@ -69,6 +71,6 @@ public final class VisibilityResolverSelector {
 
     /// 判定渲染后端是否为 OpenGL。
     private static boolean isOpenGlBackend(String backendName) {
-        return backendName != null && backendName.toLowerCase(java.util.Locale.ROOT).contains("opengl");
+        return backendName != null && backendName.toLowerCase(Locale.ROOT).contains("opengl");
     }
 }

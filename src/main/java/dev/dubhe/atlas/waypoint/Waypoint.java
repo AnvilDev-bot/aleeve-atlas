@@ -1,5 +1,9 @@
 package dev.dubhe.atlas.waypoint;
 
+import java.util.ArrayList;
+import java.util.function.Function;
+import java.util.List;
+
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -79,7 +83,7 @@ public record Waypoint(
 
     /// 读取路径点时需要维度键的解析函数。
     public static Waypoint load(CompoundTag tag,
-            java.util.function.Function<String, ResourceKey<Level>> dimensionResolver) {
+            Function<String, ResourceKey<Level>> dimensionResolver) {
         String dim = tag.getStringOr("dim", "minecraft:overworld");
         return new Waypoint(
                 UUID.fromString(tag.getStringOr("id", UUID.randomUUID().toString())),
@@ -105,9 +109,9 @@ public record Waypoint(
     }
 
     /// 从 `ListTag` 读取路径点列表。
-    public static java.util.List<Waypoint> loadAll(ListTag list,
-            java.util.function.Function<String, ResourceKey<Level>> dimensionResolver) {
-        java.util.List<Waypoint> result = new java.util.ArrayList<>();
+    public static List<Waypoint> loadAll(ListTag list,
+            Function<String, ResourceKey<Level>> dimensionResolver) {
+        List<Waypoint> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             Tag tag = list.get(i);
             if (tag instanceof CompoundTag compound) {

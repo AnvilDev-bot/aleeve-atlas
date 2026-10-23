@@ -1,5 +1,8 @@
 package dev.dubhe.atlas.api.territory;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+
 import java.util.List;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
@@ -14,7 +17,7 @@ public interface TerritoryGroup {
     String territoryId();
 
     /// 所属维度。
-    net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension();
+    ResourceKey<Level> dimension();
 
     /// 该领地声明的全部区块坐标（可为多个不相连的飞地）。
     Set<ChunkPos> chunks();

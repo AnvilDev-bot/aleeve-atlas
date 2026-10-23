@@ -1,5 +1,8 @@
 package dev.dubhe.atlas.client.map;
 
+import dev.dubhe.atlas.AtlasSession;
+import net.minecraft.util.Mth;
+
 import dev.dubhe.atlas.client.AtlasKeyMappings;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
@@ -98,7 +101,7 @@ public final class WorldMapScreen extends Screen {
 
     /// 队伍相关按钮：独立模式下置灰并给出说明（规格 §1 / AC-1）。
     private void addTeamButtons() {
-        boolean synchronizedMode = dev.dubhe.atlas.AtlasSession.synchronizedMode();
+        boolean synchronizedMode = AtlasSession.synchronizedMode();
         Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
         int buttonWidth = 120;
         int buttonHeight = 20;
@@ -392,7 +395,7 @@ public final class WorldMapScreen extends Screen {
 
     /// 主题色 + 填充透明度。
     private static int withOpacity(int rgb, float opacity) {
-        int alpha = Math.round(net.minecraft.util.Mth.clamp(opacity, 0.0F, 1.0F) * 255.0F);
+        int alpha = Math.round(Mth.clamp(opacity, 0.0F, 1.0F) * 255.0F);
         return (alpha << 24) | (rgb & 0xFFFFFF);
     }
 
@@ -514,7 +517,7 @@ public final class WorldMapScreen extends Screen {
         minecraft.player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.waypoint_created",
                         waypoint.pos().getX(), waypoint.pos().getY(), waypoint.pos().getZ())
-                        .withStyle(net.minecraft.ChatFormatting.GREEN),
+                        .withStyle(ChatFormatting.GREEN),
                 true);
     }
 

@@ -1,5 +1,9 @@
 package dev.dubhe.atlas.client.radar;
 
+import java.util.Locale;
+
+import net.minecraft.network.chat.Component;
+
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
@@ -17,9 +21,9 @@ public enum RadarCategory {
     MISC;
 
     /// 类别的玩家可见名称（规格 §12.3 实体类别名需纳入语言文件）。
-    public net.minecraft.network.chat.Component displayName() {
-        return net.minecraft.network.chat.Component.translatable(
-                "aleeve_atlas.radar.category." + name().toLowerCase(java.util.Locale.ROOT));
+    public Component displayName() {
+        return Component.translatable(
+                "aleeve_atlas.radar.category." + name().toLowerCase(Locale.ROOT));
     }
 
     /// 判定一个实体属于哪一类雷达标记；不参与雷达的实体返回 {@code null}。

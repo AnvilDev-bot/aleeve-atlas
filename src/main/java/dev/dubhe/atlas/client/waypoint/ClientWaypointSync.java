@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import java.util.UUID;
+
 import dev.dubhe.atlas.api.waypoint.WaypointReceivedEvent;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
@@ -82,7 +84,7 @@ public final class ClientWaypointSync {
     }
 
     /// 接受一个待确认路径点（由聊天栏按钮触发）。
-    public static void confirm(java.util.UUID id, boolean accepted) {
+    public static void confirm(UUID id, boolean accepted) {
         PendingWaypoint pending = ClientWaypoints.pending().remove(id);
         if (pending == null) {
             return;

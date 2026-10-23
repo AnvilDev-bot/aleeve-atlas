@@ -1,5 +1,8 @@
 package dev.dubhe.atlas.api.territory;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
+
 import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 
@@ -12,7 +15,7 @@ public interface TerritoryOverlayApi {
     void upsertTerritory(TerritoryGroup territory);
 
     /// 局部增量更新：仅新增/移除指定区块，触发相关连通分量的局部重算（规格 §7.1）。
-    void patchChunks(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension,
+    void patchChunks(ResourceKey<Level> dimension,
             String territoryId, Set<ChunkPos> added, Set<ChunkPos> removed);
 
     /// 移除一个领地的全部覆层。

@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.map;
 
+import java.util.Arrays;
+
 import java.io.ByteArrayOutputStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -36,8 +38,8 @@ public final class ChunkPixelCodec {
         if (colorLength < 0 || 4 + colorLength > packed.length) {
             return new int[][] { colors, heights };
         }
-        byte[] colorBytes = java.util.Arrays.copyOfRange(packed, 4, 4 + colorLength);
-        byte[] heightBytes = java.util.Arrays.copyOfRange(packed, 4 + colorLength, packed.length);
+        byte[] colorBytes = Arrays.copyOfRange(packed, 4, 4 + colorLength);
+        byte[] heightBytes = Arrays.copyOfRange(packed, 4 + colorLength, packed.length);
         colors = decompress(colorBytes);
         int[] decodedHeights = decompress(heightBytes);
         System.arraycopy(decodedHeights, 0, heights, 0,

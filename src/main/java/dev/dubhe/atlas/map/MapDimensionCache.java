@@ -1,5 +1,9 @@
 package dev.dubhe.atlas.map;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +31,7 @@ public final class MapDimensionCache {
     private final Path dimensionDir;
     private final Map<Long, ChunkMapData> chunks = new HashMap<>();
     /// 访问顺序即 LRU 顺序。
-    private final Map<Long, RegionFile> loadedRegions = new java.util.LinkedHashMap<>(16, 0.75F,
+    private final Map<Long, RegionFile> loadedRegions = new LinkedHashMap<>(16, 0.75F,
             true);
 
     public MapDimensionCache(Path dimensionDir) {
@@ -68,8 +72,8 @@ public final class MapDimensionCache {
     ///
     /// 仅返回内存中已加载的区块；精确全量摘要需要遍历区域文件，代价较高，
     /// 因此同步按「当前会话已探索」范围进行，符合规格「仅限在线成员」的语义。
-    public java.util.List<ChunkMapData> loadedChunks() {
-        return java.util.List.copyOf(chunks.values());
+    public List<ChunkMapData> loadedChunks() {
+        return List.copyOf(chunks.values());
     }
 
     /// 该缓存对应的维度目录（诊断用）。
@@ -103,7 +107,7 @@ public final class MapDimensionCache {
     /// 调用发生在插入新区域之前，故以 `>` 判定，使驻留数量可达 `MAX_LOADED_REGIONS`。
     private void evictRegionsIfNeeded() {
         while (loadedRegions.size() > MAX_LOADED_REGIONS - 1) {
-            java.util.Iterator<Map.Entry<Long, RegionFile>> iterator =
+            Iterator<Map.Entry<Long, RegionFile>> iterator =
                     loadedRegions.entrySet().iterator();
             if (!iterator.hasNext()) {
                 return;

@@ -1,5 +1,10 @@
 package dev.dubhe.atlas.sync;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
+import java.util.UUID;
+import net.minecraft.client.Minecraft;
+
 import dev.dubhe.atlas.client.map.AtlasClientMap;
 import dev.dubhe.atlas.client.map.ClientMapManager;
 import dev.dubhe.atlas.client.map.WorldMapScreen;
@@ -30,8 +35,8 @@ public final class ClientMapSync {
     public static final int CHUNKS_PER_TICK = 8;
 
     /// 待写队列：网络线程入队、主线程出队，需线程安全（规格 §10）。
-    private static final java.util.Queue<PendingWrite> WRITE_QUEUE =
-            new java.util.concurrent.ConcurrentLinkedQueue<>();
+    private static final Queue<PendingWrite> WRITE_QUEUE =
+            new ConcurrentLinkedQueue<>();
     private static final Map<String, Long> RECEIVED_BATCHES = new HashMap<>();
     /// 发送预算：按服务端配置限制带宽（§12.1）。
     private static final SyncBudget BUDGET = new SyncBudget();
@@ -55,8 +60,8 @@ public final class ClientMapSync {
                     data.version()));
         }
         String dimension = currentDimensionId();
-        var minecraft = net.minecraft.client.Minecraft.getInstance();
-        java.util.UUID selfId = minecraft.player == null ? null : minecraft.player.getUUID();
+        var minecraft = Minecraft.getInstance();
+        UUID selfId = minecraft.player == null ? null : minecraft.player.getUUID();
         for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries, selfId)) {
             ClientPacketDistributor.sendToServer(packet);
         }
@@ -94,7 +99,7 @@ public final class ClientMapSync {
         // 按服务端配置的带宽上限与间隔限流，避免堵塞实时包（§9.2 / §12.1）。
         // 单 tick 计数由 `tick` 统一重置，此处不再重复重置，否则同 tick 内多批差异各自计数。
         // 差异回传给摘要发送者（由服务端按 targetPlayer 精确路由）。
-        java.util.UUID target = payload.senderId();
+        UUID target = payload.senderId();
         for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas,
                 target)) {
             int estimated = estimate(packet);
@@ -181,7 +186,7 @@ public final class ClientMapSync {
     }
 
     private static String currentDimensionId() {
-        var minecraft = net.minecraft.client.Minecraft.getInstance();
+        var minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             return "minecraft:overworld";
         }

@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.ping;
 
+import net.minecraft.world.scores.PlayerTeam;
+
 import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,7 +40,7 @@ public final class ServerPingHandler {
                 sender.getGameProfile().name(), recipients.size());
     }
 
-    private static boolean sameTeam(net.minecraft.world.scores.PlayerTeam team,
+    private static boolean sameTeam(PlayerTeam team,
             ServerPlayer player) {
         return team != null && team == player.getTeam();
     }

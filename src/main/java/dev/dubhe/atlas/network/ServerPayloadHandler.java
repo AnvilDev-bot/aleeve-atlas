@@ -1,7 +1,6 @@
 package dev.dubhe.atlas.network;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.config.AtlasServerConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

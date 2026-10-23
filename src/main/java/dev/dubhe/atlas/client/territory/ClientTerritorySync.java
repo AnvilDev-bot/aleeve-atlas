@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.territory;
 
+import java.util.HashSet;
+
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import dev.dubhe.atlas.territory.SyncedTerritory;
@@ -53,7 +55,7 @@ public final class ClientTerritorySync {
     private static final class Accumulator {
         private final int expectedBatches;
         private final SyncedTerritory template;
-        private final Set<ChunkPos> chunks = new java.util.HashSet<>();
+        private final Set<ChunkPos> chunks = new HashSet<>();
         private int received;
 
         private Accumulator(int expectedBatches, SyncedTerritory template) {
