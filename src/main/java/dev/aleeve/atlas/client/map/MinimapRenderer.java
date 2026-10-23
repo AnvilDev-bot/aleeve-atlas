@@ -2,9 +2,9 @@ package dev.aleeve.atlas.client.map;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.aleeve.atlas.AleeveAtlas;
+import dev.aleeve.atlas.client.radar.RadarRenderer;
 import dev.aleeve.atlas.config.AtlasClientConfig;
 import dev.aleeve.atlas.config.AtlasClientConfigs;
-import dev.aleeve.atlas.config.ConfigBounds;
 import dev.aleeve.atlas.config.MinimapShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,8 +24,6 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 /// 画出圆形遮罩、边框与玩家朝向箭头。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class MinimapRenderer {
-    /// 1.0 倍缩放时的小地图边长（GUI 像素）。
-    private static final int BASE_SIZE = 128;
     private static final Identifier OVERLAY_TEXTURE = AleeveAtlas.id("textures/gui/white.png");
     private static final int TEXT_COLOR = 0xFFFFFFFF;
 
@@ -51,14 +49,14 @@ public final class MinimapRenderer {
             return;
         }
 
-        float scale = ConfigBounds.clamp(config.minimap.scale, 0.5F, 4.0F);
-        int size = Math.round(BASE_SIZE * scale);
+        MinimapLayout layout = MinimapLayout.of(config, minecraft);
+        if (layout == null) {
+            return;
+        }
         GuiGraphics graphics = event.getGuiGraphics();
-        int screenWidth = minecraft.getWindow().getGuiScaledWidth();
-        int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        int[] origin = resolveOrigin(config, size, screenWidth, screenHeight);
-        int x = origin[0];
-        int y = origin[1];
+        int x = layout.x();
+        int y = layout.y();
+        int size = layout.size();
 
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         // 整张纹理铺满小地图方形：纹理中心即玩家所在位置。
@@ -70,6 +68,9 @@ public final class MinimapRenderer {
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);
 
+        // 实体雷达标记绘制在地图之上、边框与箭头之下（规格 §6）。
+        RadarRenderer.render(graphics, config, layout, minecraft);
+
         // 叠加层：边框与玩家朝向箭头由着色器绘制。
         LocalPlayer player = minecraft.player;
         float yaw = config.minimap.lockNorth ? 0.0F : player.getYRot();
@@ -77,7 +78,7 @@ public final class MinimapRenderer {
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 
-        drawInfo(graphics, config, minecraft, size, origin);
+        drawInfo(graphics, config, minecraft, size, x, y);
     }
 
     /// 把朝向角与形态编码进顶点色：R 通道为 yaw/(2π)，G 通道为圆形开关。
@@ -88,29 +89,14 @@ public final class MinimapRenderer {
         return 0xFF000000 | (red << 16) | (green << 8);
     }
 
-    private static int[] resolveOrigin(AtlasClientConfig config, int size, int screenWidth,
-            int screenHeight) {
-        int margin = 6;
-        return switch (config.minimap.position) {
-            case TOP_LEFT -> new int[] { margin, margin };
-            case TOP_RIGHT -> new int[] { screenWidth - size - margin, margin };
-            case BOTTOM_LEFT -> new int[] { margin, screenHeight - size - margin };
-            case BOTTOM_RIGHT ->
-                new int[] { screenWidth - size - margin, screenHeight - size - margin };
-            case CUSTOM -> new int[] {
-                    clamp(config.minimap.offsetX, 0, Math.max(0, screenWidth - size)),
-                    clamp(config.minimap.offsetY, 0, Math.max(0, screenHeight - size)) };
-        };
-    }
-
     private static void drawInfo(GuiGraphics graphics, AtlasClientConfig config, Minecraft minecraft,
-            int size, int[] origin) {
+            int size, int x, int y) {
         LocalPlayer player = minecraft.player;
         if (player == null) {
             return;
         }
-        int line = origin[1] + size + 4;
-        int textX = origin[0];
+        int line = y + size + 4;
+        int textX = x;
         if (config.minimap.showCoords) {
             Component text = Component.literal("%d, %d, %d".formatted(
                     (int) Math.floor(player.getX()),
