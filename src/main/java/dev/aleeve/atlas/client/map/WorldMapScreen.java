@@ -48,6 +48,9 @@ public final class WorldMapScreen extends Screen {
     /// 低于该区块像素尺寸时隐藏领地名称标签（规格 §7.5 / AC-10）。
     private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
 
+    /// 当前打开的世界地图界面；未打开时为 null。
+    private static WorldMapScreen active;
+
     private final MapCanvas canvas;
     private final MapDimensionCache cache;
     /// 视野中心（世界方块坐标）。
@@ -74,6 +77,23 @@ public final class WorldMapScreen extends Screen {
         }
         refreshCanvas();
         addTeamButtons();
+        active = this;
+    }
+
+    @Override
+    public void removed() {
+        if (active == this) {
+            active = null;
+        }
+        super.removed();
+    }
+
+    /// 地图数据发生外部变更时重绘已打开的界面（规格 §3.3：接收后刷新世界地图）。
+    public static void onMapDataChanged() {
+        WorldMapScreen screen = active;
+        if (screen != null) {
+            screen.refreshCanvas();
+        }
     }
 
     /// 队伍相关按钮：独立模式下置灰并给出说明（规格 §1 / AC-1）。
