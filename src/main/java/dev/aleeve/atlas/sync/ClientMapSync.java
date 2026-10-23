@@ -80,7 +80,8 @@ public final class ClientMapSync {
             Long theirVersion = theirVersions.get(key);
             if (theirVersion == null || theirVersion < data.version()) {
                 deltas.add(new ChunkDeltaPayload.ChunkData(data.chunkX(), data.chunkZ(),
-                        data.version(), ChunkPixelCodec.compress(data.colors())));
+                        data.version(),
+                        ChunkPixelCodec.compress(data.colors(), data.heights())));
             }
         }
         if (deltas.isEmpty()) {
@@ -131,10 +132,13 @@ public final class ClientMapSync {
             PendingWrite pending = WRITE_QUEUE.remove(0);
             ChunkMapData data = new ChunkMapData(pending.chunk().chunkX(),
                     pending.chunk().chunkZ());
-            int[] colors = ChunkPixelCodec.decompress(pending.chunk().pixels());
+            // 颜色与高度一并还原，保证接收方地图的地表高度可用（§3.3）。
+            int[][] decoded = ChunkPixelCodec.decompressWithHeights(pending.chunk().pixels());
+            int[] colors = decoded[0];
+            int[] heights = decoded[1];
             for (int index = 0; index < colors.length && index < ChunkMapData.PIXELS; index++) {
                 data.setPixel(index % ChunkMapData.SIZE, index / ChunkMapData.SIZE,
-                        colors[index], 0);
+                        colors[index], heights[index]);
             }
             data.setVersion(pending.chunk().version());
             cache.put(data);

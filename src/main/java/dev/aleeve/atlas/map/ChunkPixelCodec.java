@@ -12,6 +12,49 @@ public final class ChunkPixelCodec {
     private ChunkPixelCodec() {
     }
 
+    /// 颜色与高度一起打包压缩（同步传输需要保留地表高度，规格 §3.3）。
+    public static byte[] compress(int[] colors, int[] heights) {
+        byte[] colorBytes = compress(colors);
+        byte[] heightBytes = compress(heights);
+        byte[] combined = new byte[4 + colorBytes.length + heightBytes.length];
+        writeInt(combined, 0, colorBytes.length);
+        System.arraycopy(colorBytes, 0, combined, 4, colorBytes.length);
+        System.arraycopy(heightBytes, 0, combined, 4 + colorBytes.length, heightBytes.length);
+        return combined;
+    }
+
+    /// 解包颜色与高度；格式不符时返回全透明/零高度。
+    public static int[][] decompressWithHeights(byte[] packed) {
+        int[] colors = new int[ChunkMapData.PIXELS];
+        int[] heights = new int[ChunkMapData.PIXELS];
+        if (packed.length < 4) {
+            return new int[][] { colors, heights };
+        }
+        int colorLength = readInt(packed, 0);
+        if (colorLength < 0 || 4 + colorLength > packed.length) {
+            return new int[][] { colors, heights };
+        }
+        byte[] colorBytes = java.util.Arrays.copyOfRange(packed, 4, 4 + colorLength);
+        byte[] heightBytes = java.util.Arrays.copyOfRange(packed, 4 + colorLength, packed.length);
+        colors = decompress(colorBytes);
+        int[] decodedHeights = decompress(heightBytes);
+        System.arraycopy(decodedHeights, 0, heights, 0,
+                Math.min(decodedHeights.length, heights.length));
+        return new int[][] { colors, heights };
+    }
+
+    private static void writeInt(byte[] target, int offset, int value) {
+        target[offset] = (byte) (value >>> 24);
+        target[offset + 1] = (byte) (value >>> 16);
+        target[offset + 2] = (byte) (value >>> 8);
+        target[offset + 3] = (byte) value;
+    }
+
+    private static int readInt(byte[] source, int offset) {
+        return ((source[offset] & 0xFF) << 24) | ((source[offset + 1] & 0xFF) << 16)
+                | ((source[offset + 2] & 0xFF) << 8) | (source[offset + 3] & 0xFF);
+    }
+
     /// 像素数组 → 压缩字节串。
     public static byte[] compress(int[] colors) {
         byte[] raw = new byte[colors.length * 4];

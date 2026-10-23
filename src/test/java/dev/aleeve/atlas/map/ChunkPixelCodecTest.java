@@ -33,6 +33,21 @@ class ChunkPixelCodecTest {
     }
 
     @Test
+    void compassWithHeightsRoundTripsBothArrays() {
+        int[] colors = new int[ChunkMapData.PIXELS];
+        int[] heights = new int[ChunkMapData.PIXELS];
+        java.util.Random random = new java.util.Random(7L);
+        for (int i = 0; i < colors.length; i++) {
+            colors[i] = 0xFF000000 | random.nextInt(0xFFFFFF);
+            heights[i] = 40 + random.nextInt(60);
+        }
+        int[][] decoded = ChunkPixelCodec.decompressWithHeights(
+                ChunkPixelCodec.compress(colors, heights));
+        assertArrayEquals(colors, decoded[0]);
+        assertArrayEquals(heights, decoded[1]);
+    }
+
+    @Test
     void digestSplitRespectsPacketLimit() {
         java.util.List<dev.aleeve.atlas.network.ChunkDigestPayload.Entry> entries =
                 new java.util.ArrayList<>();

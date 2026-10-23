@@ -58,6 +58,10 @@ public final class ChunkMapData {
         return colors;
     }
 
+    public int[] heights() {
+        return heights;
+    }
+
     public int heightAt(int localX, int localZ) {
         return heights[localZ * SIZE + localX];
     }
