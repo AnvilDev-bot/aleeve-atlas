@@ -1,0 +1,37 @@
+package dev.dubhe.atlas.client.profiling;
+
+import dev.dubhe.atlas.AleeveAtlas;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/// 渲染性能周期上报（规格 §12.1）。
+///
+/// 每 600 tick（约 30 秒）输出一次小地图渲染统计，便于在日志中直接核对性能指标，
+/// 无需玩家执行命令。统计输出后重置，下一周期重新采样。
+@EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
+public final class PerformanceReporter {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/perf");
+    private static final int REPORT_INTERVAL_TICKS = 600;
+
+    private static int ticks;
+
+    private PerformanceReporter() {
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (++ticks < REPORT_INTERVAL_TICKS) {
+            return;
+        }
+        ticks = 0;
+        if (AtlasProfiling.minimap().count() == 0) {
+            return;
+        }
+        LOGGER.info("{}", AtlasProfiling.minimapSummary());
+        AtlasProfiling.reset();
+    }
+}
