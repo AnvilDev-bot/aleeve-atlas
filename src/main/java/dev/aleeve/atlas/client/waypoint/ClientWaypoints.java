@@ -185,14 +185,7 @@ public final class ClientWaypoints {
     }
 
     private static String serverKey(Minecraft minecraft) {
-        ServerData server = minecraft.getCurrentServer();
-        if (server != null) {
-            return dev.aleeve.atlas.storage.AtlasPaths.hashServerKey(server.ip);
-        }
-        if (minecraft.hasSingleplayerServer()) {
-            return "singleplayer";
-        }
-        return "unknown";
+        return dev.aleeve.atlas.storage.ServerKey.resolve(minecraft);
     }
 
     /// 维度键工具（供其他模块复用）。

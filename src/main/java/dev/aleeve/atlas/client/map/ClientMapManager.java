@@ -5,6 +5,7 @@ import dev.aleeve.atlas.map.ChunkMapData;
 import dev.aleeve.atlas.map.ChunkMapSampler;
 import dev.aleeve.atlas.map.MapDimensionCache;
 import dev.aleeve.atlas.storage.AtlasPaths;
+import dev.aleeve.atlas.storage.ServerKey;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -133,15 +134,8 @@ public final class ClientMapManager {
         return minecraft.gameDirectory.toPath();
     }
 
-    /// 服务器标识：多人取 IP（哈希后落盘，规格 §11），单机取存档名（此处以 singleplayer 标识）。
+    /// 服务器/存档标识（规格 §11）。
     private static String serverKey(Minecraft minecraft) {
-        ServerData server = minecraft.getCurrentServer();
-        if (server != null) {
-            return AtlasPaths.hashServerKey(server.ip);
-        }
-        if (minecraft.hasSingleplayerServer() && minecraft.getSingleplayerServer() != null) {
-            return "singleplayer";
-        }
-        return "unknown";
+        return ServerKey.resolve(minecraft);
     }
 }
