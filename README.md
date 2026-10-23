@@ -21,11 +21,21 @@ Minecraft 1.21.11（NeoForge 21.11.x）的小地图与世界地图模组，提�
 | 可见性判定 | ✅ | ALWAYS/NEVER/VISIBLE_ONLY 策略，默认多采样点射线检测降级 |
 | 国际化 | ✅ | `en_us` 由 datagen 生成，`zh_cn` 人工维护，构建期校验键集一致 |
 
+## 包坐标
+
+- Java 包：`dev.dubhe.atlas`
+- Maven group：`dev.dubhe.atlas`
+- 模组 ID：`aleeve_atlas`
+
 ## 外部模组接入
 
 ### 临时标点（Ping Wheel 等）
 
 ```java
+import dev.dubhe.atlas.api.ping.MapPingCreatedEvent;
+import dev.dubhe.atlas.api.ping.MinimapPingAPI;
+import dev.dubhe.atlas.ping.MapPingData;
+
 // 外部模组在 3D 视界标点后推送给本模组，小地图/世界地图即刻渲染波纹标点
 MinimapPingAPI.registerPing(position, dimensionId, MapPingData.PingIcon.NORMAL,
         senderId, senderName, teamColor);
@@ -37,6 +47,9 @@ NeoForge.EVENT_BUS.addListener((MapPingCreatedEvent event) -> { ... });
 ### 领地覆层（FTB Chunks / OPAC 等）
 
 ```java
+import dev.dubhe.atlas.api.territory.AtlasTerritory;
+import dev.dubhe.atlas.territory.SimpleTerritory;
+
 AtlasTerritory.client().upsertTerritory(
         SimpleTerritory.of("my_territory", Level.OVERWORLD, chunks, name, 0x33AAFF));
 ```
@@ -49,6 +62,10 @@ AtlasTerritory.client().upsertTerritory(
 | `/aleeve_atlas waypoint import <file>` | 从该目录导入并合并路径点 |
 | `/aleeve_atlas waypoint accept\|ignore <id>` | 手动接受策略下的路径点确认 |
 | `/aleeve_atlas territory demo\|clear` | 注册/清除演示领地（含孔洞与飞地，便于验收） |
+| `/aleeve_atlas pingdemo` | 在玩家前方注入临时标点，便于验收波纹渲染 |
+| `/aleeve_atlas perf` | 输出小地图帧耗统计与标点通道诊断 |
+
+命令名另提供无下划线别名 `/aleeveatlas`，便于输入。
 
 ## 依赖
 
