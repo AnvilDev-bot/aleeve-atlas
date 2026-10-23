@@ -51,6 +51,11 @@ public final class AtlasPayloads {
         registrar.playBidirectional(ChunkDeltaPayload.TYPE, ChunkDeltaPayload.STREAM_CODEC,
                 ServerMapSync::handleDelta, ClientMapSync::handleDelta);
 
+        // 领地下发：服务端 API 推送、客户端重组后写入注册表（§7.1）。
+        registrar.playToClient(dev.aleeve.atlas.api.territory.TerritorySyncPayload.TYPE,
+                dev.aleeve.atlas.api.territory.TerritorySyncPayload.STREAM_CODEC,
+                dev.aleeve.atlas.client.territory.ClientTerritorySync::handle);
+
         registrar.optional();
     }
 }
