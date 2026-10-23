@@ -2,7 +2,6 @@ package dev.dubhe.atlas.territory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
