@@ -29,6 +29,8 @@ public final class ClientMapSync {
 
     private static final List<PendingWrite> WRITE_QUEUE = new ArrayList<>();
     private static final Map<String, Long> RECEIVED_BATCHES = new HashMap<>();
+    /// 发送预算：按服务端配置限制带宽（§12.1）。
+    private static final SyncBudget BUDGET = new SyncBudget();
 
     private ClientMapSync() {
     }
@@ -82,8 +84,16 @@ public final class ClientMapSync {
         if (deltas.isEmpty()) {
             return;
         }
+        // 按服务端配置的带宽上限与间隔限流，避免堵塞实时包（§9.2 / §12.1）。
+        BUDGET.beginTick();
         for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas)) {
+            int estimated = estimate(packet);
+            if (!BUDGET.canSend(estimated)) {
+                // 配额用尽：剩余分片留待下一轮同步，不做无界排队。
+                break;
+            }
             ClientPacketDistributor.sendToServer(packet);
+            BUDGET.record(estimated);
         }
         LOGGER.debug("Sent {} missing chunk(s) to teammate", deltas.size());
     }
@@ -131,6 +141,15 @@ public final class ClientMapSync {
     public static void clear() {
         WRITE_QUEUE.clear();
         RECEIVED_BATCHES.clear();
+    }
+
+    /// 估算一个分片的传输字节数（坐标 + 版本 + 像素串 + 包头）。
+    private static int estimate(ChunkDeltaPayload packet) {
+        int total = 0;
+        for (ChunkDeltaPayload.ChunkData chunk : packet.chunks()) {
+            total += chunk.pixels().length + 24;
+        }
+        return total + 32;
     }
 
     private static String currentDimensionId() {

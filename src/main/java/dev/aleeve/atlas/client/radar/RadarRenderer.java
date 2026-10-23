@@ -62,13 +62,21 @@ public final class RadarRenderer {
                 continue;
             }
             // 前置逻辑剔除 + 可见性判定（规格 §4.2 第 1、5 条）。
+            float opacity = 1.0F;
             if (category == RadarCategory.PLAYER && !RadarStyle.isTeammate(entity)) {
                 if (nonTeamPolicy == NonTeamVisibility.NEVER) {
                     continue;
                 }
-                if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY
-                        && !VisibilityGate.isVisible(level, player, entity)) {
-                    continue;
+                if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY) {
+                    if (VisibilityGate.isVisible(level, player, entity)) {
+                        VisibilityFade.markSeen(entity);
+                    } else {
+                        // 被遮挡后按渐隐期衰减，避免标点高频闪烁（§4.2 第 4 条）。
+                        opacity = VisibilityFade.opacity(entity);
+                        if (opacity <= 0.0F) {
+                            continue;
+                        }
+                    }
                 }
             }
             double screenX = layout.worldToScreenX(entity.getX());
@@ -80,9 +88,19 @@ public final class RadarRenderer {
                 drawPlayerHead(graphics, entity, screenX, screenZ);
                 continue;
             }
-            int color = RadarStyle.color(config.radar.categories, category, entity);
+            int color = applyOpacity(
+                    RadarStyle.color(config.radar.categories, category, entity), opacity);
             drawDot(graphics, screenX, screenZ, color);
         }
+    }
+
+    /// 按不透明度缩放颜色的 alpha 通道。
+    private static int applyOpacity(int argb, float opacity) {
+        if (opacity >= 1.0F) {
+            return argb;
+        }
+        int alpha = Math.round(((argb >>> 24) & 0xFF) * Math.max(0.0F, opacity));
+        return (alpha << 24) | (argb & 0xFFFFFF);
     }
 
     private static void drawDot(GuiGraphics graphics, double screenX, double screenZ, int color) {
