@@ -32,8 +32,8 @@ public final class VisibilityFade {
         if (lastSeen == null) {
             return 1.0F;
         }
-        float fadeSeconds = ConfigBounds.clamp(
-                AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5F, 1.5F);
+        float fadeSeconds = (float) ConfigBounds.clamp(
+                AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5, 1.5);
         long elapsedMillis = System.currentTimeMillis() - lastSeen;
         long fadeMillis = Math.round(fadeSeconds * 1000.0F);
         if (elapsedMillis >= fadeMillis) {
@@ -45,8 +45,8 @@ public final class VisibilityFade {
     /// 清理长期未见的条目，避免内存增长。
     public static void prune() {
         long now = System.currentTimeMillis();
-        float fadeSeconds = ConfigBounds.clamp(
-                AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5F, 1.5F);
+        float fadeSeconds = (float) ConfigBounds.clamp(
+                AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5, 1.5);
         long limit = Math.round(fadeSeconds * 1000.0F) * 4L;
         LAST_SEEN.entrySet().removeIf(entry -> now - entry.getValue() > limit);
     }

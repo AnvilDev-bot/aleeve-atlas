@@ -345,18 +345,18 @@ public interface TerritoryGroup {
 | ---- | ---- | ---- | ---- |
 | `minimap.enabled` | bool | `true` | 小地图总开关 |
 | `minimap.shape` | enum | `CIRCLE` | `CIRCLE` / `SQUARE` |
-| `minimap.scale` | float | `1.0` | 缩放倍率（`0.5 ~ 4.0`） |
+| `minimap.scale` | float（实现用 double） | `1.0` | 缩放倍率（`0.5 ~ 4.0`） |
 | `minimap.position` | enum | `TOP_RIGHT` | 四角预设 + 自定义偏移 |
 | `minimap.lockNorth` | bool | `false` | 北向锁定 |
 | `minimap.showCoords` / `showBiome` / `showLight` / `showTime` | bool | `true/true/false/false` | 信息覆层开关（§2.2） |
 | `radar.displayMode` | enum | `HYBRID` | `ICON` / `DOT` / `HYBRID`（§6.1） |
 | `radar.color.<category>` | string(HEX) | 见 §6.2 | 五类实体圆点配色，均可独立开关 |
-| `radar.fadeOutSeconds` | float | `1.0` | 遮挡渐隐保留期（`0.5 ~ 1.5`，§4.2） |
+| `radar.fadeOutSeconds` | float（实现用 double） | `1.0` | 遮挡渐隐保留期（`0.5 ~ 1.5`，§4.2） |
 | `waypoint.sendPolicy` | enum | `MANUAL_SYNC` | `AUTO_SYNC` / `MANUAL_SYNC`（§5.2） |
 | `waypoint.receivePolicy` | enum | `MANUAL_ACCEPT` | `AUTO_ACCEPT` / `MANUAL_ACCEPT` / `AUTO_REJECT`（§5.3） |
 | `waypoint.keepDeathPoints` | bool | `true` | 是否保留历史死亡点 |
 | `territory.showOnMinimap` / `showLabelOnMinimap` | bool | `true/false` | 小地图领地色块/名称开关（§7.5） |
-| `territory.anchorWeight` | float | `0.4` | 标签锚点重心牵引权重 λ（`0.3 ~ 0.5`，§7.4） |
+| `territory.anchorWeight` | float（实现用 double） | `0.4` | 标签锚点重心牵引权重 λ（`0.3 ~ 0.5`，§7.4） |
 | `ping.channelMode` | enum | `AUTO` | Ping Wheel 通道复用策略（§3.2.2）：`AUTO` / `LISTEN_ONLY` / `TAKEOVER` |
 
 ### 9.2 服务端配置（`aleeve_atlas-server.toml`）

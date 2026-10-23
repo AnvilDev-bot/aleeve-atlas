@@ -19,7 +19,8 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         if (player == null) {
             return null;
         }
-        float scale = dev.aleeve.atlas.config.ConfigBounds.clamp(config.minimap.scale, 0.5F, 4.0F);
+        float scale = (float) dev.aleeve.atlas.config.ConfigBounds.clamp(config.minimap.scale,
+                0.5, 4.0);
         int size = Math.round(BASE_SIZE * scale);
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();

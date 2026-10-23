@@ -40,7 +40,7 @@ public class AtlasClientConfig {
         public MinimapShape shape = MinimapShape.CIRCLE;
 
         @Comment("Minimap zoom multiplier (0.5 ~ 4.0).")
-        public float scale = 1.0F;
+        public double scale = 1.0;
 
         @Comment("Minimap screen corner.")
         public MinimapPosition position = MinimapPosition.TOP_RIGHT;
@@ -72,7 +72,7 @@ public class AtlasClientConfig {
         public RadarDisplayMode displayMode = RadarDisplayMode.HYBRID;
 
         @Comment("Fade-out grace period in seconds for occluded markers (0.5 ~ 1.5).")
-        public float fadeOutSeconds = 1.0F;
+        public double fadeOutSeconds = 1.0;
 
         @CollapsibleObject
         @Comment("Per-category radar settings.")
@@ -133,7 +133,7 @@ public class AtlasClientConfig {
         public boolean showLabelOnMinimap = false;
 
         @Comment("Centroid attraction weight used by the weighted anchor algorithm (0.3 ~ 0.5).")
-        public float anchorWeight = 0.4F;
+        public double anchorWeight = 0.4;
     }
 
     public static class Ping {

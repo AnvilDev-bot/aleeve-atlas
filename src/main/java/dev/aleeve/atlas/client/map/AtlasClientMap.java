@@ -62,8 +62,8 @@ public final class AtlasClientMap {
     /// 创建地图管理器并同步领地锚点权重配置（规格 §9.1 territory.anchorWeight）。
     private static void initManager() {
         manager = new ClientMapManager();
-        float lambda = ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
-                0.3F, 0.5F);
+        float lambda = (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
+                0.3, 0.5);
         AtlasTerritory.clientRegistry().setAnchorLambda(lambda);
     }
 }

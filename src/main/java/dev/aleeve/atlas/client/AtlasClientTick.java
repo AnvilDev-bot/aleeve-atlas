@@ -52,6 +52,6 @@ public final class AtlasClientTick {
 
     /// 供 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
     public static float minimapScale() {
-        return ConfigBounds.clamp(AtlasClientConfigs.CONFIG.minimap.scale, 0.5F, 4.0F);
+        return (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.minimap.scale, 0.5, 4.0);
     }
 }
