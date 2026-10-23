@@ -102,6 +102,7 @@
   "aleeve_atlas.configuration.waypoint.send_policy": "Send Policy",
   "aleeve_atlas.configuration.waypoint.send_policy.tooltip": "Send policy for newly created waypoints.",
   "aleeve_atlas.configuration.waypoint.tooltip": "Waypoint settings.",
+  "aleeve_atlas.hud.light": "Light: %s",
   "aleeve_atlas.message.ping_pending": "Pings are not implemented yet.",
   "aleeve_atlas.message.server_unsupported": "Server support component is not installed.",
   "aleeve_atlas.message.waypoint_pending": "Waypoints are not implemented yet.",

@@ -26,6 +26,8 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.server_unsupported",
                 "Server support component is not installed.");
 
+        add("aleeve_atlas.hud.light", "Light: %s");
+
         // 配置项翻译键由 AnvilLib 依据配置类反射生成（规格 §12.3：配置项必须纳入语言文件）。
         ConfigData.readConfigClass(this, AtlasClientConfig.class);
         ConfigData.readConfigClass(this, AtlasServerConfig.class);
