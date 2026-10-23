@@ -51,6 +51,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.radar.category.player", "Players");
         add("aleeve_atlas.radar.category.hostile", "Hostile");
         add("aleeve_atlas.radar.category.friendly", "Friendly");
+        add("aleeve_atlas.radar.category.ambient", "Ambient");
         add("aleeve_atlas.radar.category.item", "Items");
         add("aleeve_atlas.radar.category.misc", "Misc");
         add("aleeve_atlas.screen.waypoint_list", "Waypoints");

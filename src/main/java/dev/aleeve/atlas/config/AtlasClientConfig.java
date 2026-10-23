@@ -100,6 +100,12 @@ public class AtlasClientConfig {
             @Comment("Friendly mob dot color as a hex string.")
             public String friendlyColor = "#7CFC00";
 
+            @Comment("Show tiny ambient mobs such as bats on the radar.")
+            public boolean showAmbient = false;
+
+            @Comment("Ambient mob dot color as a hex string.")
+            public String ambientColor = "#B0B0B0";
+
             @Comment("Show dropped items on the radar.")
             public boolean showItems = true;
 

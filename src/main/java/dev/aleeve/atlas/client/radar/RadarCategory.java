@@ -11,6 +11,8 @@ public enum RadarCategory {
     PLAYER,
     HOSTILE,
     FRIENDLY,
+    /// 极小型环境生物（蝙蝠等），可独立开关（规格 §6.2）。
+    AMBIENT,
     ITEM,
     MISC;
 

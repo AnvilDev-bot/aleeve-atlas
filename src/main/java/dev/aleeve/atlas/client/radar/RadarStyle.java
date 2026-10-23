@@ -21,6 +21,7 @@ public final class RadarStyle {
             case PLAYER -> categories.showPlayers;
             case HOSTILE -> categories.showHostiles;
             case FRIENDLY -> categories.showFriendly;
+            case AMBIENT -> categories.showAmbient;
             case ITEM -> categories.showItems;
             case MISC -> categories.showMisc;
         };
@@ -34,6 +35,7 @@ public final class RadarStyle {
                     : categories.otherPlayerColor;
             case HOSTILE -> categories.hostileColor;
             case FRIENDLY -> categories.friendlyColor;
+            case AMBIENT -> categories.ambientColor;
             case ITEM -> categories.itemColor;
             case MISC -> categories.miscColor;
         };
@@ -56,6 +58,7 @@ public final class RadarStyle {
             case PLAYER -> 0xFFFFFFFF;
             case HOSTILE -> 0xFFFF5555;
             case FRIENDLY -> 0xFF7CFC00;
+            case AMBIENT -> 0xFFB0B0B0;
             case ITEM -> 0xFFFF55FF;
             case MISC -> 0xFF9B59B6;
         };
