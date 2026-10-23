@@ -32,6 +32,8 @@ public final class MapTexture {
     private final NativeImage image;
     /// 以区块坐标索引的已采样数据。
     private final Map<Long, ChunkMapData> source = new HashMap<>();
+    /// 已绘制区块的数据版本，用于跳过未变更区块的重绘（§2.1）。
+    private final Map<Long, Long> drawnVersions = new HashMap<>();
     /// 纹理左上角对应的世界像素坐标。
     private int originPixelX;
     private int originPixelZ;
@@ -66,13 +68,23 @@ public final class MapTexture {
         return initialized;
     }
 
-    /// 放入一个区块数据；仅重绘该区块区域，上传延后到 `flushDirty`（§12.1）。
+    /// 放入一个区块数据；仅当数据版本变化时重绘该区块，上传延后到 `flushDirty`。
+    ///
+    /// 每 tick 都会把视野内已缓存区块重新放入，若不做版本比对会持续重绘未变更的区块，
+    /// 违反「仅在区块加载或方块变更时重渲染」（§2.1）。
     public void putChunk(ChunkMapData data) {
-        source.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data);
-        if (initialized && centered) {
-            drawChunk(data);
-            dirty = true;
+        long key = ChunkPos.asLong(data.chunkX(), data.chunkZ());
+        Long drawnVersion = drawnVersions.get(key);
+        source.put(key, data);
+        if (!initialized || !centered) {
+            return;
         }
+        if (drawnVersion != null && drawnVersion == data.version()) {
+            return;
+        }
+        drawChunk(data);
+        drawnVersions.put(key, data.version());
+        dirty = true;
     }
 
     /// 若有脏区块则上传一次纹理（每 tick 末尾调用）。
@@ -134,6 +146,7 @@ public final class MapTexture {
     /// 清空全部内容（切换服务器或维度时调用）。
     public void clearAll() {
         source.clear();
+        drawnVersions.clear();
         centered = false;
         fill(MapPalette.TRANSPARENT);
         upload();
@@ -141,8 +154,10 @@ public final class MapTexture {
 
     private void redrawAll() {
         fill(MapPalette.TRANSPARENT);
+        drawnVersions.clear();
         for (ChunkMapData data : source.values()) {
             drawChunk(data);
+            drawnVersions.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data.version());
         }
         upload();
     }
