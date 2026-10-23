@@ -1,6 +1,8 @@
 package dev.dubhe.atlas.network;
 
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
+import dev.dubhe.atlas.client.territory.ClientTerritorySync;
 import dev.dubhe.atlas.client.waypoint.ClientWaypointSync;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.PingBroadcastPayload;
@@ -52,9 +54,8 @@ public final class AtlasPayloads {
                 ServerMapSync::handleDelta, ClientMapSync::handleDelta);
 
         // 领地下发：服务端 API 推送、客户端重组后写入注册表（§7.1）。
-        registrar.playToClient(dev.dubhe.atlas.api.territory.TerritorySyncPayload.TYPE,
-                dev.dubhe.atlas.api.territory.TerritorySyncPayload.STREAM_CODEC,
-                dev.dubhe.atlas.client.territory.ClientTerritorySync::handle);
+        registrar.playToClient(TerritorySyncPayload.TYPE, TerritorySyncPayload.STREAM_CODEC,
+                ClientTerritorySync::handle);
 
         registrar.optional();
     }

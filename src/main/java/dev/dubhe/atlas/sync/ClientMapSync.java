@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.sync;
 
+import dev.dubhe.atlas.client.map.AtlasClientMap;
 import dev.dubhe.atlas.client.map.ClientMapManager;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.ChunkPixelCodec;
@@ -27,7 +28,9 @@ public final class ClientMapSync {
     /// 单 tick 写入的区块数上限，避免接收端帧率骤降（规格 §12.1）。
     public static final int CHUNKS_PER_TICK = 8;
 
-    private static final List<PendingWrite> WRITE_QUEUE = new ArrayList<>();
+    /// 待写队列：网络线程入队、主线程出队，需线程安全（规格 §10）。
+    private static final java.util.Queue<PendingWrite> WRITE_QUEUE =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
     private static final Map<String, Long> RECEIVED_BATCHES = new HashMap<>();
     /// 发送预算：按服务端配置限制带宽（§12.1）。
     private static final SyncBudget BUDGET = new SyncBudget();
@@ -37,7 +40,7 @@ public final class ClientMapSync {
 
     /// 上报本地已探索区块摘要（规格 §3.3 摘要比对）。
     public static void reportLocalDigest() {
-        ClientMapManager manager = dev.dubhe.atlas.client.map.AtlasClientMap.manager();
+        ClientMapManager manager = AtlasClientMap.manager();
         if (manager == null) {
             return;
         }
@@ -61,7 +64,7 @@ public final class ClientMapSync {
 
     /// 收到队友摘要：计算对方缺失的区块并回传差异分片。
     public static void handleDigest(ChunkDigestPayload payload, IPayloadContext context) {
-        ClientMapManager manager = dev.dubhe.atlas.client.map.AtlasClientMap.manager();
+        ClientMapManager manager = AtlasClientMap.manager();
         if (manager == null) {
             return;
         }
@@ -104,13 +107,23 @@ public final class ClientMapSync {
         LOGGER.debug("Sent {} missing chunk(s) to teammate", deltas.size());
     }
 
-    /// 收到差异分片：入队后按 tick 分批写入本地缓存。
+    /// 收到差异分片：在网络线程完成解压，主线程只做缓存写入（规格 §10 线程约束）。
+    ///
+    /// 解压属于密集计算，改为在网络线程执行，避免占用渲染与逻辑帧；
+    /// 解码结果通过线程安全队列交给 `tick` 写入缓存。
     public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
         String batchKey = payload.dimensionId() + "#" + payload.batchIndex()
                 + "/" + payload.batchCount();
         RECEIVED_BATCHES.put(batchKey, System.currentTimeMillis());
+        context.enqueueWork(() -> enqueueDecoded(payload));
+    }
+
+    /// 解压分片并放入待写队列（网络线程执行）。
+    private static void enqueueDecoded(ChunkDeltaPayload payload) {
         for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
-            WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk));
+            int[][] decoded = ChunkPixelCodec.decompressWithHeights(chunk.pixels());
+            WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded[0],
+                    decoded[1]));
         }
     }
 
@@ -119,7 +132,7 @@ public final class ClientMapSync {
         if (WRITE_QUEUE.isEmpty()) {
             return;
         }
-        ClientMapManager manager = dev.dubhe.atlas.client.map.AtlasClientMap.manager();
+        ClientMapManager manager = AtlasClientMap.manager();
         if (manager == null) {
             return;
         }
@@ -129,7 +142,10 @@ public final class ClientMapSync {
         }
         int written = 0;
         while (!WRITE_QUEUE.isEmpty() && written < CHUNKS_PER_TICK) {
-            PendingWrite pending = WRITE_QUEUE.remove(0);
+            PendingWrite pending = WRITE_QUEUE.poll();
+            if (pending == null) {
+                break;
+            }
             ChunkMapData data = new ChunkMapData(pending.chunk().chunkX(),
                     pending.chunk().chunkZ());
             // 颜色与高度一并还原，保证接收方地图的地表高度可用（§3.3）。
@@ -169,6 +185,8 @@ public final class ClientMapSync {
         return minecraft.level.dimension().identifier().toString();
     }
 
-    private record PendingWrite(String dimensionId, ChunkDeltaPayload.ChunkData chunk) {
+    /// 待写入的区块：颜色与高度已在网络线程解压完成。
+    private record PendingWrite(String dimensionId, ChunkDeltaPayload.ChunkData chunk,
+            int[] colors, int[] heights) {
     }
 }
