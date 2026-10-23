@@ -42,20 +42,6 @@ public final class AtlasRenderPipelines {
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .build();
 
-    /// 遮挡查询代理包围盒管线（规格 §4.2 第 2 条）：
-    /// 关闭颜色与深度写入，仅参与深度测试以产生采样结果。
-    public static final RenderPipeline OCCLUSION_PROXY = RenderPipeline
-            .builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
-            .withLocation(AleeveAtlas.id("pipeline/occlusion_proxy"))
-            .withVertexShader(AleeveAtlas.id("core/occlusion_proxy"))
-            .withFragmentShader(AleeveAtlas.id("core/occlusion_proxy"))
-            .withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS)
-            .withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST)
-            .withColorWrite(false)
-            .withDepthWrite(false)
-            .withCull(false)
-            .build();
-
     private AtlasRenderPipelines() {
     }
 
@@ -63,6 +49,5 @@ public final class AtlasRenderPipelines {
     public static void register(RegisterRenderPipelinesEvent event) {
         event.registerPipeline(MINIMAP_CIRCLE);
         event.registerPipeline(MINIMAP_OVERLAY);
-        event.registerPipeline(OCCLUSION_PROXY);
     }
 }
