@@ -64,8 +64,22 @@ public final class AtlasClientCommands {
                                 .executes(context -> demo(context.getSource())))
                         .then(Commands.literal("clear")
                                 .executes(context -> clear(context.getSource()))))
+                .then(Commands.literal("pingdemo")
+                        .executes(context -> pingDemo(context.getSource())))
                 .then(Commands.literal("perf")
                         .executes(context -> reportPerformance(context.getSource())));
+    }
+
+    /// 在玩家前方注入一个临时标点，用于验收波纹扩散渲染（规格 §3.2.2）。
+    private static int pingDemo(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            return 0;
+        }
+        var target = player.position().add(player.getViewVector(1.0F).scale(12.0));
+        var ping = dev.aleeve.atlas.ping.ClientPings.createLocal(target,
+                dev.aleeve.atlas.ping.MapPingData.PingIcon.NORMAL);
+        return ping == null ? 0 : 1;
     }
 
     /// 输出渲染性能统计（规格 §12.1 验收）。

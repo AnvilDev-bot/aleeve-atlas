@@ -54,17 +54,18 @@ public final class PingRenderer {
         double phase = (double) (age % RIPPLE_PERIOD_MILLIS) / RIPPLE_PERIOD_MILLIS;
         int radius = 2 + (int) Math.round(phase * MAX_RIPPLE_PIXELS);
         int alpha = (int) Math.round(200 * (1.0 - phase));
+        if (alpha <= 0) {
+            alpha = 1;
+        }
         int rippleColor = (alpha << 24) | (ping.teamColorArgb() & 0xFFFFFF);
 
-        // 简易圆环：仅在自身扩散半径附近绘制像素。
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                int distance = (int) Math.round(Math.sqrt(dx * dx + dz * dz));
-                if (distance != radius) {
-                    continue;
-                }
-                graphics.fill(x + dx, z + dz, x + dx + 1, z + dz + 1, rippleColor);
-            }
+        // 按角度遍历圆环，复杂度 O(r) 而非 O(r²)，避免多标点同时存在时的绘制开销。
+        int segments = Math.max(12, radius * 8);
+        for (int step = 0; step < segments; step++) {
+            double angle = 2.0 * Math.PI * step / segments;
+            int dx = (int) Math.round(Math.cos(angle) * radius);
+            int dz = (int) Math.round(Math.sin(angle) * radius);
+            graphics.fill(x + dx, z + dz, x + dx + 1, z + dz + 1, rippleColor);
         }
         // 中心标记。
         int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
