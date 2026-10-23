@@ -98,14 +98,13 @@ public final class WorldMapScreen extends Screen {
         } catch (NumberFormatException e) {
             return;
         }
-        // 以玩家位置为基准，逐段平移视野并同步界面中心，确保画布与采样一致。
+        // 以玩家位置为基准，按小步长连续平移，模拟真实拖拽的位移节奏。
+        // 步长 1 区块用于验证阈值缓存是否按预期减少重建次数。
         double startX = centerX;
         double startZ = centerZ;
         for (int i = 1; i <= steps; i++) {
-            int dx = (i % 2 == 0) ? i : -i;
-            int dz = (i % 3 == 0) ? -i : i;
-            centerX = startX + dx * ChunkMapData.SIZE;
-            centerZ = startZ + dz * ChunkMapData.SIZE;
+            centerX = startX + i * ChunkMapData.SIZE;
+            centerZ = startZ + (i % 2 == 0 ? i : -i) * ChunkMapData.SIZE;
             refreshCanvas();
         }
         // 平移结束后回到原点，便于截图核对画面是否与平移前一致。

@@ -35,6 +35,10 @@ public final class PerformanceReporter {
         if (AtlasProfiling.canvas().count() > 0) {
             LOGGER.info("{}", AtlasProfiling.canvasSummary());
         }
+        // 平移路径单独统计，用于判断条带复用是否真正降低开销。
+        if (AtlasProfiling.canvasScroll().count() > 0) {
+            LOGGER.info("{}", AtlasProfiling.canvasScrollSummary());
+        }
         AtlasProfiling.reset();
     }
 }

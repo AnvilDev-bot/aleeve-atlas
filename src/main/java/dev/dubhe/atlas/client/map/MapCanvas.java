@@ -24,6 +24,11 @@ public final class MapCanvas {
     public static final int CHUNKS_PER_SIDE = 65;
     /// 画布边长（像素）。
     public static final int PIXELS = CHUNKS_PER_SIDE * ChunkMapData.SIZE;
+    /// 触发画布重建的最小位移（区块）。
+    ///
+    /// 渲染端按画布原点与视野中心的差值补偿采样位置，因此允许画布滞后于视野；
+    /// 取 2 区块（32 像素）可把拖拽期间的重建次数降低约一半（§12.1）。
+    private static final int RECENTER_THRESHOLD_CHUNKS = 2;
     /// 未探索区域底色（接近纯黑，保持低干扰）。
     private static final int UNEXPLORED_BASE_COLOR = 0xFF0A0A0A;
     /// 未探索区域网格线颜色。
@@ -75,6 +80,13 @@ public final class MapCanvas {
         if (positioned && targetX == originChunkX && targetZ == originChunkZ) {
             return;
         }
+        // 渲染端按画布原点与视野中心的差值补偿，因此画布可略滞后于视野。
+        // 位移不足阈值时跳过重绘，降低拖拽过程中的重建频率（§12.1）。
+        if (positioned
+                && Math.abs(targetX - originChunkX) < RECENTER_THRESHOLD_CHUNKS
+                && Math.abs(targetZ - originChunkZ) < RECENTER_THRESHOLD_CHUNKS) {
+            return;
+        }
         long startedAt = System.nanoTime();
         // 仅当已有画布内容且位移在覆盖范围内时才复用像素，首次定位与大幅跳转走全量重绘。
         boolean scrolled = positioned
@@ -82,7 +94,9 @@ public final class MapCanvas {
                 && Math.abs(targetZ - originChunkZ) < CHUNKS_PER_SIDE
                 && (targetX != originChunkX || targetZ != originChunkZ);
         if (scrolled) {
+            long scrollStartedAt = System.nanoTime();
             shiftOrigin(targetX, targetZ, cache);
+            AtlasProfiling.recordCanvasScroll(System.nanoTime() - scrollStartedAt);
         } else {
             originChunkX = targetX;
             originChunkZ = targetZ;
