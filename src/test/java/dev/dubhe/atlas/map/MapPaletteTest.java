@@ -1,10 +1,9 @@
 package dev.dubhe.atlas.map;
 
+import net.minecraft.world.level.material.MapColor;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import net.minecraft.world.level.material.MapColor;
 import org.junit.jupiter.api.Test;
 
 /// 地图取色与区块数据的基础单元测试。

@@ -1,8 +1,8 @@
 package dev.dubhe.atlas.client.map;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.CaveMode;
+import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.ChunkMapSampler;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.storage.AtlasPaths;

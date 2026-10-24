@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.sync;
 
-import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
-
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
+import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
 import dev.dubhe.atlas.client.radar.VisibilityFade;
 import dev.dubhe.atlas.ping.ClientPings;
 import net.neoforged.api.distmarker.Dist;

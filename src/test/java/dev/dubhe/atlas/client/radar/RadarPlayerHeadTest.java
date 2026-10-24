@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.client.radar;
 
+import dev.dubhe.atlas.config.RadarDisplayMode;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import dev.dubhe.atlas.config.RadarDisplayMode;
 import org.junit.jupiter.api.Test;
 
 /// 玩家头像渲染判定测试。

@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.ping;
 
-import dev.dubhe.atlas.config.AtlasClientConfig;
-import dev.dubhe.atlas.team.TeamProviders;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
+import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
+import dev.dubhe.atlas.team.TeamProviders;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

@@ -1,12 +1,10 @@
 package dev.dubhe.atlas.client.map;
 
-import java.util.List;
-
-import dev.dubhe.atlas.api.territory.BorderStyle;
-
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
+import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.territory.SimpleTerritory;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;

@@ -1,28 +1,26 @@
 package dev.dubhe.atlas.client.radar;
 
-import java.util.HashSet;
-import java.util.Set;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SpawnEggItem;
-
-import dev.dubhe.atlas.map.MapPalette;
-
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.config.NonTeamVisibility;
 import dev.dubhe.atlas.config.RadarDisplayMode;
+import dev.dubhe.atlas.map.MapPalette;
 import dev.dubhe.atlas.team.TeamProviders;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
 
 /// 实体雷达的小地图标记渲染。
 ///

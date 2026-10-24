@@ -1,8 +1,7 @@
 package dev.dubhe.atlas.map;
 
-import java.util.Arrays;
-
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;

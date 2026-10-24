@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.client.waypoint;
 
-import dev.dubhe.atlas.config.WaypointSendPolicy;
-
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
+import dev.dubhe.atlas.config.WaypointSendPolicy;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import java.util.ArrayList;
 import java.util.List;

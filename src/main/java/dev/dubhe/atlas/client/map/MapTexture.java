@@ -2,13 +2,13 @@ package dev.dubhe.atlas.client.map;
 
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapPalette;
+import com.mojang.blaze3d.platform.NativeImage;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
-import com.mojang.blaze3d.platform.NativeImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

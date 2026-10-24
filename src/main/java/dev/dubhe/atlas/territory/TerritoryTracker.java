@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.territory;
 
-import java.util.Objects;
-
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import java.util.List;
+import java.util.Objects;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;

@@ -6,12 +6,13 @@ import dev.dubhe.atlas.client.radar.RadarRenderer;
 import dev.dubhe.atlas.client.territory.TerritoryRenderer;
 import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
 import dev.dubhe.atlas.config.AtlasClientConfig;
-import dev.dubhe.atlas.config.MinimapPosition;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
+import dev.dubhe.atlas.config.MinimapPosition;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.ping.PingRenderer;
-import net.minecraft.client.gui.GuiGraphics;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -20,7 +21,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 
 /// 小地图 HUD 渲染。
 ///

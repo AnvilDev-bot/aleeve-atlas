@@ -1,10 +1,9 @@
 package dev.dubhe.atlas.team;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 /// 队伍实现选择的单元测试。

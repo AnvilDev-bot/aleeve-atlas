@@ -1,18 +1,17 @@
 package dev.dubhe.atlas.map;
 
+import dev.dubhe.atlas.network.ChunkDeltaPayload;
+import dev.dubhe.atlas.network.ChunkDigestPayload;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import net.minecraft.world.level.ChunkPos;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
-import net.minecraft.world.level.ChunkPos;
-import dev.dubhe.atlas.network.ChunkDeltaPayload;
-import dev.dubhe.atlas.network.ChunkDigestPayload;
 import org.junit.jupiter.api.Test;
 
 /// 区块像素压缩与摘要/差异分片测试。

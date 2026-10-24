@@ -1,8 +1,7 @@
 package dev.dubhe.atlas.client.radar;
 
-import dev.dubhe.atlas.team.TeamProviders;
-
 import dev.dubhe.atlas.config.AtlasClientConfig;
+import dev.dubhe.atlas.team.TeamProviders;
 import dev.dubhe.atlas.util.ColorUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;

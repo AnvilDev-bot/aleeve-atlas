@@ -1,16 +1,15 @@
 package dev.dubhe.atlas.client.map;
 
-import net.neoforged.fml.event.config.ModConfigEvent;
-
 import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.client.territory.ClientTerritorySync;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
+import dev.dubhe.atlas.client.territory.ClientTerritorySync;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientResourceLoadFinishedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;

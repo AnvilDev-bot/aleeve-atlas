@@ -1,8 +1,5 @@
 package dev.dubhe.atlas.api.territory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import dev.dubhe.atlas.territory.SyncedTerritory;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +7,8 @@ import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /// 领地同步负载的分片拆分测试。

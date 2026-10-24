@@ -1,11 +1,10 @@
 package dev.dubhe.atlas.network;
 
-import java.util.UUID;
-
 import dev.dubhe.atlas.AleeveAtlas;
+import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.List;
-import io.netty.handler.codec.DecoderException;
+import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;

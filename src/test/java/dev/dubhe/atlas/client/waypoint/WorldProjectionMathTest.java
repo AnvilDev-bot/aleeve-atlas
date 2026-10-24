@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.client.waypoint;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /// 世界坐标投影的数学验证（不依赖游戏运行时）。

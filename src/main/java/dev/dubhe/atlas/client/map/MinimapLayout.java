@@ -1,8 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
-import dev.dubhe.atlas.config.ConfigBounds;
-
 import dev.dubhe.atlas.config.AtlasClientConfig;
+import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.config.MinimapPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;

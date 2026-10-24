@@ -1,12 +1,11 @@
 package dev.dubhe.atlas.client.waypoint;
 
-import java.util.UUID;
-
 import dev.dubhe.atlas.api.waypoint.WaypointReceivedEvent;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;

@@ -2,6 +2,7 @@ package dev.dubhe.atlas.api.territory;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.territory.SyncedTerritory;
+import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -11,12 +12,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import io.netty.handler.codec.DecoderException;
 import net.minecraft.resources.Identifier;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// 领地下发负载。
 ///

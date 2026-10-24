@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.client.map;
 
+import dev.dubhe.atlas.config.MinimapPosition;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import dev.dubhe.atlas.config.MinimapPosition;
 import org.junit.jupiter.api.Test;
 
 /// 小地图尺寸与定位的边界测试。

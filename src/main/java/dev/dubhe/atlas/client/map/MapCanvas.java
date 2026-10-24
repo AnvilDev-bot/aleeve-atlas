@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.client.map;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.map.MapPalette;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;

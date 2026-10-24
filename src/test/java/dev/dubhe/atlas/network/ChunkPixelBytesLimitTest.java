@@ -1,13 +1,12 @@
 package dev.dubhe.atlas.network;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
 import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 /// 单区块像素数据的解码上限测试。

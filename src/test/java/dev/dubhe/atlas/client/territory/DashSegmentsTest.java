@@ -1,9 +1,8 @@
 package dev.dubhe.atlas.client.territory;
 
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /// 虚线边框分段计算测试。

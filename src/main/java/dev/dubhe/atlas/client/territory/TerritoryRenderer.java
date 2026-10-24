@@ -1,7 +1,5 @@
 package dev.dubhe.atlas.client.territory;
 
-import java.util.HashMap;
-
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.client.map.MinimapLayout;
@@ -9,6 +7,7 @@ import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.territory.TerritoryRegistry;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

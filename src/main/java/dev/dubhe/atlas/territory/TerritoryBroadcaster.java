@@ -1,7 +1,7 @@
 package dev.dubhe.atlas.territory;
 
-import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
+import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
