@@ -12,7 +12,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /// 可见性实现的选取与降级决策。
 ///
 /// 规格要求优先使用 GPU 遮挡查询，无法取得合法 GL 上下文或检测到不兼容渲染管线时

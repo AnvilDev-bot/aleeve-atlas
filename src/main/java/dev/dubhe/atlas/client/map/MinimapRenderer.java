@@ -22,7 +22,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 
-
 /// 小地图 HUD 渲染。
 ///
 /// 绘制分两步：先铺整张地图纹理（玩家恒在纹理中心），再叠加

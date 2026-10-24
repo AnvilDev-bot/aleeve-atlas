@@ -9,8 +9,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 /// 服务端标点处理：校验后广播给同队在线成员。
 public final class ServerPingHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/ping");

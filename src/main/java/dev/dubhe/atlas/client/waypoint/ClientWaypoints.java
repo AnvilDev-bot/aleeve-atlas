@@ -26,8 +26,6 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
-
-
 /// 客户端路径点管理器。
 ///
 /// 负责按服务器标识打开/切换路径点存储、新建路径点、记录死亡点，并在退出时写入磁盘。

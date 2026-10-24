@@ -22,8 +22,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 /// 客户端地图增量同步。
 ///
 /// 两条路径：

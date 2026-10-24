@@ -24,7 +24,6 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /// 客户端 tick 入口：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientTick {

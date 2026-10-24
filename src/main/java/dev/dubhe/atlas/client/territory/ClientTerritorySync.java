@@ -14,7 +14,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /// 客户端领地接收与分片重组。
 ///
 /// 服务端下发的领地可能拆成多个负载；本类按「领地 ID」累积区块，
