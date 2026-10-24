@@ -21,6 +21,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /// 客户端 tick 入口（规格 §8）：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientTick {
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/selftest");
+
     private AtlasClientTick() {
     }
 
@@ -28,9 +31,19 @@ public final class AtlasClientTick {
     private static boolean scrollSelfTestDone;
     /// 联机自检只执行一次。
     private static boolean connectSelfTestDone;
+    /// 实体生成自检只执行一次。
+    private static boolean entitySummonDone;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // 自动化验收：在单机世界生成各类实体，验证雷达分类与配色（正常游玩不触发）。
+        if (!entitySummonDone && System.getenv("ALEEVE_ATLAS_SUMMON_ENTITIES") != null) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null && minecraft.hasSingleplayerServer()) {
+                entitySummonDone = true;
+                summonDemoEntities(minecraft);
+            }
+        }
         // 自动化验收：打开世界地图并连续平移，验证像素搬移路径（正常游玩不触发）。
         if (!scrollSelfTestDone && System.getenv("ALEEVE_ATLAS_SCROLL_SELFTEST") != null) {
             Minecraft minecraft = Minecraft.getInstance();
@@ -95,5 +108,30 @@ public final class AtlasClientTick {
     /// 供 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
     public static float minimapScale() {
         return (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.minimap.scale, 0.5, 4.0);
+    }
+
+    /// 在单机世界生成各类实体，覆盖雷达的全部类别（§6.2）。
+    ///
+    /// 通过内建服务器派发命令，无需玩家手动操作。
+    private static void summonDemoEntities(Minecraft minecraft) {
+        var server = minecraft.getSingleplayerServer();
+        if (server == null) {
+            return;
+        }
+        String[] commands = {
+                "execute at @p run summon minecraft:zombie ~3 ~ ~3",
+                "execute at @p run summon minecraft:skeleton ~-3 ~ ~3",
+                "execute at @p run summon minecraft:pig ~2 ~ ~-3",
+                "execute at @p run summon minecraft:cow ~-2 ~ ~-3",
+                "execute at @p run summon minecraft:chicken ~0 ~ ~4",
+                "execute at @p run summon minecraft:oak_boat ~5 ~ ~0"
+        };
+        server.execute(() -> {
+            var source = server.createCommandSourceStack();
+            for (String command : commands) {
+                server.getCommands().performPrefixedCommand(source, command);
+            }
+            LOGGER.info("Summoned {} demo entities for radar verification", commands.length);
+        });
     }
 }
