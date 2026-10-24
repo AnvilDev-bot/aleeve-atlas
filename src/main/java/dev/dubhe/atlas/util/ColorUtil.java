@@ -22,6 +22,7 @@ public final class ColorUtil {
         try {
             return 0xFF000000 | Integer.parseInt(value, 16);
         } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid hex color '{}', using fallback", hex, e);
             return fallback;
         }
     }

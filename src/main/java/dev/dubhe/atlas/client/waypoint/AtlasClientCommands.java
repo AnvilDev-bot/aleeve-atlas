@@ -13,6 +13,7 @@ import dev.dubhe.atlas.ping.PingChannelPolicy;
 import dev.dubhe.atlas.team.TeamProviders;
 import dev.dubhe.atlas.territory.SimpleTerritory;
 import dev.dubhe.atlas.waypoint.WaypointTransfer;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +24,8 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -34,6 +37,7 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 /// `/aleeve_atlas waypoint accept|ignore <id>`、`/aleeve_atlas territory demo|clear`。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientCommands {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/command");
     private static final String DEMO_ID = "aleeve_atlas_demo";
     private static final String DEMO_OVERLAY_ID = "aleeve_atlas_demo_overlay";
 
@@ -124,6 +128,7 @@ public final class AtlasClientCommands {
         try {
             id = UUID.fromString(rawId);
         } catch (IllegalArgumentException e) {
+            LOGGER.warn("Invalid waypoint id for confirm: {}", rawId, e);
             return 0;
         }
         ClientWaypointSync.confirm(id, accepted);
@@ -144,7 +149,7 @@ public final class AtlasClientCommands {
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_exported", file.toString()), false);
             return 1;
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_export_failed"), false);
             return 0;
@@ -174,7 +179,7 @@ public final class AtlasClientCommands {
                     "aleeve_atlas.message.waypoint_imported",
                     result.added().size(), result.replaced().size()), false);
             return 1;
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_import_failed"), false);
             return 0;

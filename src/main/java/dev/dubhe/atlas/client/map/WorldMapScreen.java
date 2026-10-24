@@ -37,12 +37,15 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// 全屏世界地图（规格 §2.3）。
 ///
 /// 支持鼠标拖拽平移与滚轮无级缩放；未探索区块显示为黑色网格背景。
 /// 双击创建路径点 / 发起标点将随 §5、§3.2 的功能接入。
 public final class WorldMapScreen extends Screen {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/worldmap");
     /// 每区块像素数的缩放范围。
     private static final float MIN_PIXELS_PER_CHUNK = 1.0F;
     private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
@@ -100,6 +103,7 @@ public final class WorldMapScreen extends Screen {
         try {
             steps = Integer.parseInt(raw);
         } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid ALEEVE_ATLAS_SCROLL_SELFTEST value: {}", raw, e);
             return;
         }
         // 以玩家位置为基准，按小步长连续平移，模拟真实拖拽的位移节奏。
