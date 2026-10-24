@@ -2,7 +2,6 @@ package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import java.util.List;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -49,10 +48,5 @@ public final class ServerPingHandler {
     private static boolean sameTeam(PlayerTeam team,
             ServerPlayer player) {
         return team != null && team == player.getTeam();
-    }
-
-    /// 供聊天提示的组件工具。
-    public static Component description(MapPingData ping) {
-        return Component.translatable("aleeve_atlas.message.ping_received", ping.senderName());
     }
 }

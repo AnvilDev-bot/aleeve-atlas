@@ -8,7 +8,6 @@ import dev.dubhe.atlas.config.MinimapShape;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.phys.Vec3;
 
 /// 标点地图渲染（规格 §3.2.2：标点须在小地图与世界地图上以波纹扩散动画呈现）。
 public final class PingRenderer {
@@ -149,16 +148,6 @@ public final class PingRenderer {
     /// 圆形小地图形态判定。
     public static boolean circular(AtlasClientConfig config) {
         return config.minimap.shape == MinimapShape.CIRCLE;
-    }
-
-    /// 当前活动的同维度标点数量（诊断用）。
-    public static int activeCount() {
-        return ClientPings.active().size();
-    }
-
-    /// 世界坐标工具。
-    public static Vec3 positionOf(MapPingData ping) {
-        return ping.position();
     }
 
     /// 活动标点列表。

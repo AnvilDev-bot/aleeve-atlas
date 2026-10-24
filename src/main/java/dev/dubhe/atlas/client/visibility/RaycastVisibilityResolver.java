@@ -1,6 +1,5 @@
 package dev.dubhe.atlas.client.visibility;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -55,10 +54,5 @@ public final class RaycastVisibilityResolver implements VisibilityResolver {
                 ClipContext.Fluid.NONE, (Entity) null));
         return hit.getType() == HitResult.Type.MISS
                 || hit.getLocation().distanceToSqr(to) < 0.01;
-    }
-
-    /// 供其他实现复用：判断给定方块位置是否阻挡视线。
-    public static boolean blocksSight(Level level, BlockPos pos) {
-        return !level.getBlockState(pos).isAir() && level.getBlockState(pos).canOcclude();
     }
 }

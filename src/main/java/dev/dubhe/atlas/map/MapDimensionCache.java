@@ -64,11 +64,6 @@ public final class MapDimensionCache {
         region.dirty = true;
     }
 
-    /// 已缓存的区块数量（含尚未写入磁盘的）。
-    public int loadedCount() {
-        return chunks.size();
-    }
-
     /// 全部已缓存区块的摘要（坐标 + 版本号），供地图增量同步比对（规格 §3.3）。
     ///
     /// 仅返回内存中已加载的区块；精确全量摘要需要遍历区域文件，代价较高，

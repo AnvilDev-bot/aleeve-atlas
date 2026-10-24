@@ -50,11 +50,6 @@ public record Waypoint(
                 "death", true, DEFAULT_VISIBLE_DISTANCE, true, "", true);
     }
 
-    public Waypoint withName(String newName) {
-        return new Waypoint(id, newName, pos, dimension, colorArgb, icon, enabled, visibleDistance,
-                deathPoint, sourcePlayer, shareable);
-    }
-
     public Waypoint withEnabled(boolean newEnabled) {
         return new Waypoint(id, name, pos, dimension, colorArgb, icon, newEnabled,
                 visibleDistance, deathPoint, sourcePlayer, shareable);
