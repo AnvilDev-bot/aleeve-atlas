@@ -46,7 +46,6 @@ public final class SyncBudget {
         packetsThisTick++;
     }
 
-
     /// 同步推送间隔（tick），取自服务端配置（规格 §9.2）。
     public static int intervalTicks() {
         int configured = AleeveAtlas.CONFIG.sync.mapDeltaIntervalTicks;
