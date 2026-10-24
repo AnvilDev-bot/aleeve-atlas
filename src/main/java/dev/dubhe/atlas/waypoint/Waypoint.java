@@ -30,6 +30,8 @@ public record Waypoint(
         boolean shareable) {
 
     public static final String DEFAULT_ICON = "default";
+    /// 死亡点图标标识（规格 §5.1 特殊路径点）。
+    public static final String DEATH_ICON = "death";
     public static final int DEFAULT_VISIBLE_DISTANCE = 256;
 
     /// 新建一个普通路径点。

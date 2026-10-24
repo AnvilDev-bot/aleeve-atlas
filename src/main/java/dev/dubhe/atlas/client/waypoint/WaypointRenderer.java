@@ -35,7 +35,8 @@ public final class WaypointRenderer {
             double screenX = layout.worldToScreenX(waypoint.pos().getX() + 0.5);
             double screenZ = layout.worldToScreenZ(waypoint.pos().getZ() + 0.5);
             if (layout.contains(screenX, screenZ, circular)) {
-                drawDiamond(graphics, screenX, screenZ, waypoint.colorArgb());
+                drawMarker(graphics, screenX, screenZ, waypoint.colorArgb(),
+                        waypoint.icon());
                 continue;
             }
             drawEdgeMarker(graphics, layout, screenX, screenZ, circular,
@@ -77,7 +78,35 @@ public final class WaypointRenderer {
     /// 在世界地图上绘制路径点（屏幕坐标由调用方换算）。
     public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
             int color) {
-        drawDiamond(graphics, screenX, screenZ, color);
+        renderOnWorldMap(graphics, screenX, screenZ, color, Waypoint.DEFAULT_ICON);
+    }
+
+    /// 在世界地图上按图标类型绘制路径点。
+    public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
+            int color, String icon) {
+        drawMarker(graphics, screenX, screenZ, color, icon);
+    }
+
+    /// 按图标类型绘制路径点标记（规格 §5.1 颜色/图标标识）。
+    ///
+    /// 死亡点绘制十字，其余绘制菱形，形状差异使两类路径点在缩小后仍可区分。
+    static void drawMarker(GuiGraphics graphics, double screenX, double screenZ, int color,
+            String icon) {
+        if (Waypoint.DEATH_ICON.equals(icon)) {
+            drawCross(graphics, screenX, screenZ, color);
+        } else {
+            drawDiamond(graphics, screenX, screenZ, color);
+        }
+    }
+
+    /// 死亡点标记：以十字与普通路径点的菱形区分。
+    private static void drawCross(GuiGraphics graphics, double screenX, double screenZ,
+            int color) {
+        int x = (int) Math.round(screenX);
+        int z = (int) Math.round(screenZ);
+        int arm = HALF_SIZE;
+        graphics.fill(x - arm, z, x + arm + 1, z + 1, color);
+        graphics.fill(x, z - arm, x + 1, z + arm + 1, color);
     }
 
     private static void drawDiamond(GuiGraphics graphics, double screenX, double screenZ,

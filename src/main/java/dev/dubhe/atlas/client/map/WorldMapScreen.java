@@ -443,7 +443,8 @@ public final class WorldMapScreen extends Screen {
             if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
                 continue;
             }
-            WaypointRenderer.renderOnWorldMap(graphics, screenX, screenY, waypoint.colorArgb());
+            WaypointRenderer.renderOnWorldMap(graphics, screenX, screenY, waypoint.colorArgb(),
+                    waypoint.icon());
         }
     }
 
