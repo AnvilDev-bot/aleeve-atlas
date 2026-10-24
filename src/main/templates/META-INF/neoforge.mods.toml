@@ -12,6 +12,10 @@ displayName = "${mod_name}"
 authors = "${mod_authors}"
 description = '''${mod_description}'''
 
+# 客户端方块变更监听需要注入 ClientLevel.setBlocksDirty，故声明 Mixin 配置。
+[[mixins]]
+config = "${mod_id}.mixins.json"
+
 [[dependencies."${mod_id}"]]
 modId = "neoforge"
 type = "required"

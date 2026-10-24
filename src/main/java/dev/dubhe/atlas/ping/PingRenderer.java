@@ -38,7 +38,8 @@ public final class PingRenderer {
             if (!layout.contains(screenX, screenZ, circular)) {
                 continue;
             }
-            drawPing(graphics, screenX, screenZ, ping);
+            drawPing(graphics, screenX, screenZ, ping,
+                    layout.x(), layout.y(), layout.size());
         }
     }
 
@@ -71,12 +72,13 @@ public final class PingRenderer {
     /// 在世界地图上绘制活动标点（屏幕坐标由调用方换算）。
     public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
             MapPingData ping) {
-        drawPing(graphics, screenX, screenZ, ping);
+        // 世界地图铺满整个屏幕，波纹无需裁剪。
+        drawPing(graphics, screenX, screenZ, ping, 0, 0, Integer.MAX_VALUE);
     }
 
     /// 波纹扩散动画 + 中心菱标。
     private static void drawPing(GuiGraphics graphics, double screenX, double screenZ,
-            MapPingData ping) {
+            MapPingData ping, int clipX, int clipY, int clipSize) {
         int x = (int) Math.round(screenX);
         int z = (int) Math.round(screenZ);
         long age = System.currentTimeMillis() - ping.createdAtMillis();
@@ -103,12 +105,26 @@ public final class PingRenderer {
                 continue;
             }
             // 只保留圆环边缘一个像素宽，内部留空以便看出扩散方向。
-            graphics.fill(x - half, z + dz, x - half + 1, z + dz + 1, rippleColor);
-            graphics.fill(x + half, z + dz, x + half + 1, z + dz + 1, rippleColor);
+            // 超出小地图边界的像素不绘制，避免波纹溢到 HUD 之外。
+            int leftPixel = x - half;
+            int rightPixel = x + half;
+            int rowPixel = z + dz;
+            if (insideClip(leftPixel, rowPixel, clipX, clipY, clipSize)) {
+                graphics.fill(leftPixel, rowPixel, leftPixel + 1, rowPixel + 1, rippleColor);
+            }
+            if (insideClip(rightPixel, rowPixel, clipX, clipY, clipSize)) {
+                graphics.fill(rightPixel, rowPixel, rightPixel + 1, rowPixel + 1, rippleColor);
+            }
         }
         // 中心标记按图标类型区分。
         int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
         drawIcon(graphics, x, z, centerColor, ping.icon());
+    }
+
+    /// 像素是否落在裁剪矩形内。
+    static boolean insideClip(int px, int py, int clipX, int clipY, int clipSize) {
+        return px >= clipX && px < clipX + clipSize
+                && py >= clipY && py < clipY + clipSize;
     }
 
     /// 按标点图标类型绘制中心标记。

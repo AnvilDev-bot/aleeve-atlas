@@ -8,9 +8,13 @@ import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.storage.AtlasPaths;
 import dev.dubhe.atlas.storage.ServerKey;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceKey;
@@ -33,6 +37,11 @@ public final class ClientMapManager {
     ///
     /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上。
     private static final int CAVE_LAYER_RESCAN_THRESHOLD = 8;
+    /// 待重新采样的区块：方块变更时由 {@code ClientLevelMixin} 标记。
+    ///
+    /// 以 {@link ChunkPos#asLong} 编码为键。标记与消费都在客户端主线程：
+    /// 标记来自方块更新包处理，消费来自客户端 tick，无需并发容器。
+    private static final Set<Long> DIRTY_CHUNKS = new HashSet<>();
 
     private final MapTexture texture = new MapTexture(AleeveAtlas.id("minimap"));
     private final Map<String, MapDimensionCache> caches = new HashMap<>();
@@ -68,6 +77,37 @@ public final class ClientMapManager {
         }
         return Math.abs(currentTop - previousTop) >= CAVE_LAYER_RESCAN_THRESHOLD;
     }
+    /// 标记某区块需要重新采样。
+    ///
+    /// 由客户端方块变更监听调用，使地图反映破坏与放置的结果。
+    public static void markChunkChanged(int chunkX, int chunkZ) {
+        DIRTY_CHUNKS.add(ChunkPos.asLong(chunkX, chunkZ));
+    }
+
+    /// 取出并清空待重采样的区块。
+    ///
+    /// 地表与洞穴缓存相互独立，两种模式都要失效：只清当前模式时，
+    /// 切换到另一模式会命中另一份缓存中的过期像素。
+    private static void drainDirtyChunks(MapDimensionCache surface, MapDimensionCache cave) {
+        if (DIRTY_CHUNKS.isEmpty()) {
+            return;
+        }
+        // 先取出快照再清空：遍历中移除普通 HashSet 会抛并发修改异常。
+        List<Long> pending = new ArrayList<>(DIRTY_CHUNKS);
+        DIRTY_CHUNKS.clear();
+        for (Long key : pending) {
+            int chunkX = ChunkPos.getX(key);
+            int chunkZ = ChunkPos.getZ(key);
+            // 仅移除缓存条目，下次采样会重新生成。
+            if (surface != null) {
+                surface.invalidate(chunkX, chunkZ);
+            }
+            if (cave != null) {
+                cave.invalidate(chunkX, chunkZ);
+            }
+        }
+    }
+
     /// 每个客户端 tick 调用：采样玩家周围缺失的区块。
     public void tick(ClientLevel level) {
         ensureRegistered();
@@ -99,6 +139,9 @@ public final class ClientMapManager {
             caveCache = caveCacheFor(minecraft, currentServerKey, level.dimension());
         }
         caveLayerTop = caveMode ? caveTop : null;
+
+        // 方块变更后先丢弃受影响区块的缓存，下一次采样即会重建这些像素。
+        drainDirtyChunks(cache, caveCache);
 
         int sampled = 0;
         int radius = VIEW_CHUNK_RADIUS;
@@ -186,6 +229,8 @@ public final class ClientMapManager {
         caches.clear();
         currentServerKey = null;
         currentDimension = null;
+        // 脏标记属会话级状态：切换服务器后旧坐标不应触发新会话的缓存失效。
+        DIRTY_CHUNKS.clear();
         texture.clearAll();
     }
 

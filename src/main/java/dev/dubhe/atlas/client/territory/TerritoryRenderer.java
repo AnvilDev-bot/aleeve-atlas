@@ -205,8 +205,11 @@ public final class TerritoryRenderer {
                 if (!layout.contains(screenX, screenZ, circular)) {
                     continue;
                 }
+                // 以锚点为中心绘制，与世界地图的标签定位保持一致。
+                int textWidth = minecraft.font.width(group.displayName());
                 graphics.drawString(minecraft.font, group.displayName(),
-                        (int) Math.round(screenX), (int) Math.round(screenZ), LABEL_COLOR, true);
+                        (int) Math.round(screenX) - textWidth / 2,
+                        (int) Math.round(screenZ) - 4, LABEL_COLOR, true);
             }
         }
     }

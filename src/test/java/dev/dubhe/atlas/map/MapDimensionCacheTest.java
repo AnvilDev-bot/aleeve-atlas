@@ -59,4 +59,37 @@ class MapDimensionCacheTest {
         assertEquals(0, cache.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF);
         assertEquals(79, cache.get(79 * 32, 0).orElseThrow().colorAt(0, 0) & 0xFF);
     }
+
+    @Test
+    void invalidateDropsMemoryAndDiskEntry() {
+        // 方块变更后必须同时清除内存与区域文件，否则重新采样前的读取会返回过期像素。
+        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        ChunkMapData data = new ChunkMapData(3, 7);
+        data.setPixel(1, 1, 0xFF445566, 60);
+        cache.put(data);
+        cache.flush();
+
+        cache.invalidate(3, 7);
+
+        assertTrue(cache.get(3, 7).isEmpty(), "内存缓存应已清除");
+        // 新实例模拟切换维度后重新打开，磁盘条目也应已删除。
+        MapDimensionCache reopened = new MapDimensionCache(tempDir);
+        assertTrue(reopened.get(3, 7).isEmpty(), "区域文件条目应已清除");
+    }
+
+    @Test
+    void invalidateKeepsOtherChunksIntact() {
+        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        ChunkMapData keep = new ChunkMapData(1, 1);
+        keep.setPixel(0, 0, 0xFF00FF00, 64);
+        ChunkMapData drop = new ChunkMapData(2, 2);
+        drop.setPixel(0, 0, 0xFFFF0000, 65);
+        cache.put(keep);
+        cache.put(drop);
+
+        cache.invalidate(2, 2);
+
+        assertEquals(0xFF00FF00, cache.get(1, 1).orElseThrow().colorAt(0, 0));
+        assertTrue(cache.get(2, 2).isEmpty());
+    }
 }
