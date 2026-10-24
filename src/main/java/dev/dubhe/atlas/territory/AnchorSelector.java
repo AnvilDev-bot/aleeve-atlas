@@ -3,12 +3,12 @@ package dev.dubhe.atlas.territory;
 import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 
-/// 领地名称标签锚点计算（规格 §7.4 加权极点算法）。
+/// 领地名称标签锚点计算。
 ///
 /// 以最大内接圆距离场为评分基础，并用重心牵引项避免标签缩在偏远角落：
 /// `Score(p) = d(p) - λ · Dist(p, Centroid_geo)`。
 public final class AnchorSelector {
-    /// 默认重心牵引权重（规格 §7.4 建议值，允许配置为 0.3 ~ 0.5）。
+    /// 默认重心牵引权重。
     public static final float DEFAULT_LAMBDA = 0.4F;
 
     private AnchorSelector() {
@@ -36,7 +36,7 @@ public final class AnchorSelector {
             double dz = pos.z - centroidZ;
             double distanceToCentroid = Math.sqrt(dx * dx + dz * dz);
             double score = distanceToBoundary - lambda * distanceToCentroid;
-            // 得分相同时按 X 最小、再 Z 最小固定选取，保证重算不跳动（规格 §7.4 第 5 条）。
+            // 得分相同时按 X 最小、再 Z 最小固定选取，保证重算不跳动。
             if (score > bestScore || (score == bestScore && betterTieBreak(pos, best))) {
                 best = pos;
                 bestScore = score;

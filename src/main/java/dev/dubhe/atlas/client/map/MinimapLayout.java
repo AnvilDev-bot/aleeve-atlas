@@ -7,7 +7,7 @@ import dev.dubhe.atlas.config.MinimapPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 
-/// 小地图在屏幕上的布局（规格 §2.2）。
+/// 小地图在屏幕上的布局。
 ///
 /// 同时供 HUD 渲染与实体雷达使用，保证地图像素与实体标记共用同一套坐标映射。
 public record MinimapLayout(int x, int y, int size, double centerWorldX, double centerWorldZ) {
@@ -34,7 +34,7 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
     /// 计算小地图的尺寸与左上角坐标：`[x, y, size]`。
     ///
     /// 尺寸受限不超过屏幕短边可用空间，原点统一钳制到屏幕内，
-    /// 避免极端缩放与自定义偏移下算出负坐标或溢出屏幕（规格 §2.2）。
+    /// 避免极端缩放与自定义偏移下算出负坐标或溢出屏幕。
     static int[] computeBox(MinimapPosition position, double configuredScale, int offsetX,
             int offsetY, int screenWidth, int screenHeight) {
         float scale = (float) ConfigBounds.clamp(configuredScale, 0.5, 4.0);

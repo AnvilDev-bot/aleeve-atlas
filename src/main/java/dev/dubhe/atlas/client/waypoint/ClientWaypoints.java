@@ -28,7 +28,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 
 
-/// 客户端路径点管理器（规格 §5.1）。
+/// 客户端路径点管理器。
 ///
 /// 负责按服务器标识打开/切换路径点存储、新建路径点、记录死亡点，并在退出时写入磁盘。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
@@ -39,7 +39,7 @@ public final class ClientWaypoints {
     private static WaypointStore store;
     private static int ticksSinceFlush;
     private static String currentServerKey;
-    /// 按「服务器 + 维度」缓存的存储实例（规格 §11 维度隔离）。
+    /// 按「服务器 + 维度」缓存的存储实例。
     private static final Map<String, WaypointStore> STORES =
             new HashMap<>();
     /// 待玩家确认的队友路径点（手动接受策略）。
@@ -55,7 +55,7 @@ public final class ClientWaypoints {
 
     /// 当前维度对应的路径点存储；未连接时返回 {@code null}。
     ///
-    /// 每个维度独立文件（规格 §11），切换维度时自动切换存储实例。
+    /// 每个维度独立文件，切换维度时自动切换存储实例。
     public static WaypointStore store() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
@@ -81,7 +81,7 @@ public final class ClientWaypoints {
         return cached;
     }
 
-    /// 取指定维度对应的存储：当前维度用活动存储，其他维度按需打开（§11）。
+    /// 取指定维度对应的存储：当前维度用活动存储，其他维度按需打开。
     private static WaypointStore deathStoreFor(ResourceKey<Level> dimension) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null && dimension.equals(minecraft.level.dimension())) {
@@ -106,7 +106,7 @@ public final class ClientWaypoints {
     public static void flushAllDimensions() {
         flushAll();
     }
-    /// 全部维度的路径点（导入导出用，规格 §11）。
+    /// 全部维度的路径点（导入导出用）。
     ///
     /// 以磁盘文件为准：玩家未访问过的维度其存储不在内存中，
     /// 仅遍历已加载存储会让导出遗漏其他维度的路径点。
@@ -145,7 +145,7 @@ public final class ClientWaypoints {
         other.flush();
     }
 
-    /// 按维度和 ID 删除路径点（跨维度同步删除用，§11）。
+    /// 按维度和 ID 删除路径点（跨维度同步删除用）。
     public static boolean removeInDimension(Waypoint waypoint) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -171,7 +171,7 @@ public final class ClientWaypoints {
         return serverKey(minecraft);
     }
 
-    /// 在玩家当前位置新建路径点（`N` 键，规格 §8）。
+    /// 在玩家当前位置新建路径点（`N` 键）。
     public static Waypoint createHere(String name) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || store() == null) {
@@ -179,12 +179,12 @@ public final class ClientWaypoints {
         }
         BlockPos pos = minecraft.player.blockPosition();
         Waypoint waypoint = Waypoint.create(name, pos, minecraft.level.dimension(), 0xFF55FFFF);
-        // 经 add 统一处理写入与自动同步（§5.2）。
+        // 经 add 统一处理写入与自动同步。
         add(waypoint);
         return waypoint;
     }
 
-    /// 修改已有路径点（启用状态、私密标记等），自动同步策略下广播变更（规格 §5.2）。
+    /// 修改已有路径点（启用状态、私密标记等），自动同步策略下广播变更。
     public static void update(Waypoint waypoint) {
         WaypointStore waypointStore = store();
         if (waypointStore == null) {
@@ -197,7 +197,7 @@ public final class ClientWaypoints {
         }
     }
 
-    /// 新增路径点（自动同步策略下发往服务端，规格 §5.2）。
+    /// 新增路径点（按自动同步策略下发往服务端）。
     public static void add(Waypoint waypoint) {
         WaypointStore waypointStore = store();
         if (waypointStore == null) {
@@ -210,7 +210,7 @@ public final class ClientWaypoints {
         }
     }
 
-    /// 自动同步策略下的广播：私密路径点不参与，避免被自动分享（规格 §5.2）。
+    /// 自动同步策略下的广播：私密路径点不参与，避免被自动分享。
     private static void shareIfAllowed(Waypoint waypoint) {
         if (!waypoint.shareable()) {
             return;
@@ -234,7 +234,7 @@ public final class ClientWaypoints {
         return result;
     }
 
-    /// 把路径点分享给在线队友（规格 §5.2 手动同步）。
+    /// 把路径点分享给在线队友。
     public static void share(Waypoint waypoint) {
         if (!AtlasSession.synchronizedMode()) {
             return;
@@ -252,7 +252,7 @@ public final class ClientWaypoints {
                 new WaypointSyncPayload(WaypointSyncPayload.Action.DELETE, waypoint));
     }
 
-    /// 记录玩家死亡位置，供复活后生成死亡点（规格 §5.1）。
+    /// 记录玩家死亡位置，供复活后生成死亡点。
     ///
     /// 使用客户端专属的 `ClientPlayerNetworkEvent.Clone`：服务端的 `PlayerEvent.Clone`
     /// 不会在客户端触发，此前订阅错误导致死亡点功能实际不可用。
@@ -272,7 +272,7 @@ public final class ClientWaypoints {
         }
         Waypoint death = Waypoint.deathPoint(oldPlayer.blockPosition(),
                 oldPlayer.level().dimension());
-        // 不保留历史死亡点时先清掉旧点，再写入本次死亡点（§5.1）；
+        // 不保留历史死亡点时先清掉旧点，再写入本次死亡点；
         // 顺序反了会把刚写入的新点一并删除，导致死亡点功能失效。
         // 裁剪必须作用于死亡点自身的维度存储：在下界死亡、复活回主世界时活动存储是主世界。
         // 非当前维度的存储为临时实例，需立即写入磁盘，否则裁剪结果丢失。
@@ -283,7 +283,7 @@ public final class ClientWaypoints {
                 deathStore.flush();
             }
         }
-        // 死亡点按自身维度写入：在下界死亡、复活回主世界时不会写错文件（§5.1 / §11）。
+        // 死亡点按自身维度写入：在下界死亡、复活回主世界时不会写错文件。
         upsertInDimension(death);
         var newPlayer = event.getNewPlayer();
         if (newPlayer != null) {
@@ -297,7 +297,7 @@ public final class ClientWaypoints {
         flushAndClose();
     }
 
-    /// 周期性写入磁盘：仅在异常退出或崩溃时仍能保留路径点（规格 §11 数据可靠性）。
+    /// 周期性写入磁盘：仅在异常退出或崩溃时仍能保留路径点。
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (store == null) {
@@ -315,7 +315,7 @@ public final class ClientWaypoints {
             each.clear();
         }
         STORES.clear();
-        // 未处理的手动接受请求随登出丢弃，避免跨服务器残留（§5.3）。
+        // 未处理的手动接受请求随登出丢弃，避免跨服务器残留。
         PENDING.clear();
         store = null;
         currentServerKey = null;

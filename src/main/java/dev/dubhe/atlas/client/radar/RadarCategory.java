@@ -10,17 +10,17 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 
-/// 实体雷达分类（规格 §6.2）。
+/// 实体雷达分类。
 public enum RadarCategory {
     PLAYER,
     HOSTILE,
     FRIENDLY,
-    /// 极小型环境生物（蝙蝠等），可独立开关（规格 §6.2）。
+    /// 极小型环境生物（蝙蝠等），可独立开关。
     AMBIENT,
     ITEM,
     MISC;
 
-    /// 类别的玩家可见名称（规格 §12.3 实体类别名需纳入语言文件）。
+    /// 类别的玩家可见名称。
     public Component displayName() {
         return Component.translatable(
                 "aleeve_atlas.radar.category." + name().toLowerCase(Locale.ROOT));
@@ -39,7 +39,7 @@ public enum RadarCategory {
             if (category == MobCategory.MONSTER) {
                 return HOSTILE;
             }
-            // 极小型环境生物独立分类，可由配置单独过滤（§6.2）。
+            // 极小型环境生物独立分类，可由配置单独过滤。
             if (category == MobCategory.AMBIENT) {
                 return AMBIENT;
             }

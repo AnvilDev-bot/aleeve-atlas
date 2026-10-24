@@ -12,7 +12,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 渲染性能周期上报（规格 §12.1）。
+/// 渲染性能周期上报。
 ///
 /// 每 600 个有效 tick（约 30 秒）输出一次渲染统计，便于在日志中直接核对性能指标，
 /// 无需玩家执行命令。有效 tick 由 AnvilLib `ClientTickRecorder` 统计，
@@ -30,7 +30,7 @@ public final class PerformanceReporter {
     private PerformanceReporter() {
     }
 
-    /// 登出时重置基准，与 `ClientTickRecorder` 的归零保持一致（§12.1）。
+    /// 登出时重置基准，与 `ClientTickRecorder` 的归零保持一致。
     ///
     /// 该记录器在登出后把计数清零；若不重置基准，差值会变成负数，
     /// 重新进入世界后要等计数追平旧值才会再次输出统计。
@@ -57,7 +57,7 @@ public final class PerformanceReporter {
         if (AtlasProfiling.minimap().count() > 0) {
             LOGGER.info("{}", AtlasProfiling.minimapSummary());
         }
-        // 世界地图画布仅在拖拽或缩放时重绘，单独输出便于核对（§12.1）。
+        // 世界地图画布仅在拖拽或缩放时重绘，单独输出便于核对。
         if (AtlasProfiling.canvas().count() > 0) {
             LOGGER.info("{}", AtlasProfiling.canvasSummary());
         }

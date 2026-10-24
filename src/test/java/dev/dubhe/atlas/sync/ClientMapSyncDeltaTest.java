@@ -9,7 +9,7 @@ import dev.dubhe.atlas.network.ChunkDigestPayload;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/// 追赶同步的差异计算测试（规格 §3.3 / AC-3）。
+/// 追赶同步的差异计算测试。
 ///
 /// 摘要比对规则：对方缺失的区块需回传，对方版本更低的区块需回传，版本相同的跳过。
 class ClientMapSyncDeltaTest {

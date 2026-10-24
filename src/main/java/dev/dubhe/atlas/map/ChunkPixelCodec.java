@@ -9,7 +9,7 @@ import java.util.zip.Inflater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 区块像素数据的紧凑编解码（规格 §10：地图增量必须按体积上限分片，禁止整块区域塞进单包）。
+/// 区块像素数据的紧凑编解码。
 ///
 /// 采用 Deflate 压缩 `16 × 16` 的 ARGB 像素数组，通常可将每区块压缩到约 1 KiB。
 public final class ChunkPixelCodec {
@@ -18,7 +18,7 @@ public final class ChunkPixelCodec {
     private ChunkPixelCodec() {
     }
 
-    /// 颜色与高度一起打包压缩（同步传输需要保留地表高度，规格 §3.3）。
+    /// 颜色与高度一起打包压缩（同步传输需要保留地表高度）。
     public static byte[] compress(int[] colors, int[] heights) {
         byte[] colorBytes = compress(colors);
         byte[] heightBytes = compress(heights);

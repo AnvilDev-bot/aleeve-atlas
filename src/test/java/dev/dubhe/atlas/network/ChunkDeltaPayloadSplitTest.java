@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/// 地图增量分片拆分测试（规格 §3.3 / §10）。
+/// 地图增量分片拆分测试。
 ///
 /// 分片必须覆盖全部区块且不重复，批次编号连续，避免接收方漏写或重复写入。
 class ChunkDeltaPayloadSplitTest {

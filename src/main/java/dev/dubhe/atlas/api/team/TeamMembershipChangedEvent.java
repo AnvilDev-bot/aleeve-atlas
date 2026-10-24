@@ -3,7 +3,7 @@ package dev.dubhe.atlas.api.team;
 import java.util.UUID;
 import net.neoforged.bus.api.Event;
 
-/// 队伍成员变更事件（规格 §3.1：队伍适配层需支持监听入队/退队事件）。
+/// 队伍成员变更事件。
 ///
 /// 队伍变更后触发，供小地图与世界地图刷新同队标记与地图同步目标。
 public class TeamMembershipChangedEvent extends Event {

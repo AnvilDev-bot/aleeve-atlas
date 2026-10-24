@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-/// 颜色解析的单元测试（规格 §6.2 玩家自定义 HEX 配色）。
+/// 颜色解析的单元测试。
 ///
 /// 非法输入必须返回调用方给定的回退色，不得抛出异常导致渲染中断。
 class ColorUtilTest {

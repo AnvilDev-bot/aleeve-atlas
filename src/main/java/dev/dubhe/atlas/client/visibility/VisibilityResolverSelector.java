@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/// 可见性实现的选取与降级决策（规格 §4.2 第 5 条）。
+/// 可见性实现的选取与降级决策。
 ///
 /// 规格要求优先使用 GPU 遮挡查询，无法取得合法 GL 上下文或检测到不兼容渲染管线时
 /// 自动降级为多采样点射线检测。1.21.11 的 Blaze3d 只暴露计时查询，不提供遮挡查询封装，
@@ -58,7 +58,7 @@ public final class VisibilityResolverSelector {
             return;
         }
         // 1.21.11 的 Blaze3d 未封装遮挡查询，且投影矩阵仅存于 UBO 无法在渲染阶段读回，
-        // 代理包围盒渲染无法与 glBeginQuery / glEndQuery 边界可靠对齐（§4.2 第 5 条降级情形）。
+        // 代理包围盒渲染无法与 glBeginQuery / glEndQuery 边界可靠对齐。
         fallback("occlusion query unavailable: Blaze3d exposes no query API "
                 + "and the projection matrix is UBO-only in 1.21.11");
     }

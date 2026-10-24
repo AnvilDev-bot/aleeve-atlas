@@ -24,18 +24,18 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
-/// 实体雷达的小地图标记渲染（规格 §6）。
+/// 实体雷达的小地图标记渲染。
 ///
 /// 圆点模式下按类别配色绘制；混合联动模式下按住玩家列表键（默认 Tab）时，
-/// 玩家标记切换为皮肤头像（规格 §6.1 / §6.3）。
+/// 玩家标记切换为皮肤头像。
 public final class RadarRenderer {
     /// 标记半径（GUI 像素）。
     private static final int DOT_RADIUS = 2;
     private static final int HEAD_SIZE = 8;
     private static final int ICON_SIZE = 8;
-    /// 掉落物合并粒度（像素），同格内只绘制一个圆点（§6.2）。
+    /// 掉落物合并粒度（像素），同格内只绘制一个圆点。
     private static final double ITEM_MERGE_PIXELS = 4.0;
-    /// 皮肤未就绪时的占位纹理（§6.3）。
+    /// 皮肤未就绪时的占位纹理。
     private static final Identifier DEFAULT_SKIN_TEXTURE =
             Identifier.withDefaultNamespace("textures/entity/player/wide/steve.png");
 
@@ -54,17 +54,17 @@ public final class RadarRenderer {
         boolean showIcons = mode == RadarDisplayMode.ICON;
         boolean hybrid = mode == RadarDisplayMode.HYBRID;
         boolean playerListDown = hybrid && minecraft.options.keyPlayerList.isDown();
-        // 混合模式可配置为按住玩家列表键时展开全体实体图标（§6.1）。
+        // 混合模式可配置为按住玩家列表键时展开全体实体图标。
         boolean expandAllIcons = showIcons
                 || (playerListDown && config.radar.hybridExpandAllIcons);
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
-        // 本次绘制已占用的掉落物格位，用于密集合并（§6.2）。
+        // 本次绘制已占用的掉落物格位，用于密集合并。
         Set<Long> itemDots = new HashSet<>();
 
-        // 服务端下发的最大雷达距离优先于客户端配置（规格 §4.2）。
+        // 服务端下发的最大雷达距离优先于客户端配置。
         int maxDistance = AtlasSession.maxRadarDistance();
         double maxDistanceSq = (double) maxDistance * maxDistance;
-        // 非同队玩家可见性策略由服务端下发（规格 §4.1）。
+        // 非同队玩家可见性策略由服务端下发。
         NonTeamVisibility nonTeamPolicy = AtlasSession.nonTeamVisibility();
 
         for (Entity entity : level.entitiesForRendering()) {
@@ -79,15 +79,15 @@ public final class RadarRenderer {
                     || !RadarStyle.visible(config.radar.categories, category)) {
                 continue;
             }
-            // 前置逻辑剔除 + 可见性判定（规格 §4.2 第 1、5 条）。
+            // 前置逻辑剔除 + 可见性判定。
             float opacity = 1.0F;
             if (category == RadarCategory.PLAYER && !RadarStyle.isTeammate(entity)) {
                 if (nonTeamPolicy == NonTeamVisibility.NEVER) {
                     continue;
                 }
                 if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY) {
-                    // 状态剔除：隐身且无护甲的目标直接丢弃，不进入渐隐（§4.2 第 1 条）。
-                    // 渐隐期只针对遮挡与移出视野两类情形（§4.2 第 4 条）。
+                    // 状态剔除：隐身且无护甲的目标直接丢弃，不进入渐隐。
+                    // 渐隐期只针对遮挡与移出视野两类情形。
                     if (VisibilityPreFilter.isHiddenByInvisibility(entity)) {
                         continue;
                     }
@@ -100,7 +100,7 @@ public final class RadarRenderer {
                     } else if (VisibilityGate.isVisible(level, player, entity)) {
                         VisibilityFade.markSeen(entity);
                     } else {
-                        // 被遮挡后按渐隐期衰减，避免标点高频闪烁（§4.2 第 4 条）。
+                        // 被遮挡后按渐隐期衰减，避免标点高频闪烁。
                         opacity = VisibilityFade.opacity(entity);
                         if (opacity <= 0.0F) {
                             continue;
@@ -118,24 +118,24 @@ public final class RadarRenderer {
                 drawPlayerHead(graphics, entity, screenX, screenZ);
                 continue;
             }
-            // 图标模式下生物使用刷怪蛋图标；混合联动模式下按住玩家列表键亦可展开（§6.1）。
+            // 图标模式下生物使用刷怪蛋图标；混合联动模式下按住玩家列表键亦可展开。
             if (expandAllIcons && category != RadarCategory.ITEM
                     && drawEntityIcon(graphics, entity, screenX, screenZ)) {
                 continue;
             }
             int color = applyOpacity(
                     RadarStyle.color(config.radar.categories, category, entity), opacity);
-            // 敌对生物按高度差调整明暗（§6.2 附加视觉反馈）。
+            // 敌对生物按高度差调整明暗。
             if (category == RadarCategory.HOSTILE) {
                 color = applyHeightShade(color, entity.getY() - player.getY());
             }
-            // 掉落物密集合并：同格内已有标记时不再重复绘制（§6.2）。
+            // 掉落物密集合并：同格内已有标记时不再重复绘制。
             if (category == RadarCategory.ITEM
                     && !itemDots.add(packScreen(screenX, screenZ))) {
                 continue;
             }
             drawDot(graphics, screenX, screenZ, color);
-            // 同队玩家附带队伍颜色描边（§6.2）。
+            // 同队玩家附带队伍颜色描边。
             if (category == RadarCategory.PLAYER && RadarStyle.isTeammate(entity)) {
                 drawTeamOutline(graphics, screenX, screenZ, entity);
             }
@@ -187,7 +187,7 @@ public final class RadarRenderer {
         int x = (int) Math.round(screenX);
         int z = (int) Math.round(screenZ);
         graphics.fill(x - DOT_RADIUS, z - DOT_RADIUS, x + DOT_RADIUS, z + DOT_RADIUS, color);
-        // 深色描边提高在浅色地形上的可辨识度（规格 §6.2 附加视觉反馈）。
+        // 深色描边提高在浅色地形上的可辨识度。
         int outline = 0xC0000000;
         graphics.fill(x - DOT_RADIUS, z - DOT_RADIUS, x + DOT_RADIUS, z - DOT_RADIUS + 1, outline);
         graphics.fill(x - DOT_RADIUS, z + DOT_RADIUS - 1, x + DOT_RADIUS, z + DOT_RADIUS, outline);
@@ -207,7 +207,7 @@ public final class RadarRenderer {
         return true;
     }
 
-    /// 是否以玩家头像渲染玩家标记（规格 §6.1）。
+    /// 是否以玩家头像渲染玩家标记。
     ///
     /// 图标模式下恒为头像；混合联动模式下仅在按住玩家列表键时切换为头像。
     static boolean shouldDrawPlayerHead(RadarDisplayMode mode, boolean playerListDown) {
@@ -215,7 +215,7 @@ public final class RadarRenderer {
                 || (mode == RadarDisplayMode.HYBRID && playerListDown);
     }
 
-    /// 玩家皮肤头像：基础层 + 帽子层（规格 §6.3）。
+    /// 玩家皮肤头像：基础层 + 帽子层。
     ///
     /// 远端皮肤尚未完成异步加载时回退到默认 Steven/Alex 占位纹理，
     /// 避免绘制空白或抛错。
@@ -234,7 +234,7 @@ public final class RadarRenderer {
                 HEAD_SIZE, HEAD_SIZE, 8, 8, 64, 64);
     }
 
-    /// 解析皮肤纹理；纹理不可用时返回默认皮肤（§6.3 离线/未加载降级）。
+    /// 解析皮肤纹理；纹理不可用时返回默认皮肤。
     private static Identifier resolveSkinTexture(AbstractClientPlayer player) {
         var texture = player.getSkin().body();
         if (texture != null && texture.texturePath() != null) {

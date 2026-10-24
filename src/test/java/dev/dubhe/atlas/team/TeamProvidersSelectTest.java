@@ -7,7 +7,7 @@ import java.util.UUID;
 import net.minecraft.network.chat.Component;
 import org.junit.jupiter.api.Test;
 
-/// 队伍实现选择的单元测试（规格 §3.1）。
+/// 队伍实现选择的单元测试。
 ///
 /// 覆盖 `auto` 取最高优先级、`vanilla` 强制原版、外部 ID 精确匹配、未知值回退原版。
 class TeamProvidersSelectTest {

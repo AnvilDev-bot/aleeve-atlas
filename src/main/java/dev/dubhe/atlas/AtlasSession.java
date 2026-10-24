@@ -4,7 +4,7 @@ import dev.dubhe.atlas.config.NonTeamVisibility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 双端自适应会话状态（规格 §1 / §4.1 / §9.2）。
+/// 双端自适应会话状态。
 ///
 /// 客户端持有唯一实例：默认独立模式，收到服务端握手包后切换到协同模式；
 /// 服务端下发的锁定项（非同队玩家可见性策略、雷达最大距离、同步开关）在此缓存，
@@ -34,7 +34,7 @@ public final class AtlasSession {
         return maxRadarDistance;
     }
 
-    /// 服务端下发的非同队玩家可见性策略（规格 §4.1）。
+    /// 服务端下发的非同队玩家可见性策略。
     public static NonTeamVisibility nonTeamVisibility() {
         return nonTeamVisibility;
     }
@@ -55,7 +55,7 @@ public final class AtlasSession {
             maxRadarDistance = serverMaxRadarDistance;
         }
         // 可见性策略为 null 时下游会退化为「全部显示」，属于不安全的默认值，
-        // 因此按最保守的 VISIBLE_ONLY 处理并记录日志（§4.1）。
+        // 因此按最保守的 VISIBLE_ONLY 处理并记录日志。
         if (serverVisibility == null) {
             LOGGER.warn("Server sent null visibility policy, falling back to VISIBLE_ONLY");
             nonTeamVisibility = NonTeamVisibility.VISIBLE_ONLY;

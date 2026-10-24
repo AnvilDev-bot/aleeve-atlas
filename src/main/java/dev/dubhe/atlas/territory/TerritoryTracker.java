@@ -8,10 +8,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 领地进出状态跟踪（规格 §7.5 / §7.7 第 4 条）。
+/// 领地进出状态跟踪。
 ///
 /// 记录玩家当前所在的领地，并在跨越领地边界时给出「已进入/已离开」提示；
-/// 多层重叠时仅播报 `zOrder` 最高的命中领地（规格 §7.7 第 4 条）。
+/// 多层重叠时仅播报 `zOrder` 最高的命中领地。
 public final class TerritoryTracker {
     /// 上一次所在的领地 ID（无领地为 null）。
     private String currentTerritoryId;

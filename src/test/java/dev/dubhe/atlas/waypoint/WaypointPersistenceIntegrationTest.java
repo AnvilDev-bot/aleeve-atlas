@@ -14,7 +14,7 @@ import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/// 路径点「写入 → 保存到磁盘 → 重载 → 读取」全链路测试（规格 §11）。
+/// 路径点「写入 → 保存到磁盘 → 重载 → 读取」全链路测试。
 ///
 /// 覆盖跨维度的端到端行为：存储布局由单文件改为按维度分文件后，
 /// 导入导出、同步写入、同步删除三处曾出现遗漏。

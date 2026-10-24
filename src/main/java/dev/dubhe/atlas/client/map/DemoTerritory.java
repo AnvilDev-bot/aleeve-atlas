@@ -57,7 +57,7 @@ final class DemoTerritory {
                 minecraft.level.dimension(), chunks,
                 Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
 
-        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍（§7.7 第 2 条）。
+        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍。
         Set<ChunkPos> overlay = new HashSet<>();
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {

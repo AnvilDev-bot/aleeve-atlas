@@ -10,7 +10,7 @@ import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.Test;
 
-/// 单区块像素数据的解码上限测试（规格 §10）。
+/// 单区块像素数据的解码上限测试。
 ///
 /// 单区块未压缩为 2 KiB，压缩后通常约 1 KiB；解码端限制为 8 KiB，
 /// 超出该值的载荷视为异常并拒绝，避免接受超大数组。

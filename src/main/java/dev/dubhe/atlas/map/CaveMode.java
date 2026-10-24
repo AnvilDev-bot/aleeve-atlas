@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-/// 洞穴分层模式判定（规格 §2.1：进入地下或有顶棚遮挡时自动切换）。
+/// 洞穴分层模式判定。
 ///
 /// 判定顺序：
 /// 1. 玩家位于海平面以下且头顶被遮挡 → 洞穴模式；

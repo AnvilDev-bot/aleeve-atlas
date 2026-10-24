@@ -11,7 +11,7 @@ import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.Test;
 
-/// 地图增量载荷解码的边界校验测试（规格 §10 降级约束）。
+/// 地图增量载荷解码的边界校验测试。
 ///
 /// 解码端必须拒绝超出分片阈值的条目数，避免按伪造的声明值分配内存。
 class ChunkDeltaPayloadDecodeTest {

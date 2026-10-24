@@ -6,7 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.Identifier;
 
-/// 全屏世界地图的入口与画布持有者（规格 §2.3）。
+/// 全屏世界地图的入口与画布持有者。
 ///
 /// 画布随世界地图界面生命周期复用，避免每次打开都新建 GPU 纹理。
 public final class AtlasWorldMap {
@@ -31,7 +31,7 @@ public final class AtlasWorldMap {
         minecraft.setScreen(new WorldMapScreen(mapCanvas, cache, player.getX(), player.getZ()));
     }
 
-    /// 资源重载后标记画布失效，下次打开时重新注册纹理（§2.3）。
+    /// 资源重载后标记画布失效，下次打开时重新注册纹理。
     public static void onResourceReload() {
         if (canvas != null) {
             canvas.onResourceReload();

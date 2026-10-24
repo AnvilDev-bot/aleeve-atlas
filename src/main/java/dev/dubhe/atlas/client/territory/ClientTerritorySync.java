@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/// 客户端领地接收与分片重组（规格 §7.1）。
+/// 客户端领地接收与分片重组。
 ///
 /// 服务端下发的领地可能拆成多个负载；本类按「领地 ID」累积区块，
 /// 收齐全部批次后一次性写入客户端注册表，避免重复触发连通分量重算。
@@ -24,7 +24,7 @@ public final class ClientTerritorySync {
 
     /// 领地 ID → 已累积的分片数据。
     private static final Map<String, Accumulator> PENDING = new HashMap<>();
-    /// 累加器超时（毫秒）：分片丢失时按此时间回收（§3.3）。
+    /// 累加器超时（毫秒）：分片丢失时按此时间回收。
     private static final long ACCUMULATOR_TIMEOUT_MILLIS = 60_000L;
 
     private ClientTerritorySync() {
@@ -38,7 +38,7 @@ public final class ClientTerritorySync {
         }
         String territoryId = payload.territory().territoryId();
         long now = System.currentTimeMillis();
-        // 清理超时未收齐的累加器：分片丢失时不应永久占用内存（§3.3）。
+        // 清理超时未收齐的累加器：分片丢失时不应永久占用内存。
         PENDING.entrySet().removeIf(entry -> now - entry.getValue().lastUpdateMillis()
                 > ACCUMULATOR_TIMEOUT_MILLIS);
         Accumulator accumulator = PENDING.computeIfAbsent(territoryId,
@@ -63,7 +63,7 @@ public final class ClientTerritorySync {
     /// 单个领地的分片累加器。
     ///
     /// 收齐判定委托给 {@link BatchTracker}：按分片序号去重，
-    /// 避免网络重排或重传导致提前判定收齐（§3.3）。
+    /// 避免网络重排或重传导致提前判定收齐。
     private static final class Accumulator {
         private final BatchTracker tracker;
         private final SyncedTerritory template;

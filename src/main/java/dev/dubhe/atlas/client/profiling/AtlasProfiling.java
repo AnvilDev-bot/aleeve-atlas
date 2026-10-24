@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.client.profiling;
 
-/// 模组内渲染性能统计入口（规格 §12.1）。
+/// 模组内渲染性能统计入口。
 ///
 /// 各处渲染路径通过本类记录耗时；诊断命令读取统计结果用于验收。
 public final class AtlasProfiling {
-    /// 小地图 HUD 单帧预算：1 ms（规格 §12.1）。
+    /// 小地图 HUD 单帧预算：1 ms。
     public static final long MINIMAP_BUDGET_NANOS = 1_000_000L;
     /// 采样窗口：最近 300 帧（约 5 秒 @60fps）。
     private static final int SAMPLE_CAPACITY = 300;

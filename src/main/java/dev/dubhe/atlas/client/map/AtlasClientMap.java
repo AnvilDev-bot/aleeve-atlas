@@ -15,7 +15,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientResourceLoadFinishedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/// 客户端地图管理器的生命周期与调度（规格 §2.1）。
+/// 客户端地图管理器的生命周期与调度。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientMap {
     /// 定期写入磁盘的间隔（tick），避免异常退出丢失已探索数据。
@@ -58,24 +58,24 @@ public final class AtlasClientMap {
         if (manager != null) {
             manager.flush();
             manager.clear();
-            // 释放动态纹理，避免重连时残留 GPU 纹理占用显存（规格 §12.1）。
+            // 释放动态纹理，避免重连时残留 GPU 纹理占用显存。
             manager.releaseTexture();
             manager = null;
         }
         AtlasWorldMap.release();
-        // 领地分片累加器属会话级状态，切换服务器后残余条目会与新分片混合（§3.3）。
+        // 领地分片累加器属会话级状态，切换服务器后残余条目会与新分片混合。
         ClientTerritorySync.clear();
         ticksSinceFlush = 0;
     }
 
-    /// 配置重载时同步领地锚点权重（规格 §11 配置热重载）。
+    /// 配置重载时同步领地锚点权重。
     @SubscribeEvent
     public static void onConfigReload(
             ModConfigEvent.Reloading event) {
         applyAnchorWeight();
     }
 
-    /// 资源重载完成后重新注册动态纹理（规格 §2.2）。
+    /// 资源重载完成后重新注册动态纹理。
     ///
     /// 资源重载会清空纹理管理器中的全部纹理，包括本模组注册的动态纹理；
     /// 若不重置注册标志，小地图会持续渲染空白直到重启游戏。
@@ -87,14 +87,14 @@ public final class AtlasClientMap {
         AtlasWorldMap.onResourceReload();
     }
 
-    /// 把 `territory.anchorWeight` 应用到领地注册表（规格 §9.1）。
+    /// 把 `territory.anchorWeight` 应用到领地注册表。
     private static void applyAnchorWeight() {
         float lambda = (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.territory.anchorWeight,
                 0.3, 0.5);
         AtlasTerritory.clientRegistry().setAnchorLambda(lambda);
     }
 
-    /// 创建地图管理器并同步领地锚点权重配置（规格 §9.1 territory.anchorWeight）。
+    /// 创建地图管理器并同步领地锚点权重配置。
     private static void initManager() {
         manager = new ClientMapManager();
         applyAnchorWeight();

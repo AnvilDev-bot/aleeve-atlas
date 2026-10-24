@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/// 圆形裁剪的填充段计算测试（规格 §2.2）。
+/// 圆形裁剪的填充段计算测试。
 ///
 /// 圆形小地图下，领地填充必须被圆边界裁掉，不得溢出到圆外。
 class CircleClipTest {

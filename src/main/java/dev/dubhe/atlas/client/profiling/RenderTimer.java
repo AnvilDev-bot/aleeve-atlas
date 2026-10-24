@@ -2,7 +2,7 @@ package dev.dubhe.atlas.client.profiling;
 
 import java.util.Arrays;
 
-/// 渲染耗时统计（规格 §12.1：小地图 HUD 渲染平均帧耗 ≤ 1 ms）。
+/// 渲染耗时统计。
 ///
 /// 维护固定容量的环形缓冲，记录最近 N 帧的耗时（纳秒），
 /// 提供平均值、最大值与超阈次数，供诊断命令输出与自动校验使用。

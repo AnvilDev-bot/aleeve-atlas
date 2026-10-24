@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.level.Level;
 
-/// 路径点数据（规格 §5.1）。
+/// 路径点数据。
 ///
 /// 属性：名称、三维坐标、所属维度、颜色与图标标识、启用状态、可见距离，
 /// 以及"是否为死亡点"与跨客户端同步所需的稳定 UUID。
@@ -33,7 +33,7 @@ public record Waypoint(
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/waypoint");
 
     public static final String DEFAULT_ICON = "default";
-    /// 死亡点图标标识（规格 §5.1 特殊路径点）。
+    /// 死亡点图标标识。
     public static final String DEATH_ICON = "death";
     public static final int DEFAULT_VISIBLE_DISTANCE = 256;
 
@@ -44,7 +44,7 @@ public record Waypoint(
                 true, DEFAULT_VISIBLE_DISTANCE, false, "", true);
     }
 
-    /// 新建死亡点（规格 §5.1）。
+    /// 新建死亡点。
     public static Waypoint deathPoint(BlockPos pos, ResourceKey<Level> dimension) {
         return new Waypoint(UUID.randomUUID(), "death", pos, dimension, 0xFFFF5555,
                 "death", true, DEFAULT_VISIBLE_DISTANCE, true, "", true);

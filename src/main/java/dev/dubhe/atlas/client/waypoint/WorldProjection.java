@@ -8,7 +8,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector4f;
 
-/// 世界坐标 → 屏幕坐标投影（规格 §5.1：游戏内 3D 视界渲染光柱或悬浮图标+距离）。
+/// 世界坐标 → 屏幕坐标投影。
 ///
 /// 基于主相机的投影矩阵做透视投影；观察空间 z 轴朝向屏幕内为负，
 /// 因此仅当目标位于相机前方（z < 0）时才返回有效屏幕坐标。

@@ -7,7 +7,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.phys.Vec3;
 
-/// 标点分发负载（规格 §10：标点分发包，C→S→C）。
+/// 标点分发负载。
 ///
 /// 客户端把本地创建的标点上报服务端，服务端校验后广播给同队在线成员。
 public record PingPayload(MapPingData ping) implements CustomPacketPayload {

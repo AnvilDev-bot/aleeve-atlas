@@ -18,7 +18,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 领地覆层渲染（规格 §7.3 / §7.5 / §7.7）。
+/// 领地覆层渲染。
 ///
 /// 按连通分量逐区块绘制半透明填充，仅在领地/非领地交界处描边（内部交界不画线），
 /// 并按 `zOrder` 决定叠加顺序与边框归属。
@@ -45,7 +45,7 @@ public final class TerritoryRenderer {
             return;
         }
         double blocksPerPixel = (double) MinimapLayout.COVERED_BLOCKS / layout.size();
-        // 各区块的最高 zOrder：重叠区块的边框只由最高优先级领地绘制（§7.7 第 2 条）。
+        // 各区块的最高 zOrder：重叠区块的边框只由最高优先级领地绘制。
         Map<ChunkPos, Integer> topZOrder = topZOrderByChunk(groups);
         for (TerritoryGroup group : groups) {
             renderGroup(graphics, group, dimension, topZOrder,
@@ -67,7 +67,7 @@ public final class TerritoryRenderer {
     /// 单个领地的覆层绘制；`projector` 把区块映射为屏幕矩形（不可见返回 null）。
     ///
     /// 圆形小地图下，区块矩形需与圆形求交后逐行填充，
-    /// 否则矩形角部会溢出圆形边界（规格 §2.2 圆形形态）。
+    /// 否则矩形角部会溢出圆形边界。
     private static void renderGroup(GuiGraphics graphics, TerritoryGroup group,
             ResourceKey<Level> dimension, Map<ChunkPos, Integer> topZOrder,
             ChunkProjector projector, boolean circular, MinimapLayout layout) {
@@ -87,13 +87,13 @@ public final class TerritoryRenderer {
             }
             fillClipped(graphics, rect[0], rect[1], rect[2], rect[2], fill, circular, layout);
         }
-        // 边框：仅在与非本领地区块交界处绘制（规格 §7.3）。
+        // 边框：仅在与非本领地区块交界处绘制。
         for (ChunkPos chunk : chunks) {
             int[] rect = projector.project(chunk);
             if (rect == null) {
                 continue;
             }
-            // 被更高优先级领地覆盖的区块不绘制本层边框（§7.7 第 2 条）。
+            // 被更高优先级领地覆盖的区块不绘制本层边框。
             Integer top = topZOrder.get(chunk);
             if (top != null && top > group.zOrder()) {
                 continue;
@@ -120,7 +120,7 @@ public final class TerritoryRenderer {
         }
     }
 
-    /// 统计每个区块命中的最高 `zOrder`（规格 §7.7 第 2 条）。
+    /// 统计每个区块命中的最高 `zOrder`。
     private static Map<ChunkPos, Integer> topZOrderByChunk(List<TerritoryGroup> groups) {
         Map<ChunkPos, Integer> top = new HashMap<>();
         for (TerritoryGroup group : groups) {
@@ -131,7 +131,7 @@ public final class TerritoryRenderer {
         return top;
     }
 
-    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充（规格 §7.6）。
+    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充。
     ///
     /// @param horizontal 该段是否沿 X 轴延伸
     private static void borderSegment(GuiGraphics graphics, int x, int y, int width, int height,
@@ -171,7 +171,7 @@ public final class TerritoryRenderer {
         }
     }
 
-    /// 各连通分量的名称标签（规格 §7.5：缩放过度时自动隐藏）。
+    /// 各连通分量的名称标签。
     public static void renderLabelsOnMinimap(GuiGraphics graphics, MinimapLayout layout,
             boolean circular) {
         AtlasClientConfig config = AtlasClientConfigs.CONFIG;

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.dubhe.atlas.config.RadarDisplayMode;
 import org.junit.jupiter.api.Test;
 
-/// 玩家头像渲染判定测试（规格 §6.1 / AC-7）。
+/// 玩家头像渲染判定测试。
 ///
 /// 图标模式恒为头像；混合联动模式仅在按住玩家列表键时切换为头像；圆点模式不显示头像。
 class RadarPlayerHeadTest {

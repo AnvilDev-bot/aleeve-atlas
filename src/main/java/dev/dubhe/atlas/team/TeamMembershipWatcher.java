@@ -15,7 +15,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 
-/// 队伍成员变更监测（规格 §3.1：监听入队/退队事件）。
+/// 队伍成员变更监测。
 ///
 /// 原版计分板不提供队伍变更回调，因此按固定间隔比较快照；
 /// 外部队伍实现可通过 {@link #notifyChange} 主动推送变更以降低延迟。

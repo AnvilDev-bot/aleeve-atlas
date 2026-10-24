@@ -3,7 +3,7 @@ package dev.dubhe.atlas.api.ping;
 import dev.dubhe.atlas.ping.MapPingData;
 import net.neoforged.bus.api.Event;
 
-/// 本模组发起标点时触发的事件（规格 §3.2.2 Outbound：小地图驱动外部）。
+/// 本模组发起标点时触发的事件。
 ///
 /// `Ping Wheel` 等外部模组监听此事件，即可在游戏 3D 世界中同步生成光柱或悬浮 3D 图标。
 /// 事件不可取消，仅作通知用途。

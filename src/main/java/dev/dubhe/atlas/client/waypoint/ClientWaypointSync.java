@@ -15,7 +15,7 @@ import net.minecraft.network.chat.HoverEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/// 客户端路径点接收策略（规格 §5.3）。
+/// 客户端路径点接收策略。
 ///
 /// `AUTO_ACCEPT` 静默入库并轻提示；`MANUAL_ACCEPT` 在聊天栏给出可点击的「接受/忽略」；
 /// `AUTO_REJECT` 直接丢弃。
@@ -40,10 +40,10 @@ public final class ClientWaypointSync {
             return;
         }
         if (action == WaypointSyncPayload.Action.DELETE) {
-            // 按路径点自身维度删除，跨维度同步删除同样生效（§11）。
+            // 按路径点自身维度删除，跨维度同步删除同样生效。
             ClientWaypoints.removeInDimension(waypoint);
         } else {
-            // 按路径点自身维度写入，跨维度分享不会落到当前维度（§11）。
+            // 按路径点自身维度写入，跨维度分享不会落到当前维度。
             ClientWaypoints.upsertInDimension(waypoint);
         }
         NeoForge.EVENT_BUS.post(new WaypointReceivedEvent(waypoint, true));

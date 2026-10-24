@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
-/// 实体雷达的配色与显隐规则（规格 §6.2）。
+/// 实体雷达的配色与显隐规则。
 ///
 /// 配色取自客户端配置的 HEX 字符串，玩家可在设置中自定义并逐类开关。
 public final class RadarStyle {
@@ -43,7 +43,7 @@ public final class RadarStyle {
         return ColorUtil.parseHex(hex, defaultColor(category));
     }
 
-    /// 同队判定：经队伍适配层决定，默认对接原版计分板队伍（规格 §3.1）。
+    /// 同队判定：经队伍适配层决定，默认对接原版计分板队伍。
     public static boolean isTeammate(Entity entity) {
         Minecraft minecraft = Minecraft.getInstance();
         if (!(entity instanceof Player player) || minecraft.player == null

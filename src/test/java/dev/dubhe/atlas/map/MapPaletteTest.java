@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import net.minecraft.world.level.material.MapColor;
 import org.junit.jupiter.api.Test;
 
-/// 地图取色与区块数据的基础单元测试（规格 §2.1）。
+/// 地图取色与区块数据的基础单元测试。
 class MapPaletteTest {
     @Test
     void brightnessRisesWithHeight() {

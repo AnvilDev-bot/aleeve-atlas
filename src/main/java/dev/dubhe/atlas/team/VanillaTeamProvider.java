@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 
-/// 原版计分板队伍适配（规格 §3.1 默认实现）。
+/// 原版计分板队伍适配。
 public final class VanillaTeamProvider implements TeamProvider {
     /// 客户端侧只读访问：通过本地玩家的计分板连接获取队伍信息。
     @Override

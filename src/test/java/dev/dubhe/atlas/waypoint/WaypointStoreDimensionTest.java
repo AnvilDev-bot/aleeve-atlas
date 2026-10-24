@@ -16,7 +16,7 @@ import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/// 路径点按维度隔离存储测试（规格 §11）。
+/// 路径点按维度隔离存储测试。
 class WaypointStoreDimensionTest {
     @TempDir
     Path tempDir;

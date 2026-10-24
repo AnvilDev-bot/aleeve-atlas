@@ -17,7 +17,7 @@ import net.minecraft.world.level.ChunkPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 单维度的区块地图缓存（规格 §2.1 / §11）。
+/// 单维度的区块地图缓存。
 ///
 /// 按区域文件（32×32 区块）持久化，避免单文件过大；数据格式为 `CompoundTag`。
 public final class MapDimensionCache {
@@ -25,7 +25,7 @@ public final class MapDimensionCache {
     private static final int REGION_SHIFT = 5;
     private static final int REGION_SIZE = 1 << REGION_SHIFT;
 
-    /// 同时驻留的区域文件上限；超出时淘汰最久未用的已保存区域（规格 §12.1 内存占用）。
+    /// 同时驻留的区域文件上限；超出时淘汰最久未用的已保存区域。
     private static final int MAX_LOADED_REGIONS = 32;
 
     private final Path dimensionDir;
@@ -42,7 +42,7 @@ public final class MapDimensionCache {
         long key = ChunkPos.asLong(chunkX, chunkZ);
         ChunkMapData cached = chunks.get(key);
         if (cached != null) {
-            // 内存命中也要刷新所属区域的 LRU 顺序，避免热点区域被误淘汰（§12.1）。
+            // 内存命中也要刷新所属区域的 LRU 顺序，避免热点区域被误淘汰。
             // loadedRegions 为访问序 LinkedHashMap，get 的副作用即把该区域移到队尾。
             loadedRegions.get(ChunkPos.asLong(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT));
             return Optional.of(cached);
@@ -64,7 +64,7 @@ public final class MapDimensionCache {
         region.dirty = true;
     }
 
-    /// 全部已缓存区块的摘要（坐标 + 版本号），供地图增量同步比对（规格 §3.3）。
+    /// 全部已缓存区块的摘要（坐标 + 版本号），供地图增量同步比对。
     ///
     /// 仅返回内存中已加载的区块；精确全量摘要需要遍历区域文件，代价较高，
     /// 因此同步按「当前会话已探索」范围进行，符合规格「仅限在线成员」的语义。

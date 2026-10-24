@@ -8,7 +8,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 领地覆层的服务端下发（规格 §7.1「通过本模组提供的服务端 API 下发全服或视野内领地区块变更包」）。
+/// 领地覆层的服务端下发。
 ///
 /// 外部模组在服务端注册领地后调用本类将变更推送给在线玩家；
 /// 区块集合过大时自动拆分为多个负载。

@@ -12,10 +12,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 
-/// 小地图叠加层渲染管线（规格 §2.2）。
+/// 小地图叠加层渲染管线。
 ///
 /// 圆形遮罩、圆形/方形边框与玩家朝向箭头全部由片元着色器解析式绘制，
-/// 避免逐行填充几何体，符合规格 §12.1 的 HUD 帧耗要求。
+/// 避免逐行填充几何体，满足 HUD 帧耗要求。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasRenderPipelines {
     /// 地图纹理的圆形裁剪管线：圆外直接丢弃像素，使圆形小地图之外保持游戏画面原样。

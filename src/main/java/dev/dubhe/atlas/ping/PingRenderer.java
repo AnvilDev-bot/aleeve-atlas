@@ -9,7 +9,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
-/// 标点地图渲染（规格 §3.2.2：标点须在小地图与世界地图上以波纹扩散动画呈现）。
+/// 标点地图渲染。
 public final class PingRenderer {
     private static final int MAX_RIPPLE_PIXELS = 10;
     private static final long RIPPLE_PERIOD_MILLIS = 900L;
@@ -29,7 +29,7 @@ public final class PingRenderer {
             if (!ping.dimensionId().equals(dimension)) {
                 continue;
             }
-            // 非同队玩家发起的标点按服务端下发的可见性策略过滤（§4.1）。
+            // 非同队玩家发起的标点按服务端下发的可见性策略过滤。
             if (!visibleByPolicy(minecraft, ping)) {
                 continue;
             }
@@ -92,7 +92,7 @@ public final class PingRenderer {
         int rippleColor = (alpha << 24) | (ping.teamColorArgb() & 0xFFFFFF);
 
         // 圆环按行扫描：每行求圆与水平线的交点区间，一次填充覆盖该行左右两段，
-        // 绘制调用数与直径同阶，避免按角度逐点填充造成的重复绘制（§12.1）。
+        // 绘制调用数与直径同阶，避免按角度逐点填充造成的重复绘制。
         for (int dz = -radius; dz <= radius; dz++) {
             double spanSq = (double) radius * radius - (double) dz * dz;
             if (spanSq <= 0.0) {
@@ -106,7 +106,7 @@ public final class PingRenderer {
             graphics.fill(x - half, z + dz, x - half + 1, z + dz + 1, rippleColor);
             graphics.fill(x + half, z + dz, x + half + 1, z + dz + 1, rippleColor);
         }
-        // 中心标记按图标类型区分（规格 §3.2.1 标点图标类型）。
+        // 中心标记按图标类型区分。
         int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
         drawIcon(graphics, x, z, centerColor, ping.icon());
     }

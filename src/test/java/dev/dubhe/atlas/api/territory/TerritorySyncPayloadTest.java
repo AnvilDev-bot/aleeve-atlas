@@ -12,7 +12,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
-/// 领地同步负载的分片拆分测试（规格 §7.1 / §10 体积约束）。
+/// 领地同步负载的分片拆分测试。
 class TerritorySyncPayloadTest {
     @Test
     void smallTerritoryFitsSinglePacket() {

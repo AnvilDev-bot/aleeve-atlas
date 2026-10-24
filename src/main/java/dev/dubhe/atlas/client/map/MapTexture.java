@@ -12,7 +12,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 小地图像素纹理（规格 §2.1 / §2.2）。
+/// 小地图像素纹理。
 ///
 /// 纹理固定覆盖 {@link #COVERED_BLOCKS} 见方的世界范围，且**玩家始终位于纹理中心**：
 /// 玩家移动时按像素平移纹理内容，因此 HUD 直接用整张纹理绘制，UV 恒为 `[0, 1]`，
@@ -32,7 +32,7 @@ public final class MapTexture {
     private final NativeImage image;
     /// 以区块坐标索引的已采样数据。
     private final Map<Long, ChunkMapData> source = new HashMap<>();
-    /// 已绘制区块的数据版本，用于跳过未变更区块的重绘（§2.1）。
+    /// 已绘制区块的数据版本，用于跳过未变更区块的重绘。
     private final Map<Long, Long> drawnVersions = new HashMap<>();
     /// 纹理左上角对应的世界像素坐标。
     private int originPixelX;
@@ -71,7 +71,7 @@ public final class MapTexture {
     /// 放入一个区块数据；仅当数据版本变化时重绘该区块，上传延后到 `flushDirty`。
     ///
     /// 每 tick 都会把视野内已缓存区块重新放入，若不做版本比对会持续重绘未变更的区块，
-    /// 违反「仅在区块加载或方块变更时重渲染」（§2.1）。
+    /// 违反「仅在区块加载或方块变更时重渲染」。
     public void putChunk(ChunkMapData data) {
         long key = ChunkPos.asLong(data.chunkX(), data.chunkZ());
         Long drawnVersion = drawnVersions.get(key);
@@ -95,7 +95,7 @@ public final class MapTexture {
         }
     }
 
-    /// 重绘阈值（像素）：中心偏移小于该值时不重绘（§12.1）。
+    /// 重绘阈值（像素）：中心偏移小于该值时不重绘。
     ///
     /// 每帧重绘整张纹理需要数万次像素写入与一次完整 GPU 上传，代价过高；
     /// 取 1 像素可在保证纹理中心贴合玩家的同时避免每帧重绘。
@@ -123,7 +123,7 @@ public final class MapTexture {
         redrawAll();
     }
 
-    /// 丢弃已移出纹理覆盖范围的区块数据（§12.1 内存占用）。
+    /// 丢弃已移出纹理覆盖范围的区块数据。
     ///
     /// `source` 若只增不减，长距离跑图后每次重绘都要遍历全部历史区块，
     /// 内存与单帧耗时随游玩时长线性增长。
@@ -200,7 +200,7 @@ public final class MapTexture {
         }
     }
 
-    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象（§12.1）。
+    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。
     public void close() {
         if (!initialized) {
             return;

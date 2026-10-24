@@ -5,7 +5,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
-/// 临时标点核心数据结构（规格 §3.2.1）。
+/// 临时标点核心数据结构。
 ///
 /// 包含唯一 ID、发起者信息、精确三维坐标、可选跟随实体、图标类型、高亮颜色与生命周期元数据。
 public record MapPingData(
@@ -20,7 +20,7 @@ public record MapPingData(
         long createdAtMillis,
         long lifetimeMillis) {
 
-    /// 标点图标类型（规格 §3.2.1：普通标记、危险警告、集合、物资）。
+    /// 标点图标类型。
     public enum PingIcon {
         NORMAL,
         DANGER,

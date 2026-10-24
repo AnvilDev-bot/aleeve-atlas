@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-/// 画布像素搬移的索引计算测试（规格 §12.1）。
+/// 画布像素搬移的索引计算测试。
 ///
 /// 搬移方向决定遍历顺序：顺序错误会在重叠区域产生撕裂，因此需要独立验证。
 class CanvasScrollTest {

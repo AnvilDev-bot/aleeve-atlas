@@ -4,7 +4,7 @@ import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.PingChannelMode;
 import net.neoforged.fml.ModList;
 
-/// 标点通道复用策略（规格 §3.2.2 / §9.1 `ping.channelMode`）。
+/// 标点通道复用策略。
 ///
 /// 当检测到 `Ping Wheel` 等外部标点模组时，本模组按配置决定：
 /// - `AUTO`：外部模组存在时仅监听其标点，不再主动广播（避免重复）；
@@ -36,7 +36,7 @@ public final class PingChannelPolicy {
         };
     }
 
-    /// 外部模组推送的标点是否由本模组统一转发（§3.2.2 `TAKEOVER`）。
+    /// 外部模组推送的标点是否由本模组统一转发。
     ///
     /// 仅在外部模组存在且配置为接管时成立：此时外部模组不自行广播，
     /// 由本模组经队伍同步网络转发，避免同一次标点被广播两次。

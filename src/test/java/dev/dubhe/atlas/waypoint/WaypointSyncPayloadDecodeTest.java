@@ -10,7 +10,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
-/// 路径点同步载荷解码的容错测试（规格 §10 降级约束）。
+/// 路径点同步载荷解码的容错测试。
 ///
 /// 维度标识非法时解码不能抛异常：载荷在 optional 通道上传输，
 /// 解码失败会中断连接，回退主世界并保留其余字段是更合适的处理。

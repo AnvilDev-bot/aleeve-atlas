@@ -9,9 +9,9 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 服务端路径点转发（规格 §5.2 / §10）。
+/// 服务端路径点转发。
 ///
-/// 服务端不持久化任何玩家个人路径点（规格 §11 离线原则），仅校验并转发给同队在线成员。
+/// 服务端不持久化任何玩家个人路径点，仅校验并转发给同队在线成员。
 public final class WaypointSyncHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/waypoints");
 
@@ -19,7 +19,7 @@ public final class WaypointSyncHandler {
     }
 
     public static void handle(WaypointSyncPayload payload, IPayloadContext context) {
-        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        // 服务端关闭协同同步时丢弃同步类数据包。
         if (!AleeveAtlas.CONFIG.sync.enabled) {
             return;
         }

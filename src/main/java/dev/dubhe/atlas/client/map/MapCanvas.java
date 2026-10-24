@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 全屏世界地图的画布纹理（规格 §2.3）。
+/// 全屏世界地图的画布纹理。
 ///
 /// 固定覆盖 {@link #CHUNKS_PER_SIDE}² 个区块，纹理原点由视野中心决定；
 /// 视野变化时从维度缓存重绘整张画布并上传一次，避免逐帧重采样。
@@ -20,14 +20,14 @@ public final class MapCanvas {
     /// 画布覆盖的区块数（每边）。
     ///
     /// 取 65：在最小区块像素尺寸（1 px/区块）下仍可覆盖 1040 像素的视口宽度，
-    /// 避免缩小地图时出现大片空白；内存占用约 1040² × 4 ≈ 4.3 MB（规格 §2.3 / §12.1）。
+    /// 避免缩小地图时出现大片空白；内存占用约 1040² × 4 ≈ 4.3 MB。
     public static final int CHUNKS_PER_SIDE = 65;
     /// 画布边长（像素）。
     public static final int PIXELS = CHUNKS_PER_SIDE * ChunkMapData.SIZE;
     /// 触发画布重建的最小位移（区块）。
     ///
     /// 渲染端按画布原点与视野中心的差值补偿采样位置，因此允许画布滞后于视野；
-    /// 取 2 区块（32 像素）可把拖拽期间的重建次数降低约一半（§12.1）。
+    /// 取 2 区块（32 像素）可把拖拽期间的重建次数降低约一半。
     private static final int RECENTER_THRESHOLD_CHUNKS = 2;
     /// 未探索区域底色（接近纯黑，保持低干扰）。
     private static final int UNEXPLORED_BASE_COLOR = 0xFF0A0A0A;
@@ -54,7 +54,7 @@ public final class MapCanvas {
         initialized = true;
     }
 
-    /// 资源重载后标记为未初始化，使下次打开世界地图时重新注册纹理（§2.3）。
+    /// 资源重载后标记为未初始化，使下次打开世界地图时重新注册纹理。
     ///
     /// 资源重载会清空纹理管理器，若继续认为纹理有效，画布会渲染为空白。
     public void onResourceReload() {
@@ -81,7 +81,7 @@ public final class MapCanvas {
     /// 以给定区块为中心的视野重建画布；视野未变化时直接返回。
     ///
     /// 原点小幅平移时复用已有像素并只补绘新进入边界的条带，
-    /// 避免拖拽过程中每次都遍历全部区块（§12.1）。
+    /// 避免拖拽过程中每次都遍历全部区块。
     public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache) {
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
@@ -89,7 +89,7 @@ public final class MapCanvas {
             return;
         }
         // 渲染端按画布原点与视野中心的差值补偿，因此画布可略滞后于视野。
-        // 位移不足阈值时跳过重绘，降低拖拽过程中的重建频率（§12.1）。
+        // 位移不足阈值时跳过重绘，降低拖拽过程中的重建频率。
         if (positioned
                 && Math.abs(targetX - originChunkX) < RECENTER_THRESHOLD_CHUNKS
                 && Math.abs(targetZ - originChunkZ) < RECENTER_THRESHOLD_CHUNKS) {
@@ -183,7 +183,7 @@ public final class MapCanvas {
         if (data != null) {
             drawChunk(data, baseX, baseZ);
         } else {
-            // 未探索且未被队友同步的区块绘制网格底纹（§2.3）。
+            // 未探索且未被队友同步的区块绘制网格底纹。
             drawUnexplored(baseX, baseZ);
         }
     }
@@ -236,7 +236,7 @@ public final class MapCanvas {
         image.setPixel(x, PIXELS - 1 - y, argb);
     }
 
-    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象（§12.1）。
+    /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。
     public void close() {
         if (!initialized) {
             return;
@@ -247,7 +247,7 @@ public final class MapCanvas {
             LOGGER.warn("Failed to release world map canvas", e);
         } finally {
             initialized = false;
-            // 关闭后画布内容失效，重新打开时必须走全量重绘（§12.1）。
+            // 关闭后画布内容失效，重新打开时必须走全量重绘。
             positioned = false;
         }
     }

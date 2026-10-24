@@ -5,7 +5,7 @@ import dev.dubhe.atlas.ping.MapPingData;
 import java.util.UUID;
 import net.minecraft.world.phys.Vec3;
 
-/// 临时标点接入 API（规格 §3.2.2 Inbound：外部驱动小地图）。
+/// 临时标点接入 API。
 ///
 /// 本模组**不内置标点快捷键**：标点由 `Ping Wheel` 等外部模组在 3D 视界中发起，
 /// 再经本 API 推送进来；小地图与世界地图据此在对应坐标渲染波纹标点。
@@ -45,7 +45,7 @@ public final class MinimapPingAPI {
         ClientPings.remove(pingId);
     }
 
-    /// 注册绑定实体的标点：位置随目标实体移动（规格 §3.2.1 可选绑定目标实体）。
+    /// 注册绑定实体的标点：位置随目标实体移动。
     ///
     /// 用于玩家把标点打在移动的生物或玩家身上的场景；实体离开视野或消失后标点按生命周期过期。
     public static MapPingData registerEntityPing(UUID targetEntityId, String dimensionId,

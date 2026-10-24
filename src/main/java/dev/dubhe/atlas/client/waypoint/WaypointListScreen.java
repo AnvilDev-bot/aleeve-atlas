@@ -17,10 +17,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-/// 路径点管理列表（规格 §5.2：玩家需在路径点管理列表中点击「分享给队伍」）。
+/// 路径点管理列表。
 ///
 /// 列出当前维度的全部路径点，逐项提供启用切换、分享、删除操作；
-/// 独立模式下分享按钮置灰并提示（规格 §1）。
+/// 独立模式下分享按钮置灰并提示。
 public final class WaypointListScreen extends Screen {
     private static final int ROW_HEIGHT = 24;
     private static final int LIST_TOP = 36;
@@ -80,7 +80,7 @@ public final class WaypointListScreen extends Screen {
             share.active = synchronizedMode;
             addRenderableWidget(share);
 
-            // 私密切换：单独关闭该路径点的自动同步（§5.2）。
+            // 私密切换：单独关闭该路径点的自动同步。
             Button privacy = Button.builder(
                             Component.translatable(waypoint.shareable()
                                     ? "aleeve_atlas.screen.waypoint_list.public"
@@ -104,13 +104,13 @@ public final class WaypointListScreen extends Screen {
     }
 
     private void toggle(Waypoint waypoint) {
-        // 经 update 触发自动同步：规格 §5.2 要求修改路径点时也广播。
+        // 经 update 触发自动同步，使修改路径点也广播给队友。
         ClientWaypoints.update(waypoint.withEnabled(!waypoint.enabled()));
         reloadEntries();
     }
 
     private void toggleShareable(Waypoint waypoint) {
-        // 经 update 触发自动同步：规格 §5.2 要求修改路径点时也广播。
+        // 经 update 触发自动同步，使修改路径点也广播给队友。
         ClientWaypoints.update(waypoint.withShareable(!waypoint.shareable()));
         reloadEntries();
     }

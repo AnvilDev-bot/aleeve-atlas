@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 
-/// 领地区块的横向路段压缩（规格 §7.3 栅格化 / §12.1 渲染性能）。
+/// 领地区块的横向路段压缩。
 ///
 /// 大面积领地的区块集合通常按行连续，逐区块 `fill` 会产生大量冗余绘制调用。
 /// 本工具把同一 Z 行上连续的 X 区块合并为一段，绘制时每段只需一次填充。

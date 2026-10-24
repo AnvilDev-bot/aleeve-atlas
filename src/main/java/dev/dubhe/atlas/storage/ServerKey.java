@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
 
-/// 服务器/存档标识解析（规格 §11）。
+/// 服务器/存档标识解析。
 ///
 /// 地图缓存与路径点按「服务器或存档」隔离：
 /// - 多人服务器取 IP/端口的不可逆稳定哈希，避免泄露地址原文；

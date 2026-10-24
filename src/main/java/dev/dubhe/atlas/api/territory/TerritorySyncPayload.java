@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
 
-/// 领地下发负载（规格 §7.1：服务端 API 下发全服/视野内领地区块变更）。
+/// 领地下发负载。
 ///
 /// 单个负载携带一个领地的完整区块集合与展示元数据；区块集合较大时按
 /// {@link #MAX_CHUNKS_PER_PACKET} 拆分为多个负载依次发送。
@@ -63,7 +63,7 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
         int batchIndex = buf.readInt();
         int batchCount = buf.readInt();
         String territoryId = buf.readUtf(128);
-        // 维度标识非法时回退主世界，避免解码抛异常导致连接断开（§10）。
+        // 维度标识非法时回退主世界，避免解码抛异常导致连接断开。
         String rawDimension = buf.readUtf(256);
         Identifier dimensionId = Identifier.tryParse(rawDimension);
         if (dimensionId == null) {
@@ -75,7 +75,7 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
         int zOrder = buf.readInt();
         Component displayName = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         int chunkCount = buf.readVarInt();
-        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
+        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存。
         if (chunkCount < 0 || chunkCount > MAX_CHUNKS_PER_PACKET) {
             LOGGER.warn("Territory payload declares {} chunks, exceeding the {} limit; rejected",
                     chunkCount, MAX_CHUNKS_PER_PACKET);

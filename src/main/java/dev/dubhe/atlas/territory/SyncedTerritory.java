@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 可经网络传输的领地对象（规格 §7.1 服务端下发的数据形态）。
+/// 可经网络传输的领地对象。
 ///
 /// 与 {@link SimpleTerritory} 的区别：只包含可序列化字段（标识、维度、区块集合、
 /// 名称、颜色、透明度、层级），边框样式与 tooltip 在客户端重建。

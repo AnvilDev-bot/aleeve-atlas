@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 标点广播限频测试（规格 §10）。
+/// 标点广播限频测试。
 ///
 /// 冷却期内不得再次放行，避免连续点击放大带宽占用；
 /// 本地标记不受影响，仅抑制网络广播。

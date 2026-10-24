@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.level.Level;
 
-/// 路径点导入导出（规格 §11：路径点存储需支持导入导出）。
+/// 路径点导入导出。
 ///
 /// 导出为单个 NBT 文件（含版本号与全部路径点），导入时按 ID 合并：
 /// 已存在同 ID 则覆盖，其余保留，避免导入破坏现有数据。

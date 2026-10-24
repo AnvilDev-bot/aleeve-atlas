@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/// 虚线边框分段计算测试（规格 §7.6）。
+/// 虚线边框分段计算测试。
 class DashSegmentsTest {
     @Test
     void offsetsFollowFixedPeriod() {

@@ -31,7 +31,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 客户端命令（规格 §5.3 手动接受交互、§7 领地演示）。
+/// 客户端命令。
 ///
 /// 仅注册客户端命令，不污染服务端命令表：
 /// `/aleeve_atlas waypoint accept|ignore <id>`、`/aleeve_atlas territory demo|clear`。
@@ -86,7 +86,7 @@ public final class AtlasClientCommands {
                         .executes(context -> reportPerformance(context.getSource())));
     }
 
-    /// 在玩家前方注入一个临时标点，用于验收波纹扩散渲染（规格 §3.2.2）。
+    /// 在玩家前方注入一个临时标点，用于验收波纹扩散渲染。
     private static int pingDemo(CommandSourceStack source) {
         var player = source.getPlayer();
         if (player == null) {
@@ -98,7 +98,7 @@ public final class AtlasClientCommands {
         return ping == null ? 0 : 1;
     }
 
-    /// 输出渲染性能统计（规格 §12.1 验收）。
+    /// 输出渲染性能统计。
     private static int reportPerformance(CommandSourceStack source) {
         var player = source.getPlayer();
         if (player == null) {
@@ -108,7 +108,7 @@ public final class AtlasClientCommands {
                 AtlasProfiling.minimapSummary()), false);
         player.displayClientMessage(Component.literal(
                 AtlasProfiling.canvasSummary()), false);
-        // 标点通道诊断：确认是否存在与外部模组重复广播的风险（§3.2.2）。
+        // 标点通道诊断：确认是否存在与外部模组重复广播的风险。
         player.displayClientMessage(Component.literal(
                 PingChannelPolicy.describe()), false);
         if (PingChannelPolicy.duplicateRisk()) {
@@ -116,7 +116,7 @@ public final class AtlasClientCommands {
                     Component.translatable("aleeve_atlas.message.ping_channel_duplicate"),
                     false);
         }
-        // 队伍适配层诊断：确认当前实现与所属队伍（§3.1）。
+        // 队伍适配层诊断：确认当前实现与所属队伍。
         player.displayClientMessage(Component.literal(
                 TeamProviders.describe(player.getUUID())), false);
         AtlasProfiling.reset();
@@ -135,7 +135,7 @@ public final class AtlasClientCommands {
         return 1;
     }
 
-    /// 导出当前路径点到文件（规格 §11）。
+    /// 导出当前路径点到文件。
     private static int exportWaypoints(CommandSourceStack source, String fileName) {
         var waypointStore = ClientWaypoints.store();
         var player = source.getPlayer();
@@ -145,7 +145,7 @@ public final class AtlasClientCommands {
         try {
             var file = resolveExportFile(fileName);
             // 先把内存中的改动写入磁盘：allAcrossDimensions 以磁盘文件为准，
-            // 未刷新的近期改动否则不会被导出（§11）。
+            // 未刷新的近期改动否则不会被导出。
             ClientWaypoints.flushAllDimensions();
             WaypointTransfer.exportTo(file,
                     ClientWaypoints.allAcrossDimensions());
@@ -160,7 +160,7 @@ public final class AtlasClientCommands {
         }
     }
 
-    /// 从文件导入路径点并合并（规格 §11）。
+    /// 从文件导入路径点并合并。
     private static int importWaypoints(CommandSourceStack source, String fileName) {
         var waypointStore = ClientWaypoints.store();
         var player = source.getPlayer();
@@ -172,7 +172,7 @@ public final class AtlasClientCommands {
             var imported = WaypointTransfer.importFrom(file);
             var result = WaypointTransfer.merge(imported,
                     ClientWaypoints.allAcrossDimensions());
-            // 按各自维度写入，跨维度导入不会串到当前维度（§11）。
+            // 按各自维度写入，跨维度导入不会串到当前维度。
             for (var waypoint : result.added()) {
                 ClientWaypoints.upsertInDimension(waypoint);
             }
@@ -191,7 +191,7 @@ public final class AtlasClientCommands {
         }
     }
 
-    /// 导入导出目录：客户端游戏目录下的 `aleeve_atlas_exports`（规格 §11）。
+    /// 导入导出目录：客户端游戏目录下的 `aleeve_atlas_exports`。
     private static Path exportDir() {
         return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("aleeve_atlas_exports");
@@ -209,7 +209,7 @@ public final class AtlasClientCommands {
         return resolved;
     }
 
-    /// 注册一个含飞地与内孔洞的演示领地，用于验证 §7.2/§7.3（AC-8）。
+    /// 注册一个含飞地与内孔洞的演示领地，用于验证飞地与内孔洞的渲染。
     private static int demo(CommandSourceStack source) {
         var player = source.getPlayer();
         if (player == null || source.getLevel() == null) {
@@ -241,7 +241,7 @@ public final class AtlasClientCommands {
         AtlasTerritory.client().upsertTerritory(SimpleTerritory.of(DEMO_ID, dimension, chunks,
                 Component.translatable("aleeve_atlas.territory.demo_name"), 0x33AAFF));
 
-        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍（§7.7 第 2 条）。
+        // 叠加一个 zOrder 更高的重叠领地，用于验证边框取舍。
         Set<ChunkPos> overlay = new HashSet<>();
         for (int dx = 1; dx <= 3; dx++) {
             for (int dz = 1; dz <= 3; dz++) {

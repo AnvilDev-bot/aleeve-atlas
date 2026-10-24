@@ -2,7 +2,7 @@ package dev.dubhe.atlas.api.territory;
 
 import dev.dubhe.atlas.territory.TerritoryRegistry;
 
-/// 领地覆层 API 的获取入口（规格 §7.6）。
+/// 领地覆层 API 的获取入口。
 ///
 /// 客户端与服务端各自持有独立注册表：客户端注册的覆层仅本地可见，
 /// 服务端注册的覆层需由调用方自行下发给客户端后，在客户端侧注册。

@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 分片收齐判定测试（规格 §3.3）。
+/// 分片收齐判定测试。
 ///
 /// 关键行为：同一分片重复到达不得使计数虚高，否则会在缺片时提前判定收齐。
 class BatchTrackerTest {

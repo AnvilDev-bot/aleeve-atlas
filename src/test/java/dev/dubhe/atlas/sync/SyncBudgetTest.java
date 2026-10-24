@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 同步发送预算测试（规格 §9.2 / §12.1）。
+/// 同步发送预算测试。
 ///
 /// 单 tick 分片数与每秒字节数共同限制发送速率，任一超限都必须拒绝发送。
 class SyncBudgetTest {

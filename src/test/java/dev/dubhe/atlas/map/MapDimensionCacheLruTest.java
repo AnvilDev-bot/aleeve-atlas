@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/// 区域文件缓存的最久未用淘汰测试（规格 §12.1 内存占用）。
+/// 区域文件缓存的最久未用淘汰测试。
 ///
 /// 驻留上限为 32 个区域；访问热点区域后，其淘汰优先级必须被刷新，
 /// 否则高频读取的区域会被误淘汰，导致反复读盘。

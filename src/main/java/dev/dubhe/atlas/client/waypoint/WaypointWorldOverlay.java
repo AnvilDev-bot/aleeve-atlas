@@ -13,7 +13,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 
-/// 游戏内 3D 视界路径点标识（规格 §5.1：光柱或悬浮图标 + 距离米数）。
+/// 游戏内 3D 视界路径点标识。
 ///
 /// 在 HUD 阶段把路径点世界坐标投影到屏幕，绘制菱形图标、名称与距离；
 /// 超出可见距离或位于视野外的路径点不渲染。
@@ -58,7 +58,7 @@ public final class WaypointWorldOverlay {
         }
         graphics.fill(x, y - 1, x + 1, y + 1, 0xFF101010);
 
-        // 名称与距离（规格 §5.1 要求显示距离米数）。
+        // 名称与距离。
         Component label = Component.literal(
                 "%s %dm".formatted(waypoint.name(), Math.round(projected.distance())))
                 .withStyle(ChatFormatting.WHITE);

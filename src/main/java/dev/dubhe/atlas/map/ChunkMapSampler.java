@@ -8,7 +8,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.MapColor;
 
-/// 区块采样器（规格 §2.1）：把客户端已加载区块转换为 16×16 的地图像素。
+/// 区块采样器：把客户端已加载区块转换为 16×16 的地图像素。
 ///
 /// 采样策略：每列自顶向下寻找第一个非空气方块；若该方块为流体，使用其地图色并按深度压暗。
 public final class ChunkMapSampler {
@@ -22,7 +22,7 @@ public final class ChunkMapSampler {
         return sample(level, pos, null);
     }
 
-    /// 按指定起始高度采样（规格 §2.1 洞穴分层模式）。
+    /// 按指定起始高度采样。
     ///
     /// `layerTopY` 为 {@code null} 时从世界顶部向下扫描（地表模式）；
     /// 指定高度时仅扫描该高度以下（洞穴模式），使地图反映玩家所在层级的结构。
@@ -63,10 +63,10 @@ public final class ChunkMapSampler {
                         MapColor mapColor = state.getMapColor(level, cursor);
                         argb = MapPalette.colorOf(mapColor,
                                 MapPalette.brightnessForHeight(y, SEA_LEVEL));
-                        // 植被类方块按生物群系染色（§2.1 地形渲染要素）。
+                        // 植被类方块按生物群系染色。
                         argb = MapPalette.tintWithBiome(argb, state, level, cursor,
                                 level.getBiome(cursor));
-                        // 地表光照阴影：按方块光照与天光调整明暗（§2.1）。
+                        // 地表光照阴影：按方块光照与天光调整明暗。
                         int light = level.getMaxLocalRawBrightness(cursor.above());
                         argb = MapPalette.applyLighting(argb, light);
                     }

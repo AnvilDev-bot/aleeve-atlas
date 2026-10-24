@@ -3,7 +3,7 @@ package dev.dubhe.atlas.client.territory;
 import java.util.ArrayList;
 import java.util.List;
 
-/// 虚线边框的分段计算（规格 §7.6）。
+/// 虚线边框的分段计算。
 ///
 /// 把一条边框按固定节距切分为实线段，供渲染端逐段填充。
 /// 抽为纯函数以便在无渲染环境验证分段边界。

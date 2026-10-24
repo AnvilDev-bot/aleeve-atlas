@@ -15,7 +15,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
-/// 领地进出跟踪测试（规格 §7.5 / §7.7 第 4 条）。
+/// 领地进出跟踪测试。
 class TerritoryTrackerTest {
     private static final ResourceKey<Level> OVERWORLD = Level.OVERWORLD;
 
@@ -27,7 +27,7 @@ class TerritoryTrackerTest {
         registry.upsertTerritory(withZOrder("high", shared, 9));
 
         TerritoryGroup resolved = TerritoryTracker.resolveAt(registry, OVERWORLD, 0, 0);
-        assertEquals("high", resolved.territoryId(), "重叠时仅播报最高 zOrder（§7.7）");
+        assertEquals("high", resolved.territoryId(), "重叠时仅播报最高 zOrder");
     }
 
     @Test

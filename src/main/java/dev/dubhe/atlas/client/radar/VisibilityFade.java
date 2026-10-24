@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import net.minecraft.world.entity.Entity;
 
-/// 可见性渐隐跟踪（规格 §4.2 第 4 条）。
+/// 可见性渐隐跟踪。
 ///
 /// 目标由「可见」变为「遮挡」时不立即消失，而是在配置的渐隐期内逐步降低不透明度，
 /// 避免玩家转视角或目标穿过树林时标点高频闪烁。
@@ -23,7 +23,7 @@ public final class VisibilityFade {
 
     /// 记录一次可见；由可见性判定成功后调用。
     ///
-    /// 内部按固定周期清理过期条目，避免调用方遗漏导致映射无界增长（§12.1）。
+    /// 内部按固定周期清理过期条目，避免调用方遗漏导致映射无界增长。
     public static void markSeen(Entity entity) {
         LAST_SEEN.put(entity.getUUID(), System.currentTimeMillis());
         if (++pruneCounter >= PRUNE_INTERVAL) {

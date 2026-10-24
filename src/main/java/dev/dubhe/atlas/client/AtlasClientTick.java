@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/// 客户端 tick 入口（规格 §8）：在 `ClientTickEvent.Post` 中 while 消费键位。
+/// 客户端 tick 入口：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientTick {
     private static final Logger LOGGER =
@@ -99,9 +99,9 @@ public final class AtlasClientTick {
         if (minecraft.player == null) {
             return;
         }
-        // 标点由外部模组经 API 注入，本模组只负责生命周期推进与渲染（规格 §3.2.2）。
+        // 标点由外部模组经 API 注入，本模组只负责生命周期推进与渲染。
         ClientPings.tick();
-        // 地图增量分片按 tick 限速写入本地缓存（规格 §3.3 / §12.1）。
+        // 地图增量分片按 tick 限速写入本地缓存。
         ClientMapSync.tick();
         if (minecraft.screen != null) {
             return;
@@ -122,7 +122,7 @@ public final class AtlasClientTick {
         }
     }
 
-    /// 在单机世界生成各类实体，覆盖雷达的全部类别（§6.2）。
+    /// 在单机世界生成各类实体，覆盖雷达的全部类别。
     ///
     /// 通过内建服务器派发命令，无需玩家手动操作。
     private static void summonDemoEntities(Minecraft minecraft) {
@@ -147,7 +147,7 @@ public final class AtlasClientTick {
         });
     }
 
-    /// 在玩家周围放置普通路径点、死亡点与各类型标点，验证渲染区分（§5.1 / §3.2.2）。
+    /// 在玩家周围放置普通路径点、死亡点与各类型标点，验证渲染区分。
     ///
     /// 仅用于自动化验收，正常游玩不触发。
     private static void placeDemoMarkers(Minecraft minecraft) {
@@ -162,7 +162,7 @@ public final class AtlasClientTick {
                 0xFF55FFFF));
         ClientWaypoints.add(Waypoint.create("east", base.offset(20, 0, 0), dimension,
                 0xFFFFFF55));
-        // 死亡点使用十字图标（§5.1 特殊路径点）。
+        // 死亡点使用十字图标。
         ClientWaypoints.add(Waypoint.deathPoint(base.offset(-15, 0, -15), dimension));
         // 四种标点类型环绕玩家，验证形状区分与波纹扩散。
         long now = System.currentTimeMillis();

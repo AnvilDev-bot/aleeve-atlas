@@ -9,7 +9,7 @@ import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.Test;
 
-/// 横向路段压缩测试（规格 §7.3 栅格化性能）。
+/// 横向路段压缩测试。
 class TerritoryRunsTest {
     @Test
     void contiguousRowBecomesSingleRun() {

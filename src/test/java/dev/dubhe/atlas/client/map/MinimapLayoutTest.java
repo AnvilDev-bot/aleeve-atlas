@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 小地图布局的坐标映射测试（规格 §2.2）。
+/// 小地图布局的坐标映射测试。
 class MinimapLayoutTest {
     @Test
     void fullScreenCoordinateMapping() {

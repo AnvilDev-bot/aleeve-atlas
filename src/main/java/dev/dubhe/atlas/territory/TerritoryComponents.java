@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 
-/// 领地区块的连通分量判定（规格 §7.2）。
+/// 领地区块的连通分量判定。
 ///
 /// 连接准则为 8 邻域（摩尔邻域）：正交相邻或对角相接均视为连通。
 /// 拆分后每个连通分量各自独立计算轮廓与名称标签。

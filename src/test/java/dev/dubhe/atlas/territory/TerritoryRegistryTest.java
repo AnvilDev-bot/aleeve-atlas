@@ -14,7 +14,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
-/// 领地注册中心测试（规格 §7.1 / §7.2 / §7.7，验收 AC-8）。
+/// 领地注册中心测试。
 class TerritoryRegistryTest {
     private static final ResourceKey<Level> OVERWORLD = Level.OVERWORLD;
 
@@ -87,7 +87,7 @@ class TerritoryRegistryTest {
 
         List<TerritoryGroup> hits = registry.hitAt(OVERWORLD, new ChunkPos(0, 0));
         assertEquals(2, hits.size());
-        // 高 zOrder 在前（§7.7 第 3 条：tooltip 从高到低合并）。
+        // 高 zOrder 在前。
         assertEquals("high", hits.get(0).territoryId());
         assertEquals("low", hits.get(1).territoryId());
     }

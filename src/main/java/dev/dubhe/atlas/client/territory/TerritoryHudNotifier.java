@@ -15,7 +15,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
-/// 领地进出提示（规格 §7.5 / §7.7 第 4 条）。
+/// 领地进出提示。
 ///
 /// 每 tick 比较玩家所在区块的领地归属，跨越边界时在 HUD 上方给出提示；
 /// 重叠领地仅播报 `zOrder` 最高的一个。
@@ -44,7 +44,7 @@ public final class TerritoryHudNotifier {
         }
         tickCounter = 0;
 
-        // 小地图领地色块关闭时不做进出提示（规格 §7.5 单独开关语义）。
+        // 小地图领地色块关闭时不做进出提示。
         if (!AtlasClientConfigs.CONFIG.territory.showOnMinimap) {
             // 关闭期间玩家的位置变化不应在重新开启时被误报为进出。
             TRACKER.reset();

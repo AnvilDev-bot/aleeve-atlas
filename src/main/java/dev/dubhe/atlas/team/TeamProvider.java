@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import net.minecraft.network.chat.Component;
 
-/// 队伍适配层接口（规格 §3.1）。
+/// 队伍适配层接口。
 ///
 /// 默认对接原版计分板队伍；外部队伍模组（如 FTB Teams）可通过注册机制替换实现。
 public interface TeamProvider {
@@ -28,7 +28,7 @@ public interface TeamProvider {
     /// 队伍颜色（ARGB），无队伍时返回白色。
     int teamColor(String teamId);
 
-    /// 主动推送队伍变更（规格 §3.1 监听入队/退队）。
+    /// 主动推送队伍变更。
     ///
     /// 原版计分板无变更回调，由 {@link TeamMembershipWatcher} 轮询检测；
     /// 外部队伍实现若具备事件源，应调用本方法以降低延迟。

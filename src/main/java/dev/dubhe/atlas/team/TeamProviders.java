@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 队伍适配层的实现注册与选择（规格 §3.1）。
+/// 队伍适配层的实现注册与选择。
 ///
 /// 外部队伍模组（如 FTB Teams）可注册自己的 {@link TeamProvider}；
 /// 选择顺序为：显式注册的优先实现 → 配置指定 → 原版计分板回退。
@@ -55,7 +55,7 @@ public final class TeamProviders {
         return active;
     }
 
-    /// 当前队伍适配层的诊断描述：实现名与指定玩家所属队伍（§3.1）。
+    /// 当前队伍适配层的诊断描述：实现名与指定玩家所属队伍。
     public static String describe(UUID playerId) {
         TeamProvider provider = active();
         String teamId = provider.teamIdOf(playerId);

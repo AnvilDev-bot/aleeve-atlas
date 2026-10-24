@@ -15,7 +15,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
-/// 路径点序列化与可见性过滤测试（规格 §5.1 / §11）。
+/// 路径点序列化与可见性过滤测试。
 class WaypointTest {
     private static final ResourceKey<Level> OVERWORLD = Level.OVERWORLD;
 

@@ -6,7 +6,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
-/// 可见性判定的 CPU 前置剔除（规格 §4.2 第 1 条）。
+/// 可见性判定的 CPU 前置剔除。
 ///
 /// 在发起射线检测或 GPU 查询前，先按状态与视锥剔除目标，降低判定开销。
 public final class VisibilityPreFilter {

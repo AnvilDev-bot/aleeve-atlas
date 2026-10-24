@@ -7,7 +7,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/// 地图缓存持久化与区域文件淘汰测试（规格 §11 / §12.1）。
+/// 地图缓存持久化与区域文件淘汰测试。
 class MapDimensionCacheTest {
     @TempDir
     Path tempDir;

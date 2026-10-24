@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 客户端负载处理（规格 §1 / §10）：握手成功后进入协同模式，退出服务器回退独立模式。
+/// 客户端负载处理：握手成功后进入协同模式，退出服务器回退独立模式。
 ///
 /// 注意：本类不得有引用客户端专属类型的静态字段或静态初始化块，以保证专用服务端注册期安全。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)

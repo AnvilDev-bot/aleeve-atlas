@@ -17,15 +17,15 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 领地覆层注册中心（规格 §7.1 / §7.6 的 API 实现）。
+/// 领地覆层注册中心。
 ///
 /// 维护领地注册表与每个连通分量的重算缓存；局部区块变更只重算受影响的领地，
-/// 不触发全图重算（规格 §7.1 脏标记更新）。
+/// 不触发全图重算。
 public final class TerritoryRegistry implements TerritoryOverlayApi {
     /// 单个领地某维度的分量缓存。
     private final Map<String, CachedTerritory> cache = new HashMap<>();
     private final Map<String, TerritoryGroup> territories = new LinkedHashMap<>();
-    /// 加权极点的重心牵引权重 λ（规格 §7.4，由配置注入）。
+    /// 加权极点的重心牵引权重 λ（由配置注入）。
     private float anchorLambda = AnchorSelector.DEFAULT_LAMBDA;
 
     @Override
@@ -63,7 +63,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         return Set.copyOf(territories.values());
     }
 
-    /// 该维度下按 zOrder 升序排列的已注册领地（规格 §7.7 叠加顺序）。
+    /// 该维度下按 zOrder 升序排列的已注册领地。
     public List<TerritoryGroup> orderedForDimension(ResourceKey<Level> dimension) {
         List<TerritoryGroup> result = new ArrayList<>();
         for (TerritoryGroup territory : territories.values()) {
@@ -75,7 +75,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         return result;
     }
 
-    /// 查询某区块命中的全部领地，按 zOrder 从高到低（规格 §7.7 第 3 条）。
+    /// 查询某区块命中的全部领地，按 zOrder 从高到低。
     public List<TerritoryGroup> hitAt(ResourceKey<Level> dimension, ChunkPos pos) {
         List<TerritoryGroup> hits = new ArrayList<>();
         for (TerritoryGroup territory : territories.values()) {
@@ -92,7 +92,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         return cache.get(territoryId);
     }
 
-    /// 设置锚点算法的重心牵引权重（规格 §7.4，取值建议 0.3 ~ 0.5）。
+    /// 设置锚点算法的重心牵引权重。
     public void setAnchorLambda(float lambda) {
         this.anchorLambda = lambda;
         cache.clear();

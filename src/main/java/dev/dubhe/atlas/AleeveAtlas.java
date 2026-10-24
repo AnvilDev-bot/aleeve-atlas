@@ -14,10 +14,10 @@ import net.neoforged.fml.loading.FMLEnvironment;
 public final class AleeveAtlas {
     public static final String MOD_ID = "aleeve_atlas";
 
-    /// 网络协议版本，握手包据此判定双端兼容性（规格 §10）。
+    /// 网络协议版本，握手包据此判定双端兼容性。
     public static final String PROTOCOL_VERSION = "1";
 
-    /// 服务端配置（规格 §9.2）。在 `@Mod` 类加载时注册，此时 `ModList` 已就绪。
+    /// 服务端配置。在 `@Mod` 类加载时注册，此时 `ModList` 已就绪。
     public static final AtlasServerConfig CONFIG =
             ConfigManager.register(MOD_ID, AtlasServerConfig::new);
 
@@ -26,7 +26,7 @@ public final class AleeveAtlas {
             // 客户端配置只在物理客户端加载，保证专用服务端不解析客户端配置类。
             AtlasClientConfigs.load();
         }
-        // 扫描并加载可选模组集成（FTB Teams 等），未安装时自动跳过（§3.1）。
+        // 扫描并加载可选模组集成（FTB Teams 等），未安装时自动跳过。
         AtlasIntegrations.initialize();
     }
 

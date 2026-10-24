@@ -12,7 +12,7 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 路径点同步负载（规格 §5.2 / §5.3 / §10：C→S→C）。
+/// 路径点同步负载。
 ///
 /// 携带完整路径点字段与操作类型（创建/更新/删除），接收方按自身接收策略处理。
 public record WaypointSyncPayload(Action action, Waypoint waypoint) implements CustomPacketPayload {
@@ -47,7 +47,7 @@ public record WaypointSyncPayload(Action action, Waypoint waypoint) implements C
                         var id = buf.readUUID();
                         String name = buf.readUtf(128);
                         BlockPos pos = BlockPos.of(buf.readLong());
-                        // 维度标识非法时回退主世界，避免解码抛异常导致连接断开（§10）。
+                        // 维度标识非法时回退主世界，避免解码抛异常导致连接断开。
                         String rawDimension = buf.readUtf(256);
                         Identifier dimensionId = Identifier.tryParse(rawDimension);
                         if (dimensionId == null) {

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 洞穴分层缓存重建判定测试（规格 §2.1）。
+/// 洞穴分层缓存重建判定测试。
 ///
 /// 缓存按区块索引、不区分层高；玩家上下移动超过阈值后必须重建，
 /// 否则地图会一直显示旧层级的结构。

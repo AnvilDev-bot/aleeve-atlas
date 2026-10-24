@@ -8,7 +8,7 @@ import net.minecraft.world.level.LevelReader;
 
 import net.minecraft.world.level.material.MapColor;
 
-/// 地图像素取色（规格 §2.1：地形渲染要素）。
+/// 地图像素取色。
 ///
 /// 基于原版 `MapColor` 调色板，并按相对高度调整明暗，形成可辨识的地形起伏。
 public final class MapPalette {
@@ -57,7 +57,7 @@ public final class MapPalette {
         return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
-    /// 植被类方块按生物群系染色（规格 §2.1 地形渲染要素）。
+    /// 植被类方块按生物群系染色。
     ///
     /// 仅对草地、树叶等植被方块生效；其它方块原样返回。
     public static int tintWithBiome(int argb, BlockState state,
@@ -73,7 +73,7 @@ public final class MapPalette {
         return blend(argb, tint, 0.45F);
     }
 
-    /// 光照阴影：按方块光照等级调整明暗（规格 §2.1）。
+    /// 光照阴影：按方块光照等级调整明暗。
     ///
     /// 光照 15 保持原色，光照 0 压暗到 55%，避免全亮导致地形缺乏层次。
     public static int applyLighting(int argb, int lightLevel) {

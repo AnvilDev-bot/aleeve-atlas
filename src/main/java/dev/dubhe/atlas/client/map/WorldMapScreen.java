@@ -40,10 +40,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-/// 全屏世界地图（规格 §2.3）。
+/// 全屏世界地图。
 ///
 /// 支持鼠标拖拽平移与滚轮无级缩放；未探索区块显示为黑色网格背景。
-/// 双击创建路径点 / 发起标点将随 §5、§3.2 的功能接入。
+/// 双击创建路径点、右键发起标点。
 public final class WorldMapScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/worldmap");
     /// 每区块像素数的缩放范围。
@@ -51,7 +51,7 @@ public final class WorldMapScreen extends Screen {
     private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
     private static final int BACKGROUND_COLOR = 0xF0101010;
     private static final int PLAYER_COLOR = 0xFFFFFFFF;
-    /// 低于该区块像素尺寸时隐藏领地名称标签（规格 §7.5 / AC-10）。
+    /// 低于该区块像素尺寸时隐藏领地名称标签。
     private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
     /// 虚线边框的节距（像素）。
     private static final int BORDER_DASH_PERIOD = 4;
@@ -129,7 +129,7 @@ public final class WorldMapScreen extends Screen {
         super.removed();
     }
 
-    /// 地图数据发生外部变更时重绘已打开的界面（规格 §3.3：接收后刷新世界地图）。
+    /// 地图数据发生外部变更时重绘已打开的界面。
     public static void onMapDataChanged() {
         WorldMapScreen screen = active;
         if (screen != null) {
@@ -137,7 +137,7 @@ public final class WorldMapScreen extends Screen {
         }
     }
 
-    /// 队伍相关按钮：独立模式下置灰并给出说明（规格 §1 / AC-1）。
+    /// 队伍相关按钮：独立模式下置灰并给出说明。
     private void addTeamButtons() {
         boolean synchronizedMode = AtlasSession.synchronizedMode();
         Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
@@ -155,14 +155,14 @@ public final class WorldMapScreen extends Screen {
         share.active = synchronizedMode;
         addRenderableWidget(share);
 
-        // 路径点管理列表入口（规格 §5.2），与分享按钮保持 6px 间隔。
+        // 路径点管理列表入口，与分享按钮保持 6px 间隔。
         addRenderableWidget(Button.builder(
                         Component.translatable("aleeve_atlas.screen.waypoint_list"),
                         button -> Minecraft.getInstance().setScreen(new WaypointListScreen()))
                 .bounds(x - 126, y, 120, 20).build());
     }
 
-    /// 把视野中心最近的路径点分享给队伍（规格 §5.2 手动同步）。
+    /// 把视野中心最近的路径点分享给队伍。
     private void shareNearestWaypoint() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
@@ -195,7 +195,7 @@ public final class WorldMapScreen extends Screen {
         int viewWidth = width;
         int viewHeight = height;
 
-        // 黑色背景代表未探索区域（规格 §2.3）。不调用 renderBackground：模糊背景每帧只允许一次。
+        // 黑色背景代表未探索区域。不调用 renderBackground：模糊背景每帧只允许一次。
         graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
 
         if (canvas.ready()) {
@@ -236,12 +236,12 @@ public final class WorldMapScreen extends Screen {
         drawPings(graphics);
         drawPlayerMarker(graphics);
         drawOverlayText(graphics);
-        // 组件渲染后再绘制领地标签，确保标签位于最上层（§7.5）。
+        // 组件渲染后再绘制领地标签，确保标签位于最上层。
         drawTerritoryLabels(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
-    /// 领地覆层（规格 §7.3 / §7.5 / §7.7 / AC-10）。
+    /// 领地覆层。
     ///
     /// 缩小到区块像素小于标签宽度时自动隐藏名称；悬停任一区块高亮其边框并展示信息卡片。
     private void drawTerritories(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -263,7 +263,7 @@ public final class WorldMapScreen extends Screen {
             int fill = withOpacity(group.themeColorRgb(), group.fillOpacity());
             boolean highlighted = hoveredGroups.contains(group);
             int border = highlighted ? 0xFFFFFFFF : group.borderStyle().colorArgb();
-            // 填充：按横向连续路段批量绘制，减少绘制调用（§12.1）。
+            // 填充：按横向连续路段批量绘制，减少绘制调用。
             for (TerritoryRuns.Run run : TerritoryRuns.of(group.chunks())) {
                 int[] first = chunkScreenRect(new ChunkPos(run.xStart(), run.z()));
                 if (first == null) {
@@ -282,7 +282,7 @@ public final class WorldMapScreen extends Screen {
                     graphics.fill(left, top, right, bottom, fill);
                 }
             }
-            // 边框：仅在与非领地交界处逐区块描边（§7.3）。
+            // 边框：仅在与非领地交界处逐区块描边。
             for (ChunkPos chunk : group.chunks()) {
                 int[] rect = chunkScreenRect(chunk);
                 if (rect == null) {
@@ -292,7 +292,7 @@ public final class WorldMapScreen extends Screen {
             }
         }
 
-        // 悬停信息卡片按 zOrder 从高到低合并展示（§7.7 第 3 条）。
+        // 悬停信息卡片按 zOrder 从高到低合并展示。
         if (!hoveredGroups.isEmpty()) {
             List<Component> lines = new ArrayList<>();
             for (TerritoryGroup group : hoveredGroups) {
@@ -326,7 +326,7 @@ public final class WorldMapScreen extends Screen {
         }
     }
 
-    /// 领地名称标签（规格 §7.5）。在组件渲染之后调用，确保标签位于最上层。
+    /// 领地名称标签。在组件渲染之后调用，确保标签位于最上层。
     ///
     /// 逐个连通分量比较其屏幕像素面积与名称文本宽度：面积不足以容纳文本时隐藏标签，
     /// 仅保留色块，避免大量飞地标签相互重叠（AC-10）。
@@ -350,13 +350,13 @@ public final class WorldMapScreen extends Screen {
                 if (component.anchor() == null) {
                     continue;
                 }
-                // 分量的屏幕像素面积不足以容纳文本时隐藏标签（§7.5）。
+                // 分量的屏幕像素面积不足以容纳文本时隐藏标签。
                 // 面积单位为平方像素，右侧以文本宽度的 8 倍作为阈值，避免细长分量也显示标签。
                 if (component.chunks().size() * pixelsPerChunk * pixelsPerChunk
                         < textWidth * 8.0F) {
                     continue;
                 }
-                // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见（§7.5）。
+                // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见。
                 int[] rect = chunkScreenRect(component.anchor());
                 if (rect == null) {
                     rect = firstVisibleChunkRect(component);
@@ -364,7 +364,7 @@ public final class WorldMapScreen extends Screen {
                 if (rect == null) {
                     continue;
                 }
-                // 名称标签带深色背景框，避免在浅色地形上难以辨认（§7.5）。
+                // 名称标签带深色背景框，避免在浅色地形上难以辨认。
                 int tx = rect[0] + rect[2] / 2 - textWidth / 2;
                 int ty = rect[1] + rect[3] / 2 - 4;
                 graphics.fill(tx - 2, ty - 2, tx + textWidth + 2, ty + 10, 0xB0000000);
@@ -400,7 +400,7 @@ public final class WorldMapScreen extends Screen {
         return new int[] { x, y, size, size };
     }
 
-    /// 仅在领地与非领地交界处描边（规格 §7.3：内部交界不画线）。
+    /// 仅在领地与非领地交界处描边。
     private void drawChunkOutline(GuiGraphics graphics, TerritoryGroup group, ChunkPos chunk,
             int[] rect, int color) {
         int borderWidth = Math.max(1, Math.round(group.borderStyle().width()));
@@ -425,7 +425,7 @@ public final class WorldMapScreen extends Screen {
         }
     }
 
-    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充（规格 §7.6）。
+    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充。
     private void drawBorderSegment(GuiGraphics graphics, int x, int y, int width, int height,
             int color, boolean dashed, boolean horizontal) {
         if (!dashed) {
@@ -459,7 +459,7 @@ public final class WorldMapScreen extends Screen {
         return (alpha << 24) | (rgb & 0xFFFFFF);
     }
 
-    /// 世界地图上的路径点标记（规格 §5.1）。
+    /// 世界地图上的路径点标记。
     private void drawWaypoints(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
@@ -478,7 +478,7 @@ public final class WorldMapScreen extends Screen {
         }
     }
 
-    /// 世界地图上的临时标点波纹（规格 §3.2.2）。
+    /// 世界地图上的临时标点波纹。
     private void drawPings(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
@@ -540,13 +540,13 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        // 双击左键在地图位置创建路径点（规格 §2.3 / §8）。
+        // 双击左键在地图位置创建路径点。
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && doubleClick) {
             createWaypointAt(event.x(), event.y());
             dragging = false;
             return true;
         }
-        // 右键在该位置发起临时标点，并通知外部模组（规格 §2.3 / §3.2.2）。
+        // 右键在该位置发起临时标点，并通知外部模组。
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             createPingAt(event.x(), event.y());
             return true;
@@ -642,7 +642,7 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
-        // ESC 与呼出键均可关闭世界地图（规格 §8）。
+        // ESC 与呼出键均可关闭世界地图。
         if (event.key() == GLFW.GLFW_KEY_ESCAPE
                 || AtlasKeyMappings.OPEN_WORLD_MAP.matches(event)) {
             onClose();

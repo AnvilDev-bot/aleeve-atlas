@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 服务端负载处理（规格 §1 / §10）：玩家登录后主动下发握手包。
+/// 服务端负载处理：玩家登录后主动下发握手包。
 ///
 /// 服务端未安装本模组时不会下发，客户端保持独立模式；客户端未安装时 NeoForge 跳过 optional 载荷。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID)
@@ -32,7 +32,7 @@ public final class ServerPayloadHandler {
         LOGGER.debug("Sent handshake to {}", player.getGameProfile().name());
     }
 
-    /// 玩家断开后清理其未收齐的摘要批次聚合，避免服务端内存残留（§10）。
+    /// 玩家断开后清理其未收齐的摘要批次聚合，避免服务端内存残留。
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) {

@@ -6,7 +6,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/// 握手包（规格 §1 / §4.1 / §10）：服务端在玩家登录后主动下发。
+/// 握手包：服务端在玩家登录后主动下发。
 ///
 /// 除确认协同模式外，同时下发非同队玩家可见性策略与雷达最大距离等锁定项。
 public record HandshakePayload(String protocolVersion, boolean syncEnabled,

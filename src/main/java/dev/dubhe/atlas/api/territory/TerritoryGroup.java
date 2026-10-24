@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 单个领地对象（规格 §7.1 / §7.6）。
+/// 单个领地对象。
 ///
 /// 外部领地模组（FTB Chunks、Open Parties and Claims 或自研领地模组）实现本接口后，
 /// 经 {@link TerritoryOverlayApi#upsertTerritory} 注入本模组，即可在世界地图与小地图上渲染覆层。
@@ -36,7 +36,7 @@ public interface TerritoryGroup {
     /// 鼠标悬停详情。
     List<Component> tooltip();
 
-    /// 重叠时的渲染优先级，数值越大越靠上（规格 §7.7）。
+    /// 重叠时的渲染优先级，数值越大越靠上。
     default int zOrder() {
         return 0;
     }

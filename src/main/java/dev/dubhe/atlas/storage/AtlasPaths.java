@@ -7,7 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import net.minecraft.resources.Identifier;
 
-/// 数据存储路径布局（规格 §11）。
+/// 数据存储路径布局。
 ///
 /// `<游戏目录>/aleeve_atlas/mapdata/<服务器标识或存档名>/<维度ID>/`
 /// 服务器标识对 IP/端口做不可逆但稳定的规范化，避免泄露服务器地址原文。
@@ -28,7 +28,7 @@ public final class AtlasPaths {
         return root(gameDir).resolve(MAPDATA).resolve(sanitize(serverKey));
     }
 
-    /// 某维度在小地图缓存中的目录；维度以 `Identifier` 标识（规格 §2.1）。
+    /// 某维度在小地图缓存中的目录；维度以 `Identifier` 标识。
     public static Path dimensionDir(Path gameDir, String serverKey, Identifier dimension) {
         return serverRoot(gameDir, serverKey).resolve(sanitize(dimension.toString()));
     }

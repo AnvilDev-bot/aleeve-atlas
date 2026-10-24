@@ -10,7 +10,7 @@ import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 import org.junit.jupiter.api.Test;
 
-/// 领地连通分量与加权极点锚点测试（规格 §7.2 / §7.4，验收 AC-8 / AC-9）。
+/// 领地连通分量与加权极点锚点测试。
 class TerritoryComponentsTest {
     @Test
     void diagonalContactsFormSingleComponent() {

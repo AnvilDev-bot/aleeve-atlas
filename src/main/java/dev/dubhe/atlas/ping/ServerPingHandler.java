@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 
 
-/// 服务端标点处理（规格 §3.2 / §10）：校验后广播给同队在线成员。
+/// 服务端标点处理：校验后广播给同队在线成员。
 public final class ServerPingHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/ping");
 
@@ -19,7 +19,7 @@ public final class ServerPingHandler {
     }
 
     public static void handle(PingPayload payload, IPayloadContext context) {
-        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        // 服务端关闭协同同步时丢弃同步类数据包。
         if (!AleeveAtlas.CONFIG.sync.enabled) {
             return;
         }
@@ -27,7 +27,7 @@ public final class ServerPingHandler {
             return;
         }
         MapPingData ping = payload.ping();
-        // 服务端以实际发送者信息覆盖，防止伪造（规格 §10 降级约束：服务端必须校验发送方权限）。
+        // 服务端以实际发送者信息覆盖，防止伪造。
         MapPingData verified = new MapPingData(ping.pingId(), sender.getUUID(),
                 sender.getGameProfile().name(), ping.teamColorArgb(), ping.dimensionId(),
                 ping.position(), ping.targetEntityId(), ping.icon(), ping.createdAtMillis(),

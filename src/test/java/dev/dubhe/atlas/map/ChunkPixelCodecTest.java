@@ -15,7 +15,7 @@ import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
 import org.junit.jupiter.api.Test;
 
-/// 区块像素压缩与摘要/差异分片测试（规格 §10 体积约束 / §3.3）。
+/// 区块像素压缩与摘要/差异分片测试。
 class ChunkPixelCodecTest {
     @Test
     void compressRoundTripPreservesPixels() {

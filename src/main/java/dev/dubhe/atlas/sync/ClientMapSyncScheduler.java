@@ -14,7 +14,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 地图摘要上报调度（规格 §3.3）。
+/// 地图摘要上报调度。
 ///
 /// 触发时机：
 /// 1. 进入协同模式后上报一次（新上线/入队追赶同步的起点）；
@@ -49,7 +49,7 @@ public final class ClientMapSyncScheduler {
             LOGGER.debug("Initial map digest reported");
             return;
         }
-        // 周期性上报，让队友持续获知本地新探索区块（§3.3 实时共探）。
+        // 周期性上报，让队友持续获知本地新探索区块。
         if (++ticksSinceReport >= SyncBudget.intervalTicks()) {
             ticksSinceReport = 0;
             ClientMapSync.reportLocalDigest();
@@ -66,7 +66,7 @@ public final class ClientMapSyncScheduler {
         reset();
     }
 
-    /// 队友入队后立即重报摘要，让新成员尽快获得已有地图（§3.3 / §3.1）。
+    /// 队友入队后立即重报摘要，让新成员尽快获得已有地图。
     @SubscribeEvent
     public static void onTeamChanged(
             TeamMembershipChangedEvent event) {
@@ -87,7 +87,7 @@ public final class ClientMapSyncScheduler {
         ticksSinceReport = 0;
         reportedOnce = false;
         ClientMapSync.clear();
-        // 清理跨会话残留的雷达渐隐与标点状态（§12.1 内存占用）。
+        // 清理跨会话残留的雷达渐隐与标点状态。
         VisibilityFade.clear();
         ClientPings.clear();
     }

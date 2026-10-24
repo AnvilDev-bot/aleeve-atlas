@@ -3,7 +3,7 @@ package dev.dubhe.atlas.client.territory;
 import java.util.ArrayList;
 import java.util.List;
 
-/// 矩形与圆形求交后的填充行段计算（规格 §2.2 圆形小地图）。
+/// 矩形与圆形求交后的填充行段计算。
 ///
 /// 逐行计算矩形与圆的交集区间，并把裁剪区间一致的相邻行合并为一段，
 /// 减少 HUD 绘制调用；线段数量与圆半径成线性关系而非与面积成平方关系。

@@ -9,12 +9,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
-/// 多采样点射线检测可见性判定（规格 §4.2 降级方案，默认可用）。
+/// 多采样点射线检测可见性判定。
 ///
 /// 在目标玩家碰撞箱上取多个采样点（头部、胸口、脚部、左右肩），
 /// 任一采样点与观察者眼睛之间无方块遮挡即判定为可见，避免单点采样被半砖遮挡误判。
 public final class RaycastVisibilityResolver implements VisibilityResolver {
-    /// 采样点数量上限，控制每帧射线开销（规格 §12.1）。
+    /// 采样点数量上限，控制每帧射线开销。
     private static final int MAX_SAMPLES = 5;
 
     @Override

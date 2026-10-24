@@ -4,9 +4,9 @@ import java.util.Arrays;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.ChunkPos;
 
-/// 单个区块的地图数据（规格 §2.1）。
+/// 单个区块的地图数据。
 ///
-/// 保存 `16 x 16` 像素的 ARGB 颜色与每列地表高度，可序列化为 `CompoundTag`（规格 §11：优先 NBT 持久化）。
+/// 保存 `16 x 16` 像素的 ARGB 颜色与每列地表高度，可序列化为 `CompoundTag`。
 public final class ChunkMapData {
     public static final int SIZE = 16;
     public static final int PIXELS = SIZE * SIZE;
@@ -15,7 +15,7 @@ public final class ChunkMapData {
     private final int chunkZ;
     private final int[] colors;
     private final int[] heights;
-    /// 数据版本号，供增量同步摘要比对使用（规格 §3.3）。
+    /// 数据版本号，供增量同步摘要比对使用。
     private long version;
 
     public ChunkMapData(int chunkX, int chunkZ) {

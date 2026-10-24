@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
 
-/// 路径点标记渲染（规格 §5.1）。
+/// 路径点标记渲染。
 ///
 /// 小地图与世界地图共用同一套绘制：以菱形标记 + 深色描边表示路径点位置。
 public final class WaypointRenderer {
@@ -19,7 +19,7 @@ public final class WaypointRenderer {
     private WaypointRenderer() {
     }
 
-    /// 在小地图上绘制可见路径点（规格 §5.1：小地图边缘/内部同时渲染）。
+    /// 在小地图上绘制可见路径点。
     ///
     /// 落在小地图范围内的路径点绘制在对应坐标；超出范围的钳制到边缘，
     /// 以缩小标记提示方向，避免玩家看不到视野外路径点的方位。
@@ -86,7 +86,7 @@ public final class WaypointRenderer {
         drawMarker(graphics, screenX, screenZ, color, icon);
     }
 
-    /// 按图标类型绘制路径点标记（规格 §5.1 颜色/图标标识）。
+    /// 按图标类型绘制路径点标记。
     ///
     /// 死亡点绘制十字，其余绘制菱形，形状差异使两类路径点在缩小后仍可区分。
     static void drawMarker(GuiGraphics graphics, double screenX, double screenZ, int color,

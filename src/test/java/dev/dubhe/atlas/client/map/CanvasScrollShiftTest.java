@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 画布像素搬移的重叠正确性测试（规格 §12.1）。
+/// 画布像素搬移的重叠正确性测试。
 ///
 /// 源区域与目标区域重叠时，遍历顺序错误会覆盖尚未读取的像素，产生画面撕裂。
 /// 此处用整型网格模拟实际搬移过程，验证搬移结果是原图的有效子区域。

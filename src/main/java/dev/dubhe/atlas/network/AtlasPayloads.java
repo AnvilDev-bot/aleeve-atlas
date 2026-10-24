@@ -18,7 +18,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.HandlerThread;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/// 全部自定义负载注册（规格 §10）。
+/// 全部自定义负载注册。
 ///
 /// 统一在此声明协议版本与每类负载的方向、编解码器与处理器，注册为 `optional()`：
 /// 客户端未安装本模组时服务端不会发送，反之亦然。
@@ -35,25 +35,25 @@ public final class AtlasPayloads {
         // `optional()` 返回副本而非修改当前实例，必须接收返回值。
         PayloadRegistrar registrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION).optional();
 
-        // 握手：服务端在玩家登录后下发，含协同模式与可见性锁定项（§1/§4.1）。
+        // 握手：服务端在玩家登录后下发，含协同模式与可见性锁定项。
         registrar.playToClient(HandshakePayload.TYPE, HandshakePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleHandshake);
 
-        // 标点：上报与广播使用不同 payload 类型，避免方向冲突（§3.2/§10）。
+        // 标点：上报与广播使用不同 payload 类型，避免方向冲突。
         registrar.playToServer(PingPayload.TYPE, PingPayload.STREAM_CODEC,
                 ServerPingHandler::handle);
         registrar.playToClient(PingBroadcastPayload.TYPE, PingBroadcastPayload.STREAM_CODEC,
                 ClientPings::handle);
 
-        // 路径点同步：收发策略由客户端配置决定（§5.2/§5.3）。
+        // 路径点同步：收发策略由客户端配置决定。
         registrar.playBidirectional(WaypointSyncPayload.TYPE, WaypointSyncPayload.STREAM_CODEC,
                 WaypointSyncHandler::handle, ClientWaypointSync::handle);
 
-        // 地图增量同步：摘要双向转发（服务端聚合后转发，§3.3）。
+        // 地图增量同步：摘要双向转发（服务端聚合后转发）。
         registrar.playBidirectional(ChunkDigestPayload.TYPE, ChunkDigestPayload.STREAM_CODEC,
                 ServerMapSync::handleDigest, ClientMapSync::handleDigest);
 
-        // 增量分片解压属密集计算，注册为网络线程执行（规格 §10）：
+        // 增量分片解压属密集计算，注册为网络线程执行：
         // 处理器在网络线程完成解压，再用 context.enqueueWork 切回主线程写缓存。
         PayloadRegistrar deltaRegistrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION)
                 .executesOn(HandlerThread.NETWORK)
@@ -62,7 +62,7 @@ public final class AtlasPayloads {
                 ChunkDeltaPayload.STREAM_CODEC, ServerMapSync::handleDelta,
                 ClientMapSync::handleDelta);
 
-        // 领地下发：服务端 API 推送、客户端重组后写入注册表（§7.1）。
+        // 领地下发：服务端 API 推送、客户端重组后写入注册表。
         registrar.playToClient(TerritorySyncPayload.TYPE, TerritorySyncPayload.STREAM_CODEC,
                 ClientTerritorySync::handle);
     }

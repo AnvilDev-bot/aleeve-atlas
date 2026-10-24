@@ -11,7 +11,7 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import org.lwjgl.glfw.GLFW;
 
-/// 键位注册（规格 §8）。
+/// 键位注册。
 ///
 /// 全部使用 `InputConstants.Type.KEYSYM`（GLFW key token），禁止扫描码；
 /// 游戏内键位使用 `IN_GAME` 冲突上下文，并注册独立 `KeyMapping.Category`。

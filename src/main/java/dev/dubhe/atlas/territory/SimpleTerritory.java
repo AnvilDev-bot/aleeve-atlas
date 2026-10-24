@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 
-/// 领地对象的最小实现，供 API 调用方与演示使用（规格 §7.6）。
+/// 领地对象的最小实现，供 API 调用方与演示使用。
 ///
 /// 外部模组可以直接实现 {@link TerritoryGroup}，也可以复用本记录以减少样板代码。
 public record SimpleTerritory(

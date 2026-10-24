@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/// 渲染耗时统计测试（规格 §12.1 性能指标）。
+/// 渲染耗时统计测试。
 class RenderTimerTest {
     @Test
     void averageAndMaxAreTracked() {

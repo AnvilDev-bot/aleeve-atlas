@@ -2,7 +2,7 @@ package dev.dubhe.atlas.sync;
 
 import dev.dubhe.atlas.AleeveAtlas;
 
-/// 地图增量同步的发送预算（规格 §9.2 / §12.1）。
+/// 地图增量同步的发送预算。
 ///
 /// 以「每秒字节配额」限制差异分片发送速率，避免堵塞实体与移动等实时包；
 /// 配额按 tick 折算，令牌桶式补充，超限时排队等待下一次机会。
@@ -46,7 +46,7 @@ public final class SyncBudget {
         packetsThisTick++;
     }
 
-    /// 同步推送间隔（tick），取自服务端配置（规格 §9.2）。
+    /// 同步推送间隔（tick），取自服务端配置。
     public static int intervalTicks() {
         int configured = AleeveAtlas.CONFIG.sync.mapDeltaIntervalTicks;
         return Math.max(10, configured);

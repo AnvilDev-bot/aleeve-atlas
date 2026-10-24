@@ -14,24 +14,24 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 服务端地图增量同步协调（规格 §3.3）。
+/// 服务端地图增量同步协调。
 ///
 /// 职责：接收某玩家上报的区块摘要批次，聚合成完整摘要后转发给同队其他在线成员；
 /// 由这些成员各自计算「自己已探索而对方缺失」的区块并回传差异。
-/// 服务端不持久化任何玩家地图数据（规格 §11 离线原则），仅在内存中暂存批次聚合结果。
+/// 服务端不持久化任何玩家地图数据，仅在内存中暂存批次聚合结果。
 public final class ServerMapSync {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapsync");
 
     /// 摘要聚合状态：按「发起者 + 维度」暂存。
     private static final Map<Key, Aggregation> PENDING = new HashMap<>();
-    /// 聚合器超时（毫秒）：分片丢失时按此时间回收（§3.3）。
+    /// 聚合器超时（毫秒）：分片丢失时按此时间回收。
     private static final long AGGREGATION_TIMEOUT_MILLIS = 60_000L;
 
     private ServerMapSync() {
     }
 
     public static void handleDigest(ChunkDigestPayload payload, IPayloadContext context) {
-        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        // 服务端关闭协同同步时丢弃同步类数据包。
         if (!AleeveAtlas.CONFIG.sync.enabled) {
             return;
         }
@@ -40,7 +40,7 @@ public final class ServerMapSync {
         }
         Key key = new Key(sender.getUUID(), payload.dimensionId());
         long now = System.currentTimeMillis();
-        // 清理超时未收齐的聚合：分片丢失时不应永久占用内存（§3.3）。
+        // 清理超时未收齐的聚合：分片丢失时不应永久占用内存。
         PENDING.entrySet().removeIf(entry -> now - entry.getValue().lastUpdateMillis()
                 > AGGREGATION_TIMEOUT_MILLIS);
         Aggregation aggregation = PENDING.computeIfAbsent(key,
@@ -68,23 +68,23 @@ public final class ServerMapSync {
                 aggregation.entries().size(), sender.getGameProfile().name());
     }
 
-    /// 收到队友回传的差异分片：转发给当初上报摘要的发起者（规格 §3.3 分片流式传输）。
+    /// 收到队友回传的差异分片：转发给当初上报摘要的发起者。
     ///
-    /// 本处理器注册为网络线程执行（§10），玩家与队伍查询属主线程 API，故切回主线程转发。
+    /// 本处理器注册为网络线程执行，玩家与队伍查询属主线程 API，故切回主线程转发。
     public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> forwardDelta(payload, context));
     }
 
     /// 在主线程把差异分片转发给摘要发起者。
     private static void forwardDelta(ChunkDeltaPayload payload, IPayloadContext context) {
-        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        // 服务端关闭协同同步时丢弃同步类数据包。
         if (!AleeveAtlas.CONFIG.sync.enabled) {
             return;
         }
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
-        // 差异只回传给摘要发起者，避免在全体队友间重复回流（§3.3）。
+        // 差异只回传给摘要发起者，避免在全体队友间重复回流。
         UUID targetId = payload.targetPlayer();
         if (targetId == null) {
             return;
@@ -110,7 +110,7 @@ public final class ServerMapSync {
     /// 摘要批次聚合器。
     ///
     /// 收齐判定委托给 {@link BatchTracker}，与客户端领地分片共用同一套规则：
-    /// 按序号去重、期望片数随最新分片更新、记录最近更新时间供超时回收（§3.3）。
+    /// 按序号去重、期望片数随最新分片更新、记录最近更新时间供超时回收。
     private static final class Aggregation {
         private final BatchTracker tracker;
         private final Map<Integer, List<ChunkDigestPayload.Entry>> batches = new HashMap<>();

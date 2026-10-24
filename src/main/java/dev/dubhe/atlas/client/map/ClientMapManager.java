@@ -19,10 +19,10 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 客户端地图数据管理器（规格 §2.1）。
+/// 客户端地图数据管理器。
 ///
 /// 负责：按「服务器标识 → 维度」隔离地图缓存、按 tick 限速采样玩家周围区块、
-/// 把采样结果写入小地图纹理。采样仅在区块加载时进行，稳态跑图不重复采样（规格 §2.1 / §12.1）。
+/// 把采样结果写入小地图纹理。采样仅在区块加载时进行，稳态跑图不重复采样。
 public final class ClientMapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/clientmap");
     /// 每 tick 最多采样的区块数，避免集中采样造成掉帧。
@@ -31,18 +31,18 @@ public final class ClientMapManager {
     public static final int VIEW_CHUNK_RADIUS = 4;
     /// 洞穴模式下触发重新采样的层高变化阈值（方块）。
     ///
-    /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上（§2.1）。
+    /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上。
     private static final int CAVE_LAYER_RESCAN_THRESHOLD = 8;
 
     private final MapTexture texture = new MapTexture(AleeveAtlas.id("minimap"));
     private final Map<String, MapDimensionCache> caches = new HashMap<>();
-    /// 洞穴分层缓存：与地表缓存并行存在，切回地表时立即恢复（§2.1）。
+    /// 洞穴分层缓存：与地表缓存并行存在，切回地表时立即恢复。
     private MapDimensionCache caveCache;
     private String currentServerKey;
     private ResourceKey<Level> currentDimension;
     private boolean textureRegistered;
     private boolean loggedFirstSample;
-    /// 洞穴缓存的采样层高；玩家层高变化超过阈值时清空缓存重新采样（§2.1）。
+    /// 洞穴缓存的采样层高；玩家层高变化超过阈值时清空缓存重新采样。
     private Integer caveLayerTop;
 
     /// 注册纹理；资源重载后需重新注册。
@@ -53,12 +53,12 @@ public final class ClientMapManager {
         }
     }
 
-    /// 资源重载后重置注册标志，使下次 tick 重新注册动态纹理（§2.2）。
+    /// 资源重载后重置注册标志，使下次 tick 重新注册动态纹理。
     public void onResourceReload() {
         textureRegistered = false;
     }
 
-    /// 洞穴模式是否需要在本次 tick 重建分层缓存（§2.1）。
+    /// 洞穴模式是否需要在本次 tick 重建分层缓存。
     ///
     /// 缓存不区分层高，玩家上下移动超过阈值后继续命中旧缓存会让地图停留在旧层级。
     /// 非洞穴模式或首次进入洞穴时不重建。
@@ -78,7 +78,7 @@ public final class ClientMapManager {
         String serverKey = serverKey(minecraft);
         MapDimensionCache cache = cacheFor(minecraft, serverKey, level.dimension());
         if (!serverKey.equals(currentServerKey) || !level.dimension().equals(currentDimension)) {
-            // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据（§11）。
+            // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据。
             if (caveCache != null) {
                 caveCache.flush();
             }
@@ -90,11 +90,11 @@ public final class ClientMapManager {
 
         ChunkPos center = minecraft.player.chunkPosition();
         texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
-        // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式（§2.1）。
+        // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式。
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
         int caveTop = minecraft.player.blockPosition().getY() + 8;
         if (needsCaveRescan(caveMode, caveLayerTop, caveTop)) {
-            // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级（§2.1）。
+            // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级。
             caveCache.flush();
             caveCache = caveCacheFor(minecraft, currentServerKey, level.dimension());
         }
@@ -110,7 +110,7 @@ public final class ClientMapManager {
                     }
                     int chunkX = center.x + dx;
                     int chunkZ = center.z + dz;
-                    // 洞穴模式使用独立的分层缓存，避免覆盖地表数据（§2.1）。
+                    // 洞穴模式使用独立的分层缓存，避免覆盖地表数据。
                     Integer layerTop = caveMode
                             ? minecraft.player.blockPosition().getY() + 8
                             : null;
@@ -130,7 +130,7 @@ public final class ClientMapManager {
                         continue;
                     }
                     sampledData.setVersion(System.currentTimeMillis());
-                    // 分层数据写入独立缓存，不污染地表地图（§2.1）。
+                    // 分层数据写入独立缓存，不污染地表地图。
                     if (caveMode) {
                         caveCache.put(sampledData);
                     } else {
@@ -141,7 +141,7 @@ public final class ClientMapManager {
                 }
             }
         }
-        // 合并本 tick 的像素改动，只上传一次纹理（§12.1）。
+        // 合并本 tick 的像素改动，只上传一次纹理。
         texture.flushDirty();
         if (sampled > 0 && !loggedFirstSample) {
             loggedFirstSample = true;
@@ -172,7 +172,7 @@ public final class ClientMapManager {
         for (MapDimensionCache cache : caches.values()) {
             cache.flush();
         }
-        // 洞穴分层缓存独立于地表缓存，必须一并写入磁盘（规格 §2.1 / §11）。
+        // 洞穴分层缓存独立于地表缓存，必须一并写入磁盘。
         if (caveCache != null) {
             caveCache.flush();
         }
@@ -197,7 +197,7 @@ public final class ClientMapManager {
         });
     }
 
-    /// 洞穴分层缓存目录：在地表层目录下加 `_cave` 后缀区分（§2.1 / §11）。
+    /// 洞穴分层缓存目录：在地表层目录下加 `_cave` 后缀区分。
     private MapDimensionCache caveCacheFor(Minecraft minecraft, String serverKey,
             ResourceKey<Level> dimension) {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
@@ -208,7 +208,7 @@ public final class ClientMapManager {
         return minecraft.gameDirectory.toPath();
     }
 
-    /// 服务器/存档标识（规格 §11）。
+    /// 服务器/存档标识。
     private static String serverKey(Minecraft minecraft) {
         return ServerKey.resolve(minecraft);
     }

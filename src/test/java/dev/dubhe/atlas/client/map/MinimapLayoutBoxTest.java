@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import dev.dubhe.atlas.config.MinimapPosition;
 import org.junit.jupiter.api.Test;
 
-/// 小地图尺寸与定位的边界测试（规格 §2.2）。
+/// 小地图尺寸与定位的边界测试。
 ///
 /// 极端缩放或自定义偏移下，小地图必须完整落在屏幕内，不能出现负坐标。
 class MinimapLayoutBoxTest {

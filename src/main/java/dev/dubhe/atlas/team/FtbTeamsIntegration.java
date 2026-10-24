@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// FTB Teams 队伍适配（规格 §3.1 / §12.2）。
+/// FTB Teams 队伍适配。
 ///
 /// 通过 AnvilLib `@Integration` 声明的软依赖：仅当客户端同时安装 FTB Teams 且版本满足要求时，
 /// AnvilLib 才会加载本类并调用 `applyClient()`；未安装时本类不被解析，因此不构成硬依赖。
