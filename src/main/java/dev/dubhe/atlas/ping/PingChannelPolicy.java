@@ -44,10 +44,14 @@ public final class PingChannelPolicy {
         return externalPingModPresent()
                 && AtlasClientConfigs.CONFIG.ping.channelMode == PingChannelMode.TAKEOVER;
     }
+
     /// 是否存在重复标点风险（供诊断与提示）。
+    ///
+    /// `AUTO` 下本模组让位、外部模组自行处理；`TAKEOVER` 下本模组代为转发，
+    /// 两者都要求外部模组按约定配合，否则会出现同一次标点被广播两次。
     public static boolean duplicateRisk() {
         return externalPingModPresent() && AtlasClientConfigs.CONFIG.ping.channelMode
-                == PingChannelMode.AUTO;
+                != PingChannelMode.LISTEN_ONLY;
     }
 
     /// 当前生效策略的可读描述（诊断用）。
