@@ -37,6 +37,7 @@ class WaypointTest {
         assertEquals(300, restored.visibleDistance());
         assertFalse(restored.deathPoint());
         assertEquals("Aleeve", restored.sourcePlayer());
+        assertTrue(restored.shareable(), "私密标记必须随序列化保留");
     }
 
     @Test
@@ -71,5 +72,20 @@ class WaypointTest {
     private static ResourceKey<Level> resolve(String raw) {
         Identifier id = Identifier.tryParse(raw);
         return id == null ? Level.OVERWORLD : ResourceKey.create(Registries.DIMENSION, id);
+    }
+
+    @Test
+    void withShareableKeepsOtherFields() {
+        Waypoint original = new Waypoint(UUID.randomUUID(), "Secret", new BlockPos(1, 70, 2),
+                OVERWORLD, 0xFF123456, "default", true, 200, false, "Aleeve", true);
+        Waypoint priv = original.withShareable(false);
+
+        assertFalse(priv.shareable(), "切换后应为私密");
+        assertEquals(original.id(), priv.id());
+        assertEquals(original.name(), priv.name());
+        assertEquals(original.pos(), priv.pos());
+        assertEquals(original.colorArgb(), priv.colorArgb());
+        assertEquals(original.visibleDistance(), priv.visibleDistance());
+        assertEquals(original.sourcePlayer(), priv.sourcePlayer());
     }
 }

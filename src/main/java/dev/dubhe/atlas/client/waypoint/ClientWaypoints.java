@@ -167,9 +167,10 @@ public final class ClientWaypoints {
         waypointStore.upsert(waypoint);
         if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
                 == WaypointSendPolicy.AUTO_SYNC) {
-            share(waypoint);
+            shareIfAllowed(waypoint);
         }
     }
+
     /// 新增路径点（自动同步策略下发往服务端，规格 §5.2）。
     public static void add(Waypoint waypoint) {
         WaypointStore waypointStore = store();
@@ -179,8 +180,16 @@ public final class ClientWaypoints {
         waypointStore.upsert(waypoint);
         if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
                 == WaypointSendPolicy.AUTO_SYNC) {
-            share(waypoint);
+            shareIfAllowed(waypoint);
         }
+    }
+
+    /// 自动同步策略下的广播：私密路径点不参与，避免被自动分享（规格 §5.2）。
+    private static void shareIfAllowed(Waypoint waypoint) {
+        if (!waypoint.shareable()) {
+            return;
+        }
+        share(waypoint);
     }
 
     /// 某维度的全部启用路径点（世界地图展示用，不按玩家距离过滤）。
