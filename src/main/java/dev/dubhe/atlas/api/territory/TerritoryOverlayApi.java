@@ -1,10 +1,9 @@
 package dev.dubhe.atlas.api.territory;
 
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-
 import java.util.Set;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 
 /// 领地覆层 API 入口（规格 §7.6）。
 ///

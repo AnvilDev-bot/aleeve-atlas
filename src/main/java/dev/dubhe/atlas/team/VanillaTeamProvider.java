@@ -1,7 +1,5 @@
 package dev.dubhe.atlas.team;
 
-import net.minecraft.world.entity.player.Player;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -9,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 
 /// 原版计分板队伍适配（规格 §3.1 默认实现）。
