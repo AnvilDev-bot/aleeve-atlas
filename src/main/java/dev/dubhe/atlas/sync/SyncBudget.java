@@ -46,11 +46,6 @@ public final class SyncBudget {
         packetsThisTick++;
     }
 
-    /// 当前窗口剩余配额（诊断用）。
-    public long remainingBytes() {
-        int budget = AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond;
-        return Math.max(0L, budget - bytesSentInWindow);
-    }
 
     /// 同步推送间隔（tick），取自服务端配置（规格 §9.2）。
     public static int intervalTicks() {
