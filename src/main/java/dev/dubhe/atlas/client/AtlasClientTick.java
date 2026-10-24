@@ -1,31 +1,31 @@
 package dev.dubhe.atlas.client;
 
-import dev.dubhe.atlas.sync.ClientMapSync;
-
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.client.map.AtlasWorldMap;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
-import dev.dubhe.atlas.ping.ClientPings;
-import java.util.UUID;
-import net.minecraft.world.phys.Vec3;
-import dev.dubhe.atlas.ping.MapPingData;
-import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.config.ConfigBounds;
+import dev.dubhe.atlas.ping.ClientPings;
+import dev.dubhe.atlas.ping.MapPingData;
+import dev.dubhe.atlas.sync.ClientMapSync;
+import dev.dubhe.atlas.waypoint.Waypoint;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /// 客户端 tick 入口（规格 §8）：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)

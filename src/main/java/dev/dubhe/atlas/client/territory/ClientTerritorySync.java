@@ -1,17 +1,17 @@
 package dev.dubhe.atlas.client.territory;
 
-import java.util.HashSet;
-
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import dev.dubhe.atlas.territory.SyncedTerritory;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /// 客户端领地接收与分片重组（规格 §7.1）。
 ///

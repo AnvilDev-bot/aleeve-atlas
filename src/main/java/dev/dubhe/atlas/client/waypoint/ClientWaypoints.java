@@ -1,32 +1,32 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.AtlasSession;
+import dev.dubhe.atlas.config.AtlasClientConfigs;
+import dev.dubhe.atlas.config.WaypointSendPolicy;
+import dev.dubhe.atlas.storage.ServerKey;
+import dev.dubhe.atlas.waypoint.Waypoint;
+import dev.dubhe.atlas.waypoint.WaypointStore;
+import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.resources.ResourceKey;
-
-import dev.dubhe.atlas.config.WaypointSendPolicy;
-import dev.dubhe.atlas.storage.ServerKey;
-
-import dev.dubhe.atlas.AleeveAtlas;
-import dev.dubhe.atlas.config.AtlasClientConfigs;
-import dev.dubhe.atlas.waypoint.Waypoint;
-import dev.dubhe.atlas.waypoint.WaypointStore;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import dev.dubhe.atlas.AtlasSession;
-import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+
+
 
 /// 客户端路径点管理器（规格 §5.1）。
 ///

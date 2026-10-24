@@ -74,7 +74,6 @@ public final class WaypointRenderer {
         graphics.fill(x, z, x + 1, z + 1, 0xFF101010);
     }
 
-
     /// 在世界地图上绘制路径点（屏幕坐标由调用方换算）。
     public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
             int color) {

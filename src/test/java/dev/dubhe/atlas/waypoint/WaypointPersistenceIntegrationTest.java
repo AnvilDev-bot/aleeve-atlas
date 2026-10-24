@@ -22,7 +22,6 @@ class WaypointPersistenceIntegrationTest {
     @TempDir
     Path tempDir;
 
-
     @Test
     void simultaneousUpdatesAcrossDimensionsDoNotInterfere() {
         WaypointStore ow = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);

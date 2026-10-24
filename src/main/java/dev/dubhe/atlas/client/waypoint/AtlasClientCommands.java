@@ -1,8 +1,5 @@
 package dev.dubhe.atlas.client.waypoint;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.CommandDispatcher;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.BorderStyle;
@@ -24,12 +21,15 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.CommandDispatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// 客户端命令（规格 §5.3 手动接受交互、§7 领地演示）。
 ///

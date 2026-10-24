@@ -1,16 +1,16 @@
 package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AleeveAtlas;
-
-import net.minecraft.world.scores.PlayerTeam;
-
 import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
 
 /// 服务端标点处理（规格 §3.2 / §10）：校验后广播给同队在线成员。
 public final class ServerPingHandler {

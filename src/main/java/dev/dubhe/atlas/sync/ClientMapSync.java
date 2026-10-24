@@ -1,10 +1,5 @@
 package dev.dubhe.atlas.sync;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.Queue;
-import java.util.UUID;
-import net.minecraft.client.Minecraft;
-
 import dev.dubhe.atlas.client.map.AtlasClientMap;
 import dev.dubhe.atlas.client.map.ClientMapManager;
 import dev.dubhe.atlas.client.map.WorldMapScreen;
@@ -13,16 +8,21 @@ import dev.dubhe.atlas.map.ChunkPixelCodec;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
-
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.UUID;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+
 
 /// 客户端地图增量同步（规格 §3.3）。
 ///

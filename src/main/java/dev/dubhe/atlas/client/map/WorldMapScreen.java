@@ -1,44 +1,44 @@
 package dev.dubhe.atlas.client.map;
 
 import dev.dubhe.atlas.AtlasSession;
-import net.minecraft.util.Mth;
-
-import dev.dubhe.atlas.client.AtlasKeyMappings;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
+import dev.dubhe.atlas.client.AtlasKeyMappings;
+import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
+import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
+import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
+import dev.dubhe.atlas.config.ConfigBounds;
+import dev.dubhe.atlas.map.ChunkMapData;
+import dev.dubhe.atlas.map.MapDimensionCache;
+import dev.dubhe.atlas.ping.ClientPings;
+import dev.dubhe.atlas.ping.MapPingData;
+import dev.dubhe.atlas.ping.PingRenderer;
 import dev.dubhe.atlas.territory.TerritoryRegistry;
 import dev.dubhe.atlas.territory.TerritoryRuns;
+import dev.dubhe.atlas.waypoint.Waypoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.ChatFormatting;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
-import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
-import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
-import dev.dubhe.atlas.ping.ClientPings;
-import dev.dubhe.atlas.ping.MapPingData;
-import dev.dubhe.atlas.ping.PingRenderer;
-import dev.dubhe.atlas.waypoint.Waypoint;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
-import dev.dubhe.atlas.config.ConfigBounds;
-import dev.dubhe.atlas.map.ChunkMapData;
-import dev.dubhe.atlas.map.MapDimensionCache;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /// 全屏世界地图（规格 §2.3）。
 ///

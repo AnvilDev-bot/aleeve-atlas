@@ -1,17 +1,17 @@
 package dev.dubhe.atlas.client.visibility;
 
-import java.util.Locale;
-
-import com.mojang.blaze3d.systems.GpuDevice;
-import com.mojang.blaze3d.systems.RenderSystem;
-import dev.dubhe.atlas.client.radar.VisibilityGate;
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.client.radar.VisibilityGate;
+import java.util.Locale;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /// 可见性实现的选取与降级决策（规格 §4.2 第 5 条）。
 ///

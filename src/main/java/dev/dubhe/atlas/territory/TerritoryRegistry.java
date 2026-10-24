@@ -1,6 +1,5 @@
 package dev.dubhe.atlas.territory;
 
-
 import dev.dubhe.atlas.api.territory.BorderStyle;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
