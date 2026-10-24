@@ -23,6 +23,9 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
                 "Server support component is not installed.");
 
         add("aleeve_atlas.hud.light", "Light: %s");
+        add("aleeve_atlas.hud.coords", "%s, %s, %s");
+        add("aleeve_atlas.hud.time", "%s:%s");
+        add("aleeve_atlas.hud.biome_unknown", "?");
 
         add("aleeve_atlas.message.ping_received", "%s sent a ping");
         add("aleeve_atlas.message.waypoint_received", "Waypoint from %2$s accepted: %1$s");

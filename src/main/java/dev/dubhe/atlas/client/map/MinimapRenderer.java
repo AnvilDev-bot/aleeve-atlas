@@ -173,10 +173,10 @@ public final class MinimapRenderer {
                 : y + size + 4;
         int textX = x;
         if (config.minimap.showCoords) {
-            Component text = Component.literal("%d, %d, %d".formatted(
+            Component text = Component.translatable("aleeve_atlas.hud.coords",
                     (int) Math.floor(player.getX()),
                     (int) Math.floor(player.getY()),
-                    (int) Math.floor(player.getZ())));
+                    (int) Math.floor(player.getZ()));
             graphics.drawString(minecraft.font, text, textX, line, TEXT_COLOR);
             line += 10;
         }
@@ -185,7 +185,8 @@ public final class MinimapRenderer {
             Component name = biome.unwrapKey()
                     .<Component>map(key -> Component.translatable(
                             "biome." + key.identifier().toLanguageKey()))
-                    .orElseGet(() -> Component.literal("?"));
+                    .orElseGet(() -> Component.translatable(
+                            "aleeve_atlas.hud.biome_unknown"));
             graphics.drawString(minecraft.font, name, textX, line, TEXT_COLOR);
             line += 10;
         }
@@ -201,8 +202,9 @@ public final class MinimapRenderer {
             int hours = (int) ((dayTime / 1000L + 6L) % 24L);
             int minutes = (int) ((dayTime % 1000L) * 60L / 1000L);
             graphics.drawString(minecraft.font,
-                    Component.literal("%02d:%02d".formatted(hours, minutes)), textX, line,
-                    TEXT_COLOR);
+                    Component.translatable("aleeve_atlas.hud.time",
+                            "%02d".formatted(hours), "%02d".formatted(minutes)),
+                    textX, line, TEXT_COLOR);
         }
     }
 }
