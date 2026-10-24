@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import dev.dubhe.atlas.AleeveAtlas;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
@@ -8,7 +9,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
-import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 
 /// 键位注册（规格 §8）。
@@ -43,6 +43,5 @@ public final class AtlasKeyMappings {
         event.registerCategory(CATEGORY);
         event.register(OPEN_WORLD_MAP);
         event.register(NEW_WAYPOINT);
-
     }
 }
