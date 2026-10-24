@@ -100,10 +100,43 @@ public final class PingRenderer {
             int dz = (int) Math.round(Math.sin(angle) * radius);
             graphics.fill(x + dx, z + dz, x + dx + 1, z + dz + 1, rippleColor);
         }
-        // 中心标记。
+        // 中心标记按图标类型区分（规格 §3.2.1 标点图标类型）。
         int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
-        graphics.fill(x - 2, z - 2, x + 2, z + 2, centerColor);
-        graphics.fill(x - 1, z - 1, x + 1, z + 1, 0xFFFFFFFF);
+        drawIcon(graphics, x, z, centerColor, ping.icon());
+    }
+
+    /// 按标点图标类型绘制中心标记。
+    ///
+    /// 四类标点形状各异，便于在密集标点时快速分辨：普通为方块，
+    /// 危险为叉形，集合为十字，物资为菱形。
+    static void drawIcon(GuiGraphics graphics, int x, int z, int color,
+            MapPingData.PingIcon icon) {
+        switch (icon) {
+            case DANGER -> {
+                // 叉形：两条对角线。
+                for (int offset = -2; offset <= 2; offset++) {
+                    graphics.fill(x + offset, z + offset, x + offset + 1, z + offset + 1, color);
+                    graphics.fill(x + offset, z - offset, x + offset + 1, z - offset + 1, color);
+                }
+            }
+            case RALLY -> {
+                // 十字：横竖两条。
+                graphics.fill(x - 3, z, x + 4, z + 1, color);
+                graphics.fill(x, z - 3, x + 1, z + 4, color);
+            }
+            case SUPPLY -> {
+                // 菱形：逐行收窄。
+                for (int offset = -2; offset <= 2; offset++) {
+                    int half = 2 - Math.abs(offset);
+                    graphics.fill(x - half, z + offset, x + half + 1, z + offset + 1, color);
+                }
+            }
+            default -> {
+                // 普通标点：实心方块加白心。
+                graphics.fill(x - 2, z - 2, x + 2, z + 2, color);
+                graphics.fill(x - 1, z - 1, x + 1, z + 1, 0xFFFFFFFF);
+            }
+        }
     }
 
     /// 圆形小地图形态判定。
