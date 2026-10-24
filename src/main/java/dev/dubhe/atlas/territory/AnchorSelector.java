@@ -30,7 +30,6 @@ public final class AnchorSelector {
 
         ChunkPos best = null;
         double bestScore = Double.NEGATIVE_INFINITY;
-        double bestDistance = 0.0;
         for (ChunkPos pos : component) {
             double distanceToBoundary = distanceToBoundary(component, pos);
             double dx = pos.x - centroidX;
@@ -41,15 +40,9 @@ public final class AnchorSelector {
             if (score > bestScore || (score == bestScore && betterTieBreak(pos, best))) {
                 best = pos;
                 bestScore = score;
-                bestDistance = distanceToBoundary;
             }
         }
         return best;
-    }
-
-    /// 页面评论用：仅按距离场选点（λ = 0），用于对比与测试。
-    public static ChunkPos selectPoleOnly(Set<ChunkPos> component) {
-        return select(component, 0.0F);
     }
 
     /// 区块到最近非领地区块（含外部与内部孔洞边界）的欧氏距离。
