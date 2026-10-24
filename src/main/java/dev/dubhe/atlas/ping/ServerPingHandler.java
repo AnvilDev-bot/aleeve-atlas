@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.ping;
 
+import dev.dubhe.atlas.AleeveAtlas;
+
 import net.minecraft.world.scores.PlayerTeam;
 
 import java.util.List;
@@ -18,6 +20,10 @@ public final class ServerPingHandler {
     }
 
     public static void handle(PingPayload payload, IPayloadContext context) {
+        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        if (!AleeveAtlas.CONFIG.sync.enabled) {
+            return;
+        }
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }

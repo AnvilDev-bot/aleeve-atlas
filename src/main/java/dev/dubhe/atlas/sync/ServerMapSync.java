@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.sync;
 
+import dev.dubhe.atlas.AleeveAtlas;
+
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
 import java.util.HashMap;
@@ -27,6 +29,10 @@ public final class ServerMapSync {
     }
 
     public static void handleDigest(ChunkDigestPayload payload, IPayloadContext context) {
+        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        if (!AleeveAtlas.CONFIG.sync.enabled) {
+            return;
+        }
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
@@ -65,6 +71,10 @@ public final class ServerMapSync {
 
     /// 在主线程把差异分片转发给摘要发起者。
     private static void forwardDelta(ChunkDeltaPayload payload, IPayloadContext context) {
+        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        if (!AleeveAtlas.CONFIG.sync.enabled) {
+            return;
+        }
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }

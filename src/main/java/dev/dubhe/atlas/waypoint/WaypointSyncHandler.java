@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.waypoint;
 
+import dev.dubhe.atlas.AleeveAtlas;
+
 import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -17,6 +19,10 @@ public final class WaypointSyncHandler {
     }
 
     public static void handle(WaypointSyncPayload payload, IPayloadContext context) {
+        // 服务端关闭协同同步时丢弃同步类数据包（§9.2）。
+        if (!AleeveAtlas.CONFIG.sync.enabled) {
+            return;
+        }
         if (!(context.player() instanceof ServerPlayer sender)) {
             return;
         }
