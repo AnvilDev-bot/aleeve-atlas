@@ -2,7 +2,6 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'idea'
-    alias libs.plugins.lombok
     alias libs.plugins.modDevGradle
 }
 
@@ -24,8 +23,4 @@ idea {
         downloadSources = true
         downloadJavadoc = true
     }
-}
-
-lombok {
-    version = libs.versions.lombok.get()
 }

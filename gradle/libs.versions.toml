@@ -1,8 +1,6 @@
 [versions]
 minecraft = "1.21.11"
 neoForge = "21.11.48"
-lombokPlugin = "9.2.0"
-lombok = "1.18.44"
 modDevGradle = "2.0.148"
 anvillib = "2.0.0+snapshot.557"
 
@@ -15,4 +13,3 @@ anvillib-util = { group = "dev.anvilcraft.lib", name = "anvillib-util-neoforge-1
 
 [plugins]
 modDevGradle = { id = "net.neoforged.moddev", version.ref = "modDevGradle" }
-lombok = { id = "io.freefair.lombok", version.ref = "lombokPlugin" }

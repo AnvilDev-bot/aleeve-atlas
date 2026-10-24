@@ -1,6 +1,5 @@
 tasks.register('sourcesJar', Jar) {
-    from delombok.outputs.files
-    dependsOn delombok
+    from sourceSets.main.allJava
     archiveClassifier = "sources"
 }
 
