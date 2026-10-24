@@ -1,6 +1,8 @@
 package dev.dubhe.atlas.client.profiling;
 
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.team.TeamProviders;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -18,12 +20,24 @@ public final class PerformanceReporter {
     private static final int REPORT_INTERVAL_TICKS = 600;
 
     private static int ticks;
+    /// 队伍诊断只输出一次。
+    private static boolean teamDumped;
 
     private PerformanceReporter() {
     }
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // 自动化验收：输出队伍适配层状态（正常游玩不触发）。
+        if (!teamDumped && System.getenv("ALEEVE_ATLAS_DUMP_TEAM") != null) {
+            net.minecraft.client.Minecraft minecraft =
+                    net.minecraft.client.Minecraft.getInstance();
+            if (minecraft.player != null && minecraft.level != null) {
+                teamDumped = true;
+                LOGGER.info("{}", TeamProviders.describe(
+                        minecraft.player.getUUID()));
+            }
+        }
         if (++ticks < REPORT_INTERVAL_TICKS) {
             return;
         }
