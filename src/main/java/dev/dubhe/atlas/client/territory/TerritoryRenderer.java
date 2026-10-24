@@ -24,6 +24,10 @@ import net.minecraft.world.level.Level;
 /// 并按 `zOrder` 决定叠加顺序与边框归属。
 public final class TerritoryRenderer {
     private static final int LABEL_COLOR = 0xFFFFFFFF;
+    /// 虚线边框的节距（像素）：实线段长度与间隔之和。
+    private static final int DASH_PERIOD = 4;
+    /// 虚线边框实线段长度（像素）。
+    private static final int DASH_LENGTH = 2;
 
     private TerritoryRenderer() {
     }
@@ -78,6 +82,7 @@ public final class TerritoryRenderer {
         int fill = withOpacity(group.themeColorRgb(), group.fillOpacity());
         int border = group.borderStyle().colorArgb();
         int borderWidth = Math.max(1, Math.round(group.borderStyle().width()));
+        boolean dashed = group.borderStyle().dashed();
 
         for (ChunkPos chunk : chunks) {
             int[] rect = projector.project(chunk);
@@ -126,6 +131,27 @@ public final class TerritoryRenderer {
             }
         }
         return top;
+    }
+
+    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充（规格 §7.6）。
+    ///
+    /// @param horizontal 该段是否沿 X 轴延伸
+    private static void borderSegment(GuiGraphics graphics, int x, int y, int width, int height,
+            int color, boolean circular, MinimapLayout layout, boolean dashed,
+            boolean horizontal) {
+        if (!dashed) {
+            fillClipped(graphics, x, y, width, height, color, circular, layout);
+            return;
+        }
+        int length = horizontal ? width : height;
+        for (int offset = 0; offset < length; offset += DASH_PERIOD) {
+            int dashLength = Math.min(DASH_LENGTH, length - offset);
+            if (horizontal) {
+                fillClipped(graphics, x + offset, y, dashLength, height, color, circular, layout);
+            } else {
+                fillClipped(graphics, x, y + offset, width, dashLength, color, circular, layout);
+            }
+        }
     }
 
     /// 按圆形边界裁剪的矩形填充：圆形模式下逐行与圆求交，方形模式直接填充。

@@ -50,6 +50,10 @@ public final class WorldMapScreen extends Screen {
     private static final int PLAYER_COLOR = 0xFFFFFFFF;
     /// 低于该区块像素尺寸时隐藏领地名称标签（规格 §7.5 / AC-10）。
     private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
+    /// 虚线边框的节距（像素）。
+    private static final int BORDER_DASH_PERIOD = 4;
+    /// 虚线边框实线段长度（像素）。
+    private static final int BORDER_DASH_LENGTH = 2;
 
     /// 当前打开的世界地图界面；未打开时为 null。
     private static WorldMapScreen active;
@@ -395,21 +399,42 @@ public final class WorldMapScreen extends Screen {
     private void drawChunkOutline(GuiGraphics graphics, TerritoryGroup group, ChunkPos chunk,
             int[] rect, int color) {
         int borderWidth = Math.max(1, Math.round(group.borderStyle().width()));
+        boolean dashed = group.borderStyle().dashed();
         Set<ChunkPos> chunks = group.chunks();
         int x = rect[0];
         int y = rect[1];
         int size = rect[2];
         if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
-            graphics.fill(x, y, x + size, y + borderWidth, color);
+            drawBorderSegment(graphics, x, y, size, borderWidth, color, dashed, true);
         }
         if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
-            graphics.fill(x, y + size - borderWidth, x + size, y + size, color);
+            drawBorderSegment(graphics, x, y + size - borderWidth, size, borderWidth, color,
+                    dashed, true);
         }
         if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
-            graphics.fill(x, y, x + borderWidth, y + size, color);
+            drawBorderSegment(graphics, x, y, borderWidth, size, color, dashed, false);
         }
         if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
-            graphics.fill(x + size - borderWidth, y, x + size, y + size, color);
+            drawBorderSegment(graphics, x + size - borderWidth, y, borderWidth, size, color,
+                    dashed, false);
+        }
+    }
+
+    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充（规格 §7.6）。
+    private void drawBorderSegment(GuiGraphics graphics, int x, int y, int width, int height,
+            int color, boolean dashed, boolean horizontal) {
+        if (!dashed) {
+            graphics.fill(x, y, x + width, y + height, color);
+            return;
+        }
+        int length = horizontal ? width : height;
+        for (int offset = 0; offset < length; offset += BORDER_DASH_PERIOD) {
+            int dashLength = Math.min(BORDER_DASH_LENGTH, length - offset);
+            if (horizontal) {
+                graphics.fill(x + offset, y, x + offset + dashLength, y + height, color);
+            } else {
+                graphics.fill(x, y + offset, x + width, y + offset + dashLength, color);
+            }
         }
     }
 
