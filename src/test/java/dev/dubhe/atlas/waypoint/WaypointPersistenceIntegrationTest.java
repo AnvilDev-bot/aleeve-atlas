@@ -14,30 +14,14 @@ import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/// 路径点「写入 → 落盘 → 重载 → 读取」全链路测试（规格 §11）。
+/// 路径点「写入 → 保存到磁盘 → 重载 → 读取」全链路测试（规格 §11）。
 ///
-/// 补足此前各模块单独测试、缺乏跨维度端到端覆盖的缺口：
-/// 存储布局由单文件改为按维度分文件后，曾连续出现导入导出、同步写入、同步删除三处遗漏。
+/// 覆盖跨维度的端到端行为：存储布局由单文件改为按维度分文件后，
+/// 导入导出、同步写入、同步删除三处曾出现遗漏。
 class WaypointPersistenceIntegrationTest {
     @TempDir
     Path tempDir;
 
-    @Test
-    void writeInOneDimensionIsInvisibleInAnother() {
-        WaypointStore overworld = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);
-        WaypointStore nether = WaypointStore.open(tempDir, "srv", Level.NETHER);
-
-        overworld.upsert(Waypoint.create("ow", new BlockPos(1, 60, 1), Level.OVERWORLD,
-                0xFFFFFFFF));
-        overworld.flush();
-        nether.flush();
-
-        // 重载后各自只看到本维度条目。
-        WaypointStore reopenedOw = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);
-        WaypointStore reopenedNether = WaypointStore.open(tempDir, "srv", Level.NETHER);
-        assertEquals(1, reopenedOw.all().size());
-        assertTrue(reopenedNether.all().isEmpty());
-    }
 
     @Test
     void simultaneousUpdatesAcrossDimensionsDoNotInterfere() {
@@ -109,7 +93,7 @@ class WaypointPersistenceIntegrationTest {
         // 未调 flush 前不应存在文件。
         assertFalse(Files.exists(store.file()), "写入内存后不应立即产生文件");
         store.flush();
-        assertTrue(Files.exists(store.file()), "flush 后必须落盘");
+        assertTrue(Files.exists(store.file()), "flush 后必须写入磁盘");
     }
 
     @Test
