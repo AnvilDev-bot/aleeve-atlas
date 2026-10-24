@@ -69,8 +69,7 @@ AtlasTerritory.client().upsertTerritory(
 
 ## 依赖
 
-本模组依赖 **AnvilLib**（≥ 2.0.0）的 `config` / `codec` / `network` / `integration` / `util` 五个模块，
-请一并安装对应 Minecraft 1.21.11 版本。
+本模组必需 **AnvilLib**（≥ 2.0.0）的 `config` 模块，请安装对应 Minecraft 1.21.11 版本；安装 AnvilLib 时会一并有 `codec` / `network` / `integration` / `util` 四个模块。其中 `integration` 用于 FTB Teams 等外部模组集成，`util` 用于客户端 tick 计数，其余两个模块本模组未直接引用。
 
 ## 环境要求
 
