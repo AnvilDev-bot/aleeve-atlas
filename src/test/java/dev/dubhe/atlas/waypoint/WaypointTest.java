@@ -88,4 +88,22 @@ class WaypointTest {
         assertEquals(original.visibleDistance(), priv.visibleDistance());
         assertEquals(original.sourcePlayer(), priv.sourcePlayer());
     }
+
+    @Test
+    void malformedEntryIsSkipped() {
+        // 单条记录损坏（id 非法）不应让整个文件加载失败，其余路径点仍需可用。
+        ListTag list = new ListTag();
+        CompoundTag broken = new CompoundTag();
+        broken.putString("id", "not-a-uuid");
+        broken.putString("name", "broken");
+        list.add(broken);
+        CompoundTag good = new CompoundTag();
+        good.putString("id", UUID.randomUUID().toString());
+        good.putString("name", "good");
+        list.add(good);
+
+        List<Waypoint> loaded = Waypoint.loadAll(list, WaypointTest::resolve);
+        assertEquals(1, loaded.size(), "损坏条目应被跳过");
+        assertEquals("good", loaded.get(0).name());
+    }
 }

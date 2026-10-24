@@ -1,15 +1,16 @@
 package dev.dubhe.atlas.waypoint;
 
 import java.util.ArrayList;
-import java.util.function.Function;
 import java.util.List;
-
 import java.util.UUID;
+import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.minecraft.world.level.Level;
 
 /// 路径点数据（规格 §5.1）。
@@ -28,6 +29,8 @@ public record Waypoint(
         boolean deathPoint,
         String sourcePlayer,
         boolean shareable) {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/waypoint");
 
     public static final String DEFAULT_ICON = "default";
     /// 死亡点图标标识（规格 §5.1 特殊路径点）。
@@ -116,8 +119,14 @@ public record Waypoint(
         List<Waypoint> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             Tag tag = list.get(i);
-            if (tag instanceof CompoundTag compound) {
+            if (!(tag instanceof CompoundTag compound)) {
+                continue;
+            }
+            // 单条记录损坏不应让整个文件加载失败：跳过并记录，其余路径点仍可用。
+            try {
                 result.add(load(compound, dimensionResolver));
+            } catch (RuntimeException e) {
+                LOGGER.warn("Skipping malformed waypoint at index {}", i, e);
             }
         }
         return result;
