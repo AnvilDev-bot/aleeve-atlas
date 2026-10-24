@@ -67,7 +67,7 @@ final class DemoTerritory {
         AtlasTerritory.client().upsertTerritory(new SimpleTerritory(OVERLAY_ID,
                 minecraft.level.dimension(), overlay,
                 Component.translatable("aleeve_atlas.territory.demo_overlay_name"), 0xFFAA33,
-                0.55F, BorderStyle.ofTheme(0xFFAA33),
+                0.55F, new BorderStyle(0xFFFFAA33, 1.0F, true),
                 List.of(), 10));
     }
 }
