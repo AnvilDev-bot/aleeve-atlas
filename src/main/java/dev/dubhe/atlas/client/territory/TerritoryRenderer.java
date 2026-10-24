@@ -158,7 +158,14 @@ public final class TerritoryRenderer {
     private static void fillClipped(GuiGraphics graphics, int x, int y, int width, int height,
             int color, boolean circular, MinimapLayout layout) {
         if (!circular) {
-            graphics.fill(x, y, x + width, y + height, color);
+            // 方形形态按小地图边界裁剪：区块跨出边界时填充不得溢到 HUD 之外。
+            int left = Math.max(layout.x(), x);
+            int top = Math.max(layout.y(), y);
+            int right = Math.min(layout.x() + layout.size(), x + width);
+            int bottom = Math.min(layout.y() + layout.size(), y + height);
+            if (right > left && bottom > top) {
+                graphics.fill(left, top, right, bottom, color);
+            }
             return;
         }
         double centerX = layout.x() + layout.size() / 2.0;
