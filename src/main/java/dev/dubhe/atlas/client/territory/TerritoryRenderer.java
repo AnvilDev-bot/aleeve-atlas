@@ -163,36 +163,9 @@ public final class TerritoryRenderer {
         double centerX = layout.x() + layout.size() / 2.0;
         double centerZ = layout.y() + layout.size() / 2.0;
         double radius = layout.size() / 2.0;
-        int runStartRow = -1;
-        int runLeft = 0;
-        int runRight = 0;
-        for (int row = y; row <= y + height; row++) {
-            int left = 0;
-            int right = 0;
-            boolean visible = false;
-            if (row < y + height) {
-                double dy = row + 0.5 - centerZ;
-                double spanSq = radius * radius - dy * dy;
-                if (spanSq > 0.0) {
-                    double span = Math.sqrt(spanSq);
-                    left = Math.max(x, (int) Math.floor(centerX - span));
-                    right = Math.min(x + width, (int) Math.ceil(centerX + span));
-                    visible = right > left;
-                }
-            }
-            // 与上一行裁剪区间一致则继续累积，否则冲刷上一段。
-            if (visible && runStartRow >= 0 && left == runLeft && right == runRight) {
-                continue;
-            }
-            if (runStartRow >= 0) {
-                graphics.fill(runLeft, runStartRow, runRight, row, color);
-                runStartRow = -1;
-            }
-            if (visible) {
-                runStartRow = row;
-                runLeft = left;
-                runRight = right;
-            }
+        for (CircleClip.Band band : CircleClip.bands(x, y, width, height,
+                centerX, centerZ, radius)) {
+            graphics.fill(band.left(), band.top(), band.right(), band.bottom(), color);
         }
     }
 
