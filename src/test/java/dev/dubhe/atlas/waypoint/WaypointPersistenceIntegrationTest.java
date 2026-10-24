@@ -130,4 +130,23 @@ class WaypointPersistenceIntegrationTest {
             assertFalse(reopened.get(id).isPresent());
         }
     }
+
+    @Test
+    void pruneThenAddKeepsNewDeathPoint() {
+        // 关闭「保留历史死亡点」时的正确顺序：先清理旧点，再写入本次死亡点。
+        // 顺序反了会把刚写入的新点一并删除，死亡点功能完全失效。
+        WaypointStore store = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);
+        store.upsert(Waypoint.deathPoint(new BlockPos(0, 64, 0), Level.OVERWORLD));
+        store.upsert(Waypoint.deathPoint(new BlockPos(1, 64, 0), Level.OVERWORLD));
+        store.flush();
+
+        Waypoint newest = Waypoint.deathPoint(new BlockPos(2, 64, 0), Level.OVERWORLD);
+        store.pruneDeathPoints();
+        store.upsert(newest);
+        store.flush();
+
+        WaypointStore reopened = WaypointStore.open(tempDir, "srv", Level.OVERWORLD);
+        assertEquals(1, reopened.all().size(), "只应保留最新的死亡点");
+        assertTrue(reopened.get(newest.id()).isPresent(), "本次死亡点必须保留");
+    }
 }
