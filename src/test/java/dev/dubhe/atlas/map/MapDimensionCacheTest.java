@@ -72,9 +72,10 @@ class MapDimensionCacheTest {
         cache.invalidate(3, 7);
 
         assertTrue(cache.get(3, 7).isEmpty(), "内存缓存应已清除");
-        // 新实例模拟切换维度后重新打开，磁盘条目也应已删除。
+        // 写盘后才反映到区域文件：invalidate 只标记脏，由 flush 批量写入。
+        cache.flush();
         MapDimensionCache reopened = new MapDimensionCache(tempDir);
-        assertTrue(reopened.get(3, 7).isEmpty(), "区域文件条目应已清除");
+        assertTrue(reopened.get(3, 7).isEmpty(), "flush 后区域文件条目应已清除");
     }
 
     @Test

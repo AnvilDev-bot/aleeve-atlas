@@ -57,15 +57,12 @@ public final class MapDimensionCache {
 
     /// 丢弃某区块的缓存数据，使其下次访问时重新采样。
     ///
-    /// 内存与所属区域文件都要清除：仅清内存时，重新采样前的读取会从旧区域文件返回过期像素。
-    /// 变更随即写盘，避免进程异常退出后磁盘上残留已失效的像素。
+    /// 从内存的区域条目中移除并标记脏，实际的磁盘写入交由 `flush` 批量完成。
+    /// 单次方块变更即写盘会在爆炸等场景下反复重写整个区域文件。
     public void invalidate(int chunkX, int chunkZ) {
-        long key = ChunkPos.asLong(chunkX, chunkZ);
-        chunks.remove(key);
-        RegionFile region = regionFor(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT);
-        if (region.remove(chunkX & (REGION_SIZE - 1), chunkZ & (REGION_SIZE - 1))) {
-            region.save();
-        }
+        chunks.remove(ChunkPos.asLong(chunkX, chunkZ));
+        regionFor(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT)
+                .remove(chunkX & (REGION_SIZE - 1), chunkZ & (REGION_SIZE - 1));
     }
 
     public void put(ChunkMapData data) {
