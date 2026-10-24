@@ -350,7 +350,8 @@ public final class WorldMapScreen extends Screen {
                 if (component.anchor() == null) {
                     continue;
                 }
-                // 分量屏幕宽度不足文本宽度时隐藏标签（§7.5）。
+                // 分量的屏幕像素面积不足以容纳文本时隐藏标签（§7.5）。
+                // 面积单位为平方像素，右侧以文本宽度的 8 倍作为阈值，避免细长分量也显示标签。
                 if (component.chunks().size() * pixelsPerChunk * pixelsPerChunk
                         < textWidth * 8.0F) {
                     continue;
