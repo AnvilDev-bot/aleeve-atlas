@@ -10,6 +10,7 @@ import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,6 +25,8 @@ public final class AtlasClientTick {
 
     /// 自检只执行一次。
     private static boolean scrollSelfTestDone;
+    /// 联机自检只执行一次。
+    private static boolean connectSelfTestDone;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -34,6 +37,23 @@ public final class AtlasClientTick {
                     && minecraft.screen == null) {
                 scrollSelfTestDone = true;
                 AtlasWorldMap.open();
+            }
+        }
+        // 自动化验收：直接连接指定服务器，验证双端握手与协同模式（正常游玩不触发）。
+        String serverAddress = System.getenv("ALEEVE_ATLAS_CONNECT_SERVER");
+        if (!connectSelfTestDone && serverAddress != null) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+                connectSelfTestDone = true;
+                net.minecraft.client.gui.screens.ConnectScreen.startConnecting(
+                        minecraft.screen,
+                        minecraft,
+                        ServerAddress.parseString(serverAddress),
+                        new net.minecraft.client.multiplayer.ServerData(
+                                "atlas_selftest", serverAddress,
+                                net.minecraft.client.multiplayer.ServerData.Type.OTHER),
+                        false,
+                        null);
             }
         }
         Minecraft minecraft = Minecraft.getInstance();
