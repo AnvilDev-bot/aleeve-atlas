@@ -78,21 +78,8 @@ public final class ClientMapSync {
         if (cache == null) {
             return;
         }
-        Map<Long, Long> theirVersions = new HashMap<>();
-        for (ChunkDigestPayload.Entry entry : payload.entries()) {
-            theirVersions.put((long) entry.chunkX() << 32 | (entry.chunkZ() & 0xFFFFFFFFL),
-                    entry.version());
-        }
-        List<ChunkDeltaPayload.ChunkData> deltas = new ArrayList<>();
-        for (ChunkMapData data : cache.loadedChunks()) {
-            long key = (long) data.chunkX() << 32 | (data.chunkZ() & 0xFFFFFFFFL);
-            Long theirVersion = theirVersions.get(key);
-            if (theirVersion == null || theirVersion < data.version()) {
-                deltas.add(new ChunkDeltaPayload.ChunkData(data.chunkX(), data.chunkZ(),
-                        data.version(),
-                        ChunkPixelCodec.compress(data.colors(), data.heights())));
-            }
-        }
+        List<ChunkDeltaPayload.ChunkData> deltas = computeDeltas(payload.entries(),
+                cache.loadedChunks());
         if (deltas.isEmpty()) {
             return;
         }
@@ -111,6 +98,33 @@ public final class ClientMapSync {
             BUDGET.record(estimated);
         }
         LOGGER.debug("Sent {} missing chunk(s) to teammate", deltas.size());
+    }
+
+    /// 计算「本地有而对方缺失或过期」的区块差异（规格 §3.3 摘要比对）。
+    ///
+    /// 对方摘要中不存在的区块视为缺失，版本更低的视为过期，两者都需回传。
+    /// 抽为纯函数便于验证版本比对规则。
+    static List<ChunkDeltaPayload.ChunkData> computeDeltas(
+            List<ChunkDigestPayload.Entry> theirEntries, List<ChunkMapData> localChunks) {
+        Map<Long, Long> theirVersions = new HashMap<>();
+        for (ChunkDigestPayload.Entry entry : theirEntries) {
+            theirVersions.put(chunkKey(entry.chunkX(), entry.chunkZ()), entry.version());
+        }
+        List<ChunkDeltaPayload.ChunkData> deltas = new ArrayList<>();
+        for (ChunkMapData data : localChunks) {
+            Long theirVersion = theirVersions.get(chunkKey(data.chunkX(), data.chunkZ()));
+            if (theirVersion == null || theirVersion < data.version()) {
+                deltas.add(new ChunkDeltaPayload.ChunkData(data.chunkX(), data.chunkZ(),
+                        data.version(),
+                        ChunkPixelCodec.compress(data.colors(), data.heights())));
+            }
+        }
+        return deltas;
+    }
+
+    /// 以区块坐标构造摘要比对用的键，负坐标同样可区分。
+    static long chunkKey(int chunkX, int chunkZ) {
+        return ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
     }
 
     /// 收到差异分片：在网络线程完成解压，主线程只做缓存写入（规格 §10 线程约束）。
