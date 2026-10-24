@@ -7,6 +7,10 @@ import dev.dubhe.atlas.client.map.AtlasWorldMap;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.ping.ClientPings;
+import java.util.UUID;
+import net.minecraft.world.phys.Vec3;
+import dev.dubhe.atlas.ping.MapPingData;
+import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
@@ -33,6 +37,8 @@ public final class AtlasClientTick {
     private static boolean connectSelfTestDone;
     /// 实体生成自检只执行一次。
     private static boolean entitySummonDone;
+    /// 路径点与标点自检只执行一次。
+    private static boolean markerDemoDone;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -42,6 +48,14 @@ public final class AtlasClientTick {
             if (minecraft.player != null && minecraft.hasSingleplayerServer()) {
                 entitySummonDone = true;
                 summonDemoEntities(minecraft);
+            }
+        }
+        // 自动化验收：放置路径点与标点，验证图标与波纹渲染（正常游玩不触发）。
+        if (!markerDemoDone && System.getenv("ALEEVE_ATLAS_DEMO_MARKERS") != null) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null && minecraft.level != null) {
+                markerDemoDone = true;
+                placeDemoMarkers(minecraft);
             }
         }
         // 自动化验收：打开世界地图并连续平移，验证像素搬移路径（正常游玩不触发）。
@@ -133,5 +147,37 @@ public final class AtlasClientTick {
             }
             LOGGER.info("Summoned {} demo entities for radar verification", commands.length);
         });
+    }
+
+    /// 在玩家周围放置普通路径点、死亡点与各类型标点，验证渲染区分（§5.1 / §3.2.2）。
+    ///
+    /// 仅用于自动化验收，正常游玩不触发。
+    private static void placeDemoMarkers(Minecraft minecraft) {
+        var player = minecraft.player;
+        if (player == null || minecraft.level == null) {
+            return;
+        }
+        var dimension = minecraft.level.dimension();
+        var base = player.blockPosition();
+        // 普通路径点分别置于四个方向，便于观察菱形与颜色。
+        ClientWaypoints.add(Waypoint.create("north", base.offset(0, 0, -20), dimension,
+                0xFF55FFFF));
+        ClientWaypoints.add(Waypoint.create("east", base.offset(20, 0, 0), dimension,
+                0xFFFFFF55));
+        // 死亡点使用十字图标（§5.1 特殊路径点）。
+        ClientWaypoints.add(Waypoint.deathPoint(base.offset(-15, 0, -15), dimension));
+        // 四种标点类型环绕玩家，验证形状区分与波纹扩散。
+        long now = System.currentTimeMillis();
+        MapPingData.PingIcon[] icons = MapPingData.PingIcon.values();
+        for (int i = 0; i < icons.length; i++) {
+            double angle = Math.PI * 2 * i / icons.length;
+            Vec3 pos = new Vec3(player.getX() + Math.cos(angle) * 10,
+                    player.getY(), player.getZ() + Math.sin(angle) * 10);
+            ClientPings.upsert(new MapPingData(UUID.randomUUID(), player.getUUID(),
+                    player.getName().getString(), 0xFF55FF55,
+                    MapPingData.dimensionId(dimension), pos, null, icons[i], now, 600000L));
+        }
+        LOGGER.info("Placed demo waypoints and {} ping icons for render verification",
+                icons.length);
     }
 }
