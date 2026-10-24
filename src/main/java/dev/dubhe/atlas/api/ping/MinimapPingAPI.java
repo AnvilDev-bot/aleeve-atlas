@@ -19,7 +19,7 @@ public final class MinimapPingAPI {
     ///
     /// 标点会立即出现在小地图与世界地图上，并在超过生命周期后自动移除。
     public static void registerPing(MapPingData ping) {
-        ClientPings.upsert(ping);
+        ClientPings.upsertAndRelay(ping);
     }
 
     /// 以坐标注册标点，其余字段由本模组填充。
@@ -36,7 +36,7 @@ public final class MinimapPingAPI {
                 icon,
                 System.currentTimeMillis(),
                 MapPingData.DEFAULT_LIFETIME_MILLIS);
-        ClientPings.upsert(ping);
+        ClientPings.upsertAndRelay(ping);
         return ping;
     }
 
@@ -61,7 +61,7 @@ public final class MinimapPingAPI {
                 icon,
                 System.currentTimeMillis(),
                 MapPingData.DEFAULT_LIFETIME_MILLIS);
-        ClientPings.upsert(ping);
+        ClientPings.upsertAndRelay(ping);
         return ping;
     }
 }

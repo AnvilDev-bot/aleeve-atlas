@@ -36,6 +36,14 @@ public final class PingChannelPolicy {
         };
     }
 
+    /// 外部模组推送的标点是否由本模组统一转发（§3.2.2 `TAKEOVER`）。
+    ///
+    /// 仅在外部模组存在且配置为接管时成立：此时外部模组不自行广播，
+    /// 由本模组经队伍同步网络转发，避免同一次标点被广播两次。
+    public static boolean relaysExternalPings() {
+        return externalPingModPresent()
+                && AtlasClientConfigs.CONFIG.ping.channelMode == PingChannelMode.TAKEOVER;
+    }
     /// 是否存在重复标点风险（供诊断与提示）。
     public static boolean duplicateRisk() {
         return externalPingModPresent() && AtlasClientConfigs.CONFIG.ping.channelMode

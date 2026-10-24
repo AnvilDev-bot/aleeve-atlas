@@ -68,6 +68,18 @@ public final class ClientPings {
         NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, false));
     }
 
+    /// 外部模组注入标点，并在接管模式下由本模组统一转发（§3.2.2 通道复用）。
+    ///
+    /// `TAKEOVER` 表示外部模组不自行广播、由本模组经队伍同步网络统一转发，
+    /// 避免同一次标点被两个系统各广播一次。
+    public static void upsertAndRelay(MapPingData ping) {
+        upsert(ping);
+        if (PingChannelPolicy.relaysExternalPings()
+                && BROADCAST_COOLDOWN.tryAcquire(System.currentTimeMillis())) {
+            ClientPacketDistributor.sendToServer(new PingPayload(ping));
+        }
+    }
+
     /// 移除指定标点（外部模组撤回或本地清理）。
     public static void remove(UUID pingId) {
         ACTIVE.removeIf(existing -> existing.pingId().equals(pingId));
