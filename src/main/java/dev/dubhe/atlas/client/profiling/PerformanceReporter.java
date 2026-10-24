@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,15 @@ public final class PerformanceReporter {
     private static boolean teamDumped;
 
     private PerformanceReporter() {
+    }
+
+    /// 登出时重置基准，与 `ClientTickRecorder` 的归零保持一致（§12.1）。
+    ///
+    /// 该记录器在登出后把计数清零；若不重置基准，差值会变成负数，
+    /// 重新进入世界后要等计数追平旧值才会再次输出统计。
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        lastReportedTicks = 0;
     }
 
     @SubscribeEvent
