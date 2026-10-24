@@ -6,6 +6,7 @@ import dev.dubhe.atlas.client.radar.RadarRenderer;
 import dev.dubhe.atlas.client.territory.TerritoryRenderer;
 import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
 import dev.dubhe.atlas.config.AtlasClientConfig;
+import dev.dubhe.atlas.config.MinimapPosition;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.ping.PingRenderer;
@@ -119,13 +120,47 @@ public final class MinimapRenderer {
         return 0xFF000000 | (red << 16) | (green << 8);
     }
 
+    /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。
+    ///
+    /// 按小地图底边到屏幕底部的距离判断，兼容四角预设与自定义偏移（§2.2）。
+    private static boolean isBottomPosition(MinimapPosition position, int y, int size,
+            Minecraft minecraft) {
+        if (position == MinimapPosition.BOTTOM_LEFT || position == MinimapPosition.BOTTOM_RIGHT) {
+            return true;
+        }
+        int screenHeight = minecraft.getWindow().getGuiScaledHeight();
+        return y + size + 4 + 10 > screenHeight;
+    }
+
+    /// 当前配置下将绘制多少行信息。
+    private static int countInfoLines(AtlasClientConfig config, Minecraft minecraft) {
+        int lines = 0;
+        if (config.minimap.showCoords) {
+            lines++;
+        }
+        if (config.minimap.showBiome && minecraft.level != null) {
+            lines++;
+        }
+        if (config.minimap.showLight && minecraft.level != null) {
+            lines++;
+        }
+        if (config.minimap.showTime && minecraft.level != null) {
+            lines++;
+        }
+        return lines;
+    }
     private static void drawInfo(GuiGraphics graphics, AtlasClientConfig config, Minecraft minecraft,
             int size, int x, int y) {
         LocalPlayer player = minecraft.player;
         if (player == null) {
             return;
         }
-        int line = y + size + 4;
+        // 小地图贴屏幕底部时把信息绘制在其上方，否则文字会超出屏幕下边界（§2.2）。
+        boolean above = isBottomPosition(config.minimap.position, y, size, minecraft);
+        int lineCount = countInfoLines(config, minecraft);
+        int line = above
+                ? y - 4 - lineCount * 10
+                : y + size + 4;
         int textX = x;
         if (config.minimap.showCoords) {
             Component text = Component.literal("%d, %d, %d".formatted(
