@@ -102,18 +102,20 @@ public final class TerritoryRenderer {
             int y = rect[1];
             int size = rect[2];
             if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
-                fillClipped(graphics, x, y, size, borderWidth, border, circular, layout);
+                borderSegment(graphics, x, y, size, borderWidth, border, circular, layout,
+                        dashed, true);
             }
             if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
-                fillClipped(graphics, x, y + size - borderWidth, size, borderWidth, border,
-                        circular, layout);
+                borderSegment(graphics, x, y + size - borderWidth, size, borderWidth, border,
+                        circular, layout, dashed, true);
             }
             if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
-                fillClipped(graphics, x, y, borderWidth, size, border, circular, layout);
+                borderSegment(graphics, x, y, borderWidth, size, border, circular, layout,
+                        dashed, false);
             }
             if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
-                fillClipped(graphics, x + size - borderWidth, y, borderWidth, size, border,
-                        circular, layout);
+                borderSegment(graphics, x + size - borderWidth, y, borderWidth, size, border,
+                        circular, layout, dashed, false);
             }
         }
     }
