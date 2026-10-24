@@ -46,6 +46,8 @@ public final class TerritoryHudNotifier {
 
         // 小地图领地色块关闭时不做进出提示（规格 §7.5 单独开关语义）。
         if (!AtlasClientConfigs.CONFIG.territory.showOnMinimap) {
+            // 关闭期间玩家的位置变化不应在重新开启时被误报为进出。
+            TRACKER.reset();
             return;
         }
         ResourceKey<Level> dimension = minecraft.level.dimension();
