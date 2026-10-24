@@ -18,7 +18,6 @@ public final class AtlasSession {
     private static volatile AtlasMode mode = AtlasMode.STANDALONE;
     private static volatile int maxRadarDistance = 128;
     private static volatile NonTeamVisibility nonTeamVisibility = NonTeamVisibility.VISIBLE_ONLY;
-    private static volatile boolean serverSyncEnabled;
 
     private AtlasSession() {
     }
@@ -38,11 +37,6 @@ public final class AtlasSession {
     /// 服务端下发的非同队玩家可见性策略（规格 §4.1）。
     public static NonTeamVisibility nonTeamVisibility() {
         return nonTeamVisibility;
-    }
-
-    /// 服务端是否启用协同同步（规格 §9.2 `sync.enabled`）。
-    public static boolean serverSyncEnabled() {
-        return serverSyncEnabled;
     }
 
     /// 收到服务端握手包时应用下发锁定项。
@@ -68,7 +62,6 @@ public final class AtlasSession {
         } else {
             nonTeamVisibility = serverVisibility;
         }
-        serverSyncEnabled = syncEnabled;
         mode = syncEnabled ? AtlasMode.SYNCHRONIZED : AtlasMode.STANDALONE;
     }
 
@@ -76,6 +69,5 @@ public final class AtlasSession {
         mode = AtlasMode.STANDALONE;
         maxRadarDistance = 128;
         nonTeamVisibility = NonTeamVisibility.VISIBLE_ONLY;
-        serverSyncEnabled = false;
     }
 }

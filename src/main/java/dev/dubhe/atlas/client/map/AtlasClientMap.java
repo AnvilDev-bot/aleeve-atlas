@@ -3,6 +3,7 @@ package dev.dubhe.atlas.client.map;
 import net.neoforged.fml.event.config.ModConfigEvent;
 
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.client.territory.ClientTerritorySync;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
@@ -62,6 +63,8 @@ public final class AtlasClientMap {
             manager = null;
         }
         AtlasWorldMap.release();
+        // 领地分片累加器属会话级状态，切换服务器后残余条目会与新分片混合（§3.3）。
+        ClientTerritorySync.clear();
         ticksSinceFlush = 0;
     }
 

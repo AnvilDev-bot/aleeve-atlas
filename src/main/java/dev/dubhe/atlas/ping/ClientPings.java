@@ -74,7 +74,8 @@ public final class ClientPings {
     /// 避免同一次标点被两个系统各广播一次。
     public static void upsertAndRelay(MapPingData ping) {
         upsert(ping);
-        if (PingChannelPolicy.relaysExternalPings()
+        // 独立模式下服务端无同步能力，与本地发起路径保持一致，不发送网络包。
+        if (AtlasSession.synchronizedMode() && PingChannelPolicy.relaysExternalPings()
                 && BROADCAST_COOLDOWN.tryAcquire(System.currentTimeMillis())) {
             ClientPacketDistributor.sendToServer(new PingPayload(ping));
         }

@@ -77,17 +77,18 @@ public final class MinimapRenderer {
                 ? AtlasRenderPipelines.MINIMAP_CIRCLE
                 : RenderPipelines.GUI_TEXTURED;
 
+        // 方形形态旋转后四角会越出小地图边界，需用裁剪区限制（§2.2）。
+        // 裁剪必须在旋转前启用：enableScissor 按当前 pose 变换矩形，
+        // 旋转后传入的轴对齐矩形会被变换成负宽高或错位区域。
+        boolean scissored = !circular && rotationDegrees != 0.0F;
+        if (scissored) {
+            graphics.enableScissor(x, y, x + size, y + size);
+        }
         graphics.pose().pushMatrix();
         if (rotationDegrees != 0.0F) {
             graphics.pose().translate(centerX, centerY);
             graphics.pose().rotate((float) Math.toRadians(rotationDegrees));
             graphics.pose().translate(-centerX, -centerY);
-        }
-        // 旋转后方形纹理的四角会越出小地图边界，用裁剪区限制在方形范围内（§2.2）。
-        // 圆形形态由着色器按半径裁剪，此处仅对方形生效。
-        boolean scissored = !circular && rotationDegrees != 0.0F;
-        if (scissored) {
-            graphics.enableScissor(x, y, x + size, y + size);
         }
 
         // 整张纹理铺满小地图方形：纹理中心即玩家所在位置（偏移 <1 像素）。
@@ -203,12 +204,5 @@ public final class MinimapRenderer {
                     Component.literal("%02d:%02d".formatted(hours, minutes)), textX, line,
                     TEXT_COLOR);
         }
-    }
-
-    private static int clamp(int value, int min, int max) {
-        if (max < min) {
-            return min;
-        }
-        return Math.max(min, Math.min(max, value));
     }
 }

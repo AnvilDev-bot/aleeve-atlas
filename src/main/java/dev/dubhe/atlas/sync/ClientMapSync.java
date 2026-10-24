@@ -37,7 +37,7 @@ public final class ClientMapSync {
     /// 待写队列：网络线程入队、主线程出队，需线程安全（规格 §10）。
     private static final Queue<PendingWrite> WRITE_QUEUE =
             new ConcurrentLinkedQueue<>();
-    private static final Map<String, Long> RECEIVED_BATCHES = new HashMap<>();
+    private static final Map<String, BatchRecord> RECEIVED_BATCHES = new HashMap<>();
     /// 批次记录的过期窗口（毫秒）：超过该窗口的未收齐记录视为陈旧并清理。
     private static final long BATCH_WINDOW_MILLIS = 30_000L;
     /// 发送预算：按服务端配置限制带宽（§12.1）。
@@ -131,53 +131,57 @@ public final class ClientMapSync {
 
     /// 收到差异分片：在网络线程完成解压，主线程只做缓存写入（规格 §10 线程约束）。
     ///
-    /// 解压属于密集计算，改为在网络线程执行，避免占用渲染与逻辑帧；
-    /// 解码结果通过线程安全队列交给 `tick` 写入缓存。
+    /// 本负载注册为 `HandlerThread.NETWORK`，处理时已在网络线程；
+    /// 解压结果通过线程安全队列交给 `tick` 在逻辑线程写入缓存。
     public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> enqueueDecoded(payload));
+        enqueueDecoded(payload);
     }
 
     /// 清理超过窗口仍未收齐的批次记录，避免分片丢失时记录永久残留（§3.3）。
     private static void pruneStaleBatches() {
-        long cutoff = System.currentTimeMillis() / BATCH_WINDOW_MILLIS - 1;
+        long cutoff = System.currentTimeMillis() - BATCH_WINDOW_MILLIS;
         synchronized (RECEIVED_BATCHES) {
-            RECEIVED_BATCHES.keySet().removeIf(key -> {
-                int hash = key.lastIndexOf('#');
-                if (hash < 0) {
-                    return true;
-                }
-                try {
-                    return Long.parseLong(key.substring(hash + 1)) < cutoff;
-                } catch (NumberFormatException e) {
-                    LOGGER.warn("Malformed batch record key: {}", key, e);
-                    return true;
-                }
-            });
+            RECEIVED_BATCHES.values().removeIf(record -> record.firstSeenMillis < cutoff);
         }
     }
     /// 解压分片并放入待写队列（网络线程执行）。
     ///
-    /// 同时按 `batchIndex/batchCount` 记录分片到达情况，收齐或超时后清理记录（§3.3）：
-    /// 分片可能因网络重排乱序到达，缺少批次跟踪就无法确认一次差异传输是否完整。
+    /// 按 `batchIndex/batchCount` 记录分片到达情况，用于确认一次差异传输是否完整（§3.3）。
+    /// 批次键不含时间桶：一次拆分跨过窗口边界时，前后分片仍应归入同一批次。
     private static void enqueueDecoded(ChunkDeltaPayload payload) {
         String batchKey = payload.dimensionId() + '#' + payload.targetPlayer() + '#'
-                + payload.batchCount() + '#' + System.currentTimeMillis() / BATCH_WINDOW_MILLIS;
+                + payload.batchCount();
         synchronized (RECEIVED_BATCHES) {
-            long received = RECEIVED_BATCHES.getOrDefault(batchKey, 0L)
-                    | (1L << Math.min(payload.batchIndex(), 63));
-            RECEIVED_BATCHES.put(batchKey, received);
+            BatchRecord record = RECEIVED_BATCHES.computeIfAbsent(batchKey,
+                    key -> new BatchRecord(System.currentTimeMillis()));
+            if (payload.batchIndex() < 64) {
+                record.mask |= 1L << payload.batchIndex();
+            }
             int expected = payload.batchCount();
-            long mask = expected >= 64 ? -1L : (1L << expected) - 1L;
-            if ((received & mask) == mask) {
-                RECEIVED_BATCHES.remove(batchKey);
-                LOGGER.debug("Received all {} delta batches for {}", expected,
-                        payload.targetPlayer());
+            // 位图只能表示 64 个分片：超出时无法在此判定收齐，交由超时清理。
+            if (expected <= 64) {
+                long mask = (1L << expected) - 1L;
+                if ((record.mask & mask) == mask) {
+                    RECEIVED_BATCHES.remove(batchKey);
+                    LOGGER.debug("Received all {} delta batches for {}", expected,
+                            payload.targetPlayer());
+                }
             }
         }
         for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
             int[][] decoded = ChunkPixelCodec.decompressWithHeights(chunk.pixels());
             WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded[0],
                     decoded[1]));
+        }
+    }
+
+    /// 未收齐批次的到达位图与首次到达时刻。
+    private static final class BatchRecord {
+        private long mask;
+        private final long firstSeenMillis;
+
+        private BatchRecord(long firstSeenMillis) {
+            this.firstSeenMillis = firstSeenMillis;
         }
     }
 
@@ -203,6 +207,13 @@ public final class ClientMapSync {
             if (pending == null) {
                 break;
             }
+            // 分片所属维度与当前缓存不一致时丢弃：写入会让另一维度的地形覆盖本维度（§3.3）。
+            String cacheDimension = currentDimensionId();
+            if (cacheDimension != null && !cacheDimension.equals(pending.dimensionId())) {
+                LOGGER.debug("Dropping delta chunk for {} while viewing {}",
+                        pending.dimensionId(), cacheDimension);
+                continue;
+            }
             ChunkMapData data = new ChunkMapData(pending.chunk().chunkX(),
                     pending.chunk().chunkZ());
             // 颜色与高度已在网络线程解压，此处直接写入，避免重复解压（§3.3 / §10）。
@@ -225,7 +236,10 @@ public final class ClientMapSync {
     /// 清理断线状态。
     public static void clear() {
         WRITE_QUEUE.clear();
-        RECEIVED_BATCHES.clear();
+        // 与网络线程的写入共用同一把锁，避免登出时并发破坏哈希表。
+        synchronized (RECEIVED_BATCHES) {
+            RECEIVED_BATCHES.clear();
+        }
         // 带宽预算属会话级状态，切换服务器后从零开始（§9.2）。
         BUDGET.reset();
     }

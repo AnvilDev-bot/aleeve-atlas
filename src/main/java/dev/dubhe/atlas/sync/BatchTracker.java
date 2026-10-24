@@ -21,9 +21,12 @@ public final class BatchTracker {
     }
 
     /// 记录一个分片到达。
+    ///
+    /// 期望片数只增不减：一片声明 `batchCount=1` 的迟到分片若覆盖已有期望值，
+    /// 会让残缺的集合立即被判定收齐。
     public void add(int batchIndex, int batchCount, long now) {
         receivedIndices.add(batchIndex);
-        expectedBatches = Math.max(1, batchCount);
+        expectedBatches = Math.max(expectedBatches, Math.max(1, batchCount));
         lastUpdateMillis = now;
     }
 
@@ -35,10 +38,5 @@ public final class BatchTracker {
     /// 最近一次收到分片的时间戳。
     public long lastUpdateMillis() {
         return lastUpdateMillis;
-    }
-
-    /// 已收到的分片数量（诊断用）。
-    public int receivedCount() {
-        return receivedIndices.size();
     }
 }

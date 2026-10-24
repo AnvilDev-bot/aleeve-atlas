@@ -93,18 +93,18 @@ public final class ClientWaypoints {
         return WaypointStore.open(minecraft.gameDirectory.toPath(), serverKey(minecraft),
                 dimension);
     }
-    /// 把全部维度的存储写入磁盘。
+    /// 把内存中已加载的维度存储写入磁盘。
     private static void flushAll() {
         for (WaypointStore each : STORES.values()) {
             each.flush();
         }
     }
 
-    /// 把内存中已加载的全部维度存储写入磁盘（导出前调用）。
+    /// 把内存中已加载的维度存储写入磁盘（导出前调用）。
+    ///
+    /// 未访问过的维度其存储不在内存中，无需写入：`allAcrossDimensions` 会从磁盘补齐。
     public static void flushAllDimensions() {
-        for (WaypointStore each : STORES.values()) {
-            each.flush();
-        }
+        flushAll();
     }
     /// 全部维度的路径点（导入导出用，规格 §11）。
     ///

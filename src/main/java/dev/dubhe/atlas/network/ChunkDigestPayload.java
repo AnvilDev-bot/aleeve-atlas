@@ -49,6 +49,11 @@ public record ChunkDigestPayload(String dimensionId, List<Entry> entries,
                         UUID sender = buf.readBoolean() ? buf.readUUID() : null;
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
+                        // 批次序号参与移位运算，越界会让接收端掩码失真（§10）。
+                        if (batchCount < 1 || batchIndex < 0 || batchIndex >= batchCount) {
+                            throw new DecoderException(
+                                    "Invalid digest batch index " + batchIndex + " of " + batchCount);
+                        }
                         int size = buf.readVarInt();
                         // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
                         if (size < 0 || size > MAX_ENTRIES_PER_PACKET) {

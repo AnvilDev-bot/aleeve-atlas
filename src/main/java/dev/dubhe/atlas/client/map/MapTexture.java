@@ -130,13 +130,6 @@ public final class MapTexture {
     private void evictOutsideCoverage() {
         int originChunkX = Math.floorDiv(originPixelX, ChunkMapData.SIZE);
         int originChunkZ = Math.floorDiv(originPixelZ, ChunkMapData.SIZE);
-        // 版本记录必须随区块数据一并淘汰，否则玩家持续移动时该表无界增长（§12.1）。
-        drawnVersions.keySet().removeIf(key -> {
-            int chunkX = ChunkPos.getX(key);
-            int chunkZ = ChunkPos.getZ(key);
-            return chunkX < originChunkX || chunkX >= originChunkX + SLOTS
-                    || chunkZ < originChunkZ || chunkZ >= originChunkZ + SLOTS;
-        });
         source.keySet().removeIf(key -> {
             int chunkX = ChunkPos.getX(key);
             int chunkZ = ChunkPos.getZ(key);

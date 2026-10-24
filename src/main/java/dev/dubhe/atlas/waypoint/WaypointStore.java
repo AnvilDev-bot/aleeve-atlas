@@ -188,6 +188,11 @@ public final class WaypointStore {
 
     /// 从已读取的存档内容加载条目。
     private void loadFrom(CompoundTag tag) {
+        if (tag == null) {
+            // 调用方读取失败时传入 null，此处返回空存储，避免空指针中断整个目录扫描。
+            LOGGER.warn("Waypoint file {} could not be read, starting with empty store", file);
+            return;
+        }
         ListTag list = tag.getListOrEmpty("waypoints");
         for (Waypoint waypoint : Waypoint.loadAll(list, WaypointStore::resolveDimension)) {
             // 仅接受属于本存储维度的条目，防止文件被移动后串维度。
@@ -212,10 +217,5 @@ public final class WaypointStore {
     /// 维度标识中的非法文件名字符替换为下划线。
     private static String sanitize(String raw) {
         return raw.replaceAll("[^a-zA-Z0-9._-]", "_");
-    }
-
-    /// 便捷构造坐标（供外部调用）。
-    public static BlockPos pos(int x, int y, int z) {
-        return new BlockPos(x, y, z);
     }
 }
