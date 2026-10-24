@@ -5,6 +5,7 @@ import java.util.UUID;
 import dev.dubhe.atlas.AleeveAtlas;
 import java.util.ArrayList;
 import java.util.List;
+import io.netty.handler.codec.DecoderException;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -50,6 +51,10 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         int batchCount = buf.readVarInt();
                         UUID target = buf.readBoolean() ? buf.readUUID() : null;
                         int size = buf.readVarInt();
+                        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
+                        if (size < 0 || size > MAX_CHUNKS_PER_PACKET) {
+                            throw new DecoderException("Invalid delta chunk count: " + size);
+                        }
                         List<ChunkData> chunks = new ArrayList<>(size);
                         for (int i = 0; i < size; i++) {
                             chunks.add(new ChunkData(buf.readInt(), buf.readInt(),

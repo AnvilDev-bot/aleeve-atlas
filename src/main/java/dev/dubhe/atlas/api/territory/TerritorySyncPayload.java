@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import io.netty.handler.codec.DecoderException;
 import net.minecraft.resources.Identifier;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -74,6 +75,13 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
         int zOrder = buf.readInt();
         Component displayName = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         int chunkCount = buf.readVarInt();
+        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
+        if (chunkCount < 0 || chunkCount > MAX_CHUNKS_PER_PACKET) {
+            LOGGER.warn("Territory payload declares {} chunks, exceeding the {} limit; rejected",
+                    chunkCount, MAX_CHUNKS_PER_PACKET);
+            throw new DecoderException(
+                    "Invalid territory chunk count: " + chunkCount);
+        }
         Set<ChunkPos> chunks = new HashSet<>(Math.max(16, chunkCount));
         for (int i = 0; i < chunkCount; i++) {
             chunks.add(new ChunkPos(buf.readInt(), buf.readInt()));
