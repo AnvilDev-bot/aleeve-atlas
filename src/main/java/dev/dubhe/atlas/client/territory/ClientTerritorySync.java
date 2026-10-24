@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.territory;
 
+import dev.dubhe.atlas.sync.BatchTracker;
+
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import dev.dubhe.atlas.territory.SyncedTerritory;

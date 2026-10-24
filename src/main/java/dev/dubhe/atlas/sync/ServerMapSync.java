@@ -109,31 +109,28 @@ public final class ServerMapSync {
 
     /// 摘要批次聚合器。
     ///
-    /// 期望片数随每个分片更新：同一玩家可能在一次聚合未完成时又发起新的摘要上报，
-    /// 若沿用首次的片数，收齐判定会提前或永远不成立（§3.3）。
+    /// 收齐判定委托给 {@link BatchTracker}，与客户端领地分片共用同一套规则：
+    /// 按序号去重、期望片数随最新分片更新、记录最近更新时间供超时回收（§3.3）。
     private static final class Aggregation {
-        private int expectedBatches;
-        private long lastUpdateMillis;
+        private final BatchTracker tracker;
         private final Map<Integer, List<ChunkDigestPayload.Entry>> batches = new HashMap<>();
 
         private Aggregation(int expectedBatches) {
-            this.expectedBatches = Math.max(1, expectedBatches);
-            this.lastUpdateMillis = System.currentTimeMillis();
+            this.tracker = new BatchTracker(expectedBatches, System.currentTimeMillis());
         }
 
         private void add(int index, List<ChunkDigestPayload.Entry> entries, int batchCount,
                 long now) {
             batches.put(index, entries);
-            expectedBatches = Math.max(1, batchCount);
-            lastUpdateMillis = now;
+            tracker.add(index, batchCount, now);
         }
 
         private long lastUpdateMillis() {
-            return lastUpdateMillis;
+            return tracker.lastUpdateMillis();
         }
 
         private boolean complete() {
-            return batches.size() >= expectedBatches;
+            return tracker.complete();
         }
 
         private List<ChunkDigestPayload.Entry> entries() {

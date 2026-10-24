@@ -1,4 +1,4 @@
-package dev.dubhe.atlas.client.territory;
+package dev.dubhe.atlas.sync;
 
 import java.util.HashSet;
 import java.util.Set;
