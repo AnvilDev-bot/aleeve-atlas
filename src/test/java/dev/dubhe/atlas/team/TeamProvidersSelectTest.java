@@ -36,7 +36,7 @@ class TeamProvidersSelectTest {
     @Test
     void unknownIdFallsBackToVanilla() {
         TeamProviders.select("no_such_provider");
-        assertEquals("vanilla", TeamProviders.active().id(), "未知实现必须回退原版而非留空");
+        assertEquals("vanilla", TeamProviders.active().id(), "未知实现必须回退原版");
     }
 
     @Test

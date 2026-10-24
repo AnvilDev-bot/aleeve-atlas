@@ -32,7 +32,7 @@ class WaypointSyncPayloadDecodeTest {
 
     @Test
     void invalidDimensionFallsBackToOverworld() {
-        // 手工构造非法维度标识的载荷：解码应回退主世界而非抛出异常。
+        // 手工构造非法维度标识的载荷：解码应回退主世界并保留其余字段。
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeEnum(WaypointSyncPayload.Action.UPSERT);
         buf.writeUUID(UUID.randomUUID());

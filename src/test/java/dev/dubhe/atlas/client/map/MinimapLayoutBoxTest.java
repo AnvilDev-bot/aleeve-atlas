@@ -46,7 +46,7 @@ class MinimapLayoutBoxTest {
 
     @Test
     void customOffsetIsClampedIntoView() {
-        // 自定义偏移远超屏幕尺寸，必须被钳制而非溢出。
+        // 自定义偏移远超屏幕尺寸，必须钳制到屏幕范围内。
         int[] box = MinimapLayout.computeBox(MinimapPosition.CUSTOM, 1.0, 9999, 9999,
                 SCREEN_W, SCREEN_H);
         int x = box[0];

@@ -32,7 +32,7 @@ public final class AtlasPayloads {
 
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
-        // `optional()` 返回副本而非修改当前实例，必须接收返回值。
+        // `optional()` 返回新副本，必须接收返回值。
         PayloadRegistrar registrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION).optional();
 
         // 握手：服务端在玩家登录后下发，含协同模式与可见性锁定项。

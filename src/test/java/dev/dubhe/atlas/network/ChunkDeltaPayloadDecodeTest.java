@@ -35,7 +35,7 @@ class ChunkDeltaPayloadDecodeTest {
 
     @Test
     void oversizedChunkCountIsRejected() {
-        // 声明超过拆包阈值的区块数：解码必须拒绝而非按该值分配内存。
+        // 声明超过拆包阈值的区块数：解码必须拒绝，不得按该值分配内存。
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         buf.writeUtf("minecraft:overworld", 256);
         buf.writeVarInt(0);

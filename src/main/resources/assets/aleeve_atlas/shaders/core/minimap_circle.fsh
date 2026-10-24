@@ -1,9 +1,9 @@
 #version 330
 
-// 小地图地图纹理的圆形裁剪（规格 §2.2）。
+// 小地图地图纹理的圆形裁剪。
 //
 // 与 GUI 纹理管线共享顶点格式与矩阵 uniform，仅在片元阶段按 UV 半径丢弃圆外像素，
-// 使圆形小地图之外不渲染任何东西（而非压暗）。
+// 圆形小地图之外的像素直接丢弃。
 
 layout(std140) uniform DynamicTransforms {
     mat4 ModelViewMat;
