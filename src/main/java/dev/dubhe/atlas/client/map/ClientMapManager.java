@@ -29,6 +29,10 @@ public final class ClientMapManager {
     private static final int SAMPLES_PER_TICK = 6;
     /// 小地图覆盖的区块半径（以玩家区块为中心的窗口）。
     public static final int VIEW_CHUNK_RADIUS = 4;
+    /// 洞穴模式下触发重新采样的层高变化阈值（方块）。
+    ///
+    /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上（§2.1）。
+    private static final int CAVE_LAYER_RESCAN_THRESHOLD = 8;
 
     private final MapTexture texture = new MapTexture(AleeveAtlas.id("minimap"));
     private final Map<String, MapDimensionCache> caches = new HashMap<>();
@@ -38,6 +42,8 @@ public final class ClientMapManager {
     private ResourceKey<Level> currentDimension;
     private boolean textureRegistered;
     private boolean loggedFirstSample;
+    /// 洞穴缓存的采样层高；玩家层高变化超过阈值时清空缓存重新采样（§2.1）。
+    private Integer caveLayerTop;
 
     /// 注册纹理；资源重载后需重新注册。
     public void ensureRegistered() {
@@ -45,6 +51,11 @@ public final class ClientMapManager {
             texture.register();
             textureRegistered = true;
         }
+    }
+
+    /// 资源重载后重置注册标志，使下次 tick 重新注册动态纹理（§2.2）。
+    public void onResourceReload() {
+        textureRegistered = false;
     }
 
     /// 每个客户端 tick 调用：采样玩家周围缺失的区块。
@@ -71,6 +82,14 @@ public final class ClientMapManager {
         texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
         // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式（§2.1）。
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
+        int caveTop = minecraft.player.blockPosition().getY() + 8;
+        if (caveMode && caveLayerTop != null
+                && Math.abs(caveTop - caveLayerTop) >= CAVE_LAYER_RESCAN_THRESHOLD) {
+            // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级（§2.1）。
+            caveCache.flush();
+            caveCache = caveCacheFor(minecraft, currentServerKey, level.dimension());
+        }
+        caveLayerTop = caveMode ? caveTop : null;
 
         int sampled = 0;
         int radius = VIEW_CHUNK_RADIUS;

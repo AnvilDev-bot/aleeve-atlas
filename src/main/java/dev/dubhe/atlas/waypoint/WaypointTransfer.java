@@ -15,6 +15,8 @@ import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import net.minecraft.world.level.Level;
 
 /// 路径点导入导出（规格 §11：路径点存储需支持导入导出）。
@@ -22,6 +24,7 @@ import net.minecraft.world.level.Level;
 /// 导出为单个 NBT 文件（含版本号与全部路径点），导入时按 ID 合并：
 /// 已存在同 ID 则覆盖，其余保留，避免导入破坏现有数据。
 public final class WaypointTransfer {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/waypoint");
     /// 导出文件格式版本，便于后续兼容处理。
     public static final int FORMAT_VERSION = 1;
     private static final String ROOT = "aleeve_atlas_waypoints";
@@ -82,6 +85,8 @@ public final class WaypointTransfer {
     private static ResourceKey<Level> resolveDimension(String raw) {
         Identifier id = Identifier.tryParse(raw);
         if (id == null) {
+            // 维度标识非法时回退主世界，必须留日志，否则导入的路径点会静默落到错误维度。
+            LOGGER.warn("Invalid dimension id '{}' in waypoint file, using overworld", raw);
             return Level.OVERWORLD;
         }
         return ResourceKey.create(Registries.DIMENSION, id);

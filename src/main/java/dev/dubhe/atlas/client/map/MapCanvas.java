@@ -54,6 +54,14 @@ public final class MapCanvas {
         initialized = true;
     }
 
+    /// 资源重载后标记为未初始化，使下次打开世界地图时重新注册纹理（§2.3）。
+    ///
+    /// 资源重载会清空纹理管理器，若继续认为纹理有效，画布会渲染为空白。
+    public void onResourceReload() {
+        initialized = false;
+        positioned = false;
+    }
+
     public Identifier textureId() {
         return textureId;
     }

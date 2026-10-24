@@ -31,6 +31,13 @@ public final class AtlasWorldMap {
         minecraft.setScreen(new WorldMapScreen(mapCanvas, cache, player.getX(), player.getZ()));
     }
 
+    /// 资源重载后标记画布失效，下次打开时重新注册纹理（§2.3）。
+    public static void onResourceReload() {
+        if (canvas != null) {
+            canvas.onResourceReload();
+        }
+    }
+
     /// 关闭并释放画布。
     public static void release() {
         if (canvas != null) {

@@ -144,6 +144,9 @@ public final class AtlasClientCommands {
         }
         var file = exportDir().resolve(fileName);
         try {
+            // 先把内存中的改动写入磁盘：allAcrossDimensions 以磁盘文件为准，
+            // 未刷新的近期改动否则不会被导出（§11）。
+            ClientWaypoints.flushAllDimensions();
             WaypointTransfer.exportTo(file,
                     ClientWaypoints.allAcrossDimensions());
             player.displayClientMessage(Component.translatable(

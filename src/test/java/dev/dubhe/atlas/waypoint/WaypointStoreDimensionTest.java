@@ -89,4 +89,28 @@ class WaypointStoreDimensionTest {
         assertEquals(1, visible.size());
         assertEquals("near", visible.get(0).name());
     }
+
+    @Test
+    void openAllScansEveryDimensionFileOnDisk() {
+        // 导入导出需要覆盖全部维度：仅遍历内存中已加载的存储会遗漏未访问过的维度。
+        WaypointStore overworld = WaypointStore.open(tempDir, "scan_key", Level.OVERWORLD);
+        overworld.upsert(Waypoint.create("ow", new BlockPos(1, 64, 1), Level.OVERWORLD,
+                0xFFFFFFFF));
+        overworld.flush();
+        WaypointStore nether = WaypointStore.open(tempDir, "scan_key", Level.NETHER);
+        nether.upsert(Waypoint.create("nether", new BlockPos(2, 64, 2), Level.NETHER,
+                0xFFFFFFFF));
+        nether.flush();
+
+        List<WaypointStore> stores = WaypointStore.openAll(tempDir, "scan_key");
+        assertEquals(2, stores.size(), "两个维度文件都应被扫描到");
+
+        long total = stores.stream().mapToLong(store -> store.all().size()).sum();
+        assertEquals(2, total, "两个维度的路径点都应可读取");
+
+        // 维度必须从文件内容还原，文件名中的冒号已被替换为下划线，无法据此推断。
+        boolean hasNether = stores.stream()
+                .anyMatch(store -> store.dimension().equals(Level.NETHER));
+        assertTrue(hasNether, "下界维度必须被正确识别");
+    }
 }

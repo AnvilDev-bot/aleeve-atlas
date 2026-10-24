@@ -41,11 +41,59 @@ public final class WaypointStore {
         load();
     }
 
+    /// 接受已读取的存档内容，避免扫描目录时重复读盘。
+    private WaypointStore(Path file, ResourceKey<Level> dimension, CompoundTag prefetched) {
+        this.file = file;
+        this.dimension = dimension;
+        loadFrom(prefetched);
+    }
+
     /// 打开某服务器标识下、指定维度的路径点存储（规格 §11 维度隔离）。
     public static WaypointStore open(Path gameDir, String serverKey, ResourceKey<Level> dimension) {
         Path dir = AtlasPaths.serverRoot(gameDir, serverKey).resolve(DIR_NAME);
         String fileName = sanitize(dimension.identifier().toString()) + ".nbt";
         return new WaypointStore(dir.resolve(fileName), dimension);
+    }
+
+    /// 扫描磁盘上该服务器的全部维度存储（规格 §11）。
+    ///
+    /// 导入导出需要覆盖所有维度，仅遍历内存中已加载的存储会遗漏玩家未曾访问的维度。
+    public static List<WaypointStore> openAll(Path gameDir, String serverKey) {
+        Path dir = AtlasPaths.serverRoot(gameDir, serverKey).resolve(DIR_NAME);
+        List<WaypointStore> stores = new ArrayList<>();
+        if (!Files.isDirectory(dir)) {
+            return stores;
+        }
+        try (var stream = Files.list(dir)) {
+            for (Path path : stream.sorted().toList()) {
+                String name = path.getFileName().toString();
+                if (!name.endsWith(".nbt")) {
+                    continue;
+                }
+                // 维度以文件内容记录的 `dimension` 字段为准：
+                // 文件名经过字符替换（冒号变下划线），无法据此还原原始维度标识。
+                stores.add(openExisting(path));
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Failed to list waypoint stores under {}", dir, e);
+        }
+        return stores;
+    }
+
+    /// 打开已存在的存储文件：只读取一次，维度取自文件头并按该维度过滤条目。
+    private static WaypointStore openExisting(Path file) {
+        CompoundTag tag = null;
+        try {
+            tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
+        } catch (IOException e) {
+            LOGGER.warn("Failed to read waypoint file {}", file, e);
+        }
+        ResourceKey<Level> dimension = tag == null
+                ? Level.OVERWORLD
+                : resolveDimension(tag.getStringOr("dimension",
+                        Level.OVERWORLD.identifier().toString()));
+        WaypointStore store = new WaypointStore(file, dimension, tag);
+        return store;
     }
 
     /// 该存储对应的维度。
@@ -132,24 +180,30 @@ public final class WaypointStore {
             return;
         }
         try {
-            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
-            ListTag list = tag.getListOrEmpty("waypoints");
-            for (Waypoint waypoint : Waypoint.loadAll(list, WaypointStore::resolveDimension)) {
-                // 仅接受属于本存储维度的条目，防止文件被移动后串维度。
-                if (waypoint.dimension().equals(dimension)) {
-                    waypoints.put(waypoint.id(), waypoint);
-                }
-            }
-            dirty = false;
+            loadFrom(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()));
         } catch (IOException e) {
             LOGGER.warn("Failed to read waypoints {}", file, e);
         }
+    }
+
+    /// 从已读取的存档内容加载条目。
+    private void loadFrom(CompoundTag tag) {
+        ListTag list = tag.getListOrEmpty("waypoints");
+        for (Waypoint waypoint : Waypoint.loadAll(list, WaypointStore::resolveDimension)) {
+            // 仅接受属于本存储维度的条目，防止文件被移动后串维度。
+            if (waypoint.dimension().equals(dimension)) {
+                waypoints.put(waypoint.id(), waypoint);
+            }
+        }
+        dirty = false;
     }
 
     /// 依次尝试解析维度标识，未知维度回退主世界。
     private static ResourceKey<Level> resolveDimension(String raw) {
         Identifier id = Identifier.tryParse(raw);
         if (id == null) {
+            // 单个条目维度非法时回退主世界，留日志便于定位损坏的存档数据。
+            LOGGER.warn("Invalid dimension id '{}' in waypoint store, using overworld", raw);
             return Level.OVERWORLD;
         }
         return ResourceKey.create(Registries.DIMENSION, id);

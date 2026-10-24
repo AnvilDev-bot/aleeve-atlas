@@ -102,6 +102,9 @@ public record MapPingData(
     }
 
     private static PingIcon parseIcon(String raw) {
+        if (raw == null || raw.isEmpty()) {
+            return PingIcon.NORMAL;
+        }
         try {
             return PingIcon.valueOf(raw);
         } catch (IllegalArgumentException e) {

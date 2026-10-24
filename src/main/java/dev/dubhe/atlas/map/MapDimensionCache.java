@@ -43,6 +43,7 @@ public final class MapDimensionCache {
         ChunkMapData cached = chunks.get(key);
         if (cached != null) {
             // 内存命中也要刷新所属区域的 LRU 顺序，避免热点区域被误淘汰（§12.1）。
+            // loadedRegions 为访问序 LinkedHashMap，get 的副作用即把该区域移到队尾。
             loadedRegions.get(ChunkPos.asLong(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT));
             return Optional.of(cached);
         }

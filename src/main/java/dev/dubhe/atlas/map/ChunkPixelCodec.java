@@ -34,10 +34,14 @@ public final class ChunkPixelCodec {
         int[] colors = new int[ChunkMapData.PIXELS];
         int[] heights = new int[ChunkMapData.PIXELS];
         if (packed.length < 4) {
+            LOGGER.warn("Chunk pixel payload too short ({} bytes), expected at least 4",
+                    packed.length);
             return new int[][] { colors, heights };
         }
         int colorLength = readInt(packed, 0);
         if (colorLength < 0 || 4 + colorLength > packed.length) {
+            LOGGER.warn("Chunk pixel payload has invalid color length {} for {} bytes",
+                    colorLength, packed.length);
             return new int[][] { colors, heights };
         }
         byte[] colorBytes = Arrays.copyOfRange(packed, 4, 4 + colorLength);

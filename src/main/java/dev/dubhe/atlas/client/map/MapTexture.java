@@ -95,11 +95,6 @@ public final class MapTexture {
         }
     }
 
-    /// 查询已缓存的区块数据。
-    public ChunkMapData chunkAt(int chunkX, int chunkZ) {
-        return source.get(ChunkPos.asLong(chunkX, chunkZ));
-    }
-
     /// 重绘阈值（像素）：中心偏移小于该值时不重绘（§12.1）。
     ///
     /// 每帧重绘整张纹理需要数万次像素写入与一次完整 GPU 上传，代价过高；
@@ -135,6 +130,13 @@ public final class MapTexture {
     private void evictOutsideCoverage() {
         int originChunkX = Math.floorDiv(originPixelX, ChunkMapData.SIZE);
         int originChunkZ = Math.floorDiv(originPixelZ, ChunkMapData.SIZE);
+        // 版本记录必须随区块数据一并淘汰，否则玩家持续移动时该表无界增长（§12.1）。
+        drawnVersions.keySet().removeIf(key -> {
+            int chunkX = ChunkPos.getX(key);
+            int chunkZ = ChunkPos.getZ(key);
+            return chunkX < originChunkX || chunkX >= originChunkX + SLOTS
+                    || chunkZ < originChunkZ || chunkZ >= originChunkZ + SLOTS;
+        });
         source.keySet().removeIf(key -> {
             int chunkX = ChunkPos.getX(key);
             int chunkZ = ChunkPos.getZ(key);

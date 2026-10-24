@@ -11,6 +11,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.ClientResourceLoadFinishedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 /// 客户端地图管理器的生命周期与调度（规格 §2.1）。
@@ -69,6 +70,18 @@ public final class AtlasClientMap {
     public static void onConfigReload(
             ModConfigEvent.Reloading event) {
         applyAnchorWeight();
+    }
+
+    /// 资源重载完成后重新注册动态纹理（规格 §2.2）。
+    ///
+    /// 资源重载会清空纹理管理器中的全部纹理，包括本模组注册的动态纹理；
+    /// 若不重置注册标志，小地图会持续渲染空白直到重启游戏。
+    @SubscribeEvent
+    public static void onResourceReload(ClientResourceLoadFinishedEvent event) {
+        if (manager != null) {
+            manager.onResourceReload();
+        }
+        AtlasWorldMap.onResourceReload();
     }
 
     /// 把 `territory.anchorWeight` 应用到领地注册表（规格 §9.1）。

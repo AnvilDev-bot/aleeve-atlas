@@ -38,6 +38,8 @@ public final class ClientMapSync {
     private static final Queue<PendingWrite> WRITE_QUEUE =
             new ConcurrentLinkedQueue<>();
     private static final Map<String, Long> RECEIVED_BATCHES = new HashMap<>();
+    /// 批次记录的过期窗口（毫秒）：超过该窗口的未收齐记录视为陈旧并清理。
+    private static final long BATCH_WINDOW_MILLIS = 30_000L;
     /// 发送预算：按服务端配置限制带宽（§12.1）。
     private static final SyncBudget BUDGET = new SyncBudget();
 
@@ -135,8 +137,43 @@ public final class ClientMapSync {
         context.enqueueWork(() -> enqueueDecoded(payload));
     }
 
+    /// 清理超过窗口仍未收齐的批次记录，避免分片丢失时记录永久残留（§3.3）。
+    private static void pruneStaleBatches() {
+        long cutoff = System.currentTimeMillis() / BATCH_WINDOW_MILLIS - 1;
+        synchronized (RECEIVED_BATCHES) {
+            RECEIVED_BATCHES.keySet().removeIf(key -> {
+                int hash = key.lastIndexOf('#');
+                if (hash < 0) {
+                    return true;
+                }
+                try {
+                    return Long.parseLong(key.substring(hash + 1)) < cutoff;
+                } catch (NumberFormatException e) {
+                    LOGGER.warn("Malformed batch record key: {}", key, e);
+                    return true;
+                }
+            });
+        }
+    }
     /// 解压分片并放入待写队列（网络线程执行）。
+    ///
+    /// 同时按 `batchIndex/batchCount` 记录分片到达情况，收齐或超时后清理记录（§3.3）：
+    /// 分片可能因网络重排乱序到达，缺少批次跟踪就无法确认一次差异传输是否完整。
     private static void enqueueDecoded(ChunkDeltaPayload payload) {
+        String batchKey = payload.dimensionId() + '#' + payload.targetPlayer() + '#'
+                + payload.batchCount() + '#' + System.currentTimeMillis() / BATCH_WINDOW_MILLIS;
+        synchronized (RECEIVED_BATCHES) {
+            long received = RECEIVED_BATCHES.getOrDefault(batchKey, 0L)
+                    | (1L << Math.min(payload.batchIndex(), 63));
+            RECEIVED_BATCHES.put(batchKey, received);
+            int expected = payload.batchCount();
+            long mask = expected >= 64 ? -1L : (1L << expected) - 1L;
+            if ((received & mask) == mask) {
+                RECEIVED_BATCHES.remove(batchKey);
+                LOGGER.debug("Received all {} delta batches for {}", expected,
+                        payload.targetPlayer());
+            }
+        }
         for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
             int[][] decoded = ChunkPixelCodec.decompressWithHeights(chunk.pixels());
             WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded[0],
@@ -148,6 +185,7 @@ public final class ClientMapSync {
     public static void tick() {
         // 每 tick 重置单 tick 发包计数，避免同一 tick 内多批差异各自计数（§12.1）。
         BUDGET.beginTick();
+        pruneStaleBatches();
         if (WRITE_QUEUE.isEmpty()) {
             return;
         }

@@ -3,8 +3,6 @@ package dev.dubhe.atlas.client;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.client.map.AtlasWorldMap;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
-import dev.dubhe.atlas.config.AtlasClientConfigs;
-import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
 import dev.dubhe.atlas.sync.ClientMapSync;
@@ -122,11 +120,6 @@ public final class AtlasClientTick {
                         true);
             }
         }
-    }
-
-    /// 供 HUD 读取的缩放倍率，已按规格 §9.1 钳制到 `0.5 ~ 4.0`。
-    public static float minimapScale() {
-        return (float) ConfigBounds.clamp(AtlasClientConfigs.CONFIG.minimap.scale, 0.5, 4.0);
     }
 
     /// 在单机世界生成各类实体，覆盖雷达的全部类别（§6.2）。

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -52,6 +54,22 @@ class ChunkPixelCodecTest {
     }
 
     @Test
+    void negativeAndExtremeHeightsRoundTrip() {
+        // 1.21.11 世界高度范围含负值（-64 起），高度按 int 大端序写入，必须支持负数与边界值。
+        int[] colors = new int[ChunkMapData.PIXELS];
+        int[] heights = new int[ChunkMapData.PIXELS];
+        int[] samples = { -64, -1, 0, 1, 319, 320, Integer.MIN_VALUE, Integer.MAX_VALUE };
+        for (int i = 0; i < heights.length; i++) {
+            colors[i] = 0xFF000000 | (i * 31 & 0xFFFFFF);
+            heights[i] = samples[i % samples.length];
+        }
+        int[][] decoded = ChunkPixelCodec.decompressWithHeights(
+                ChunkPixelCodec.compress(colors, heights));
+        assertArrayEquals(colors, decoded[0]);
+        assertArrayEquals(heights, decoded[1], "负高度与极值必须无损往返");
+    }
+
+    @Test
     void digestSplitRespectsPacketLimit() {
         List<ChunkDigestPayload.Entry> entries =
                 new ArrayList<>();
@@ -67,6 +85,28 @@ class ChunkPixelCodecTest {
             assertTrue(packet.entries().size()
                     <= ChunkDigestPayload.MAX_ENTRIES_PER_PACKET);
         }
+    }
+
+    @Test
+    void digestSplitKeepsBatchIndexesAndEntriesUnique() {
+        // 服务端按 batchIndex 聚合分片，批次序号必须连续且不重不漏，否则聚合永远无法收齐。
+        List<ChunkDigestPayload.Entry> entries = new ArrayList<>();
+        for (int i = 0; i < 2500; i++) {
+            entries.add(new ChunkDigestPayload.Entry(i, -i, i));
+        }
+        List<ChunkDigestPayload> packets =
+                ChunkDigestPayload.split("minecraft:overworld", entries, null);
+        Set<Integer> seenIndexes = new HashSet<>();
+        Set<Integer> seenChunks = new HashSet<>();
+        for (var packet : packets) {
+            assertTrue(seenIndexes.add(packet.batchIndex()), "批次序号不得重复");
+            assertEquals(packets.size(), packet.batchCount());
+            for (var entry : packet.entries()) {
+                assertTrue(seenChunks.add(entry.chunkX()), "条目不得跨分片重复");
+            }
+        }
+        assertEquals(packets.size(), seenIndexes.size(), "批次序号数量应与分片数一致");
+        assertEquals(2500, seenChunks.size(), "所有条目必须恰好出现一次");
     }
 
     @Test

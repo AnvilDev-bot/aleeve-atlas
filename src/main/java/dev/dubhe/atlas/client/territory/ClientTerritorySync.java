@@ -22,6 +22,8 @@ public final class ClientTerritorySync {
 
     /// 领地 ID → 已累积的分片数据。
     private static final Map<String, Accumulator> PENDING = new HashMap<>();
+    /// 累加器超时（毫秒）：分片丢失时按此时间回收（§3.3）。
+    private static final long ACCUMULATOR_TIMEOUT_MILLIS = 60_000L;
 
     private ClientTerritorySync() {
     }
@@ -33,9 +35,14 @@ public final class ClientTerritorySync {
             return;
         }
         String territoryId = payload.territory().territoryId();
+        long now = System.currentTimeMillis();
+        // 清理超时未收齐的累加器：分片丢失时不应永久占用内存（§3.3）。
+        PENDING.entrySet().removeIf(entry -> now - entry.getValue().lastUpdateMillis()
+                > ACCUMULATOR_TIMEOUT_MILLIS);
         Accumulator accumulator = PENDING.computeIfAbsent(territoryId,
                 ignored -> new Accumulator(payload.batchCount(), payload.territory()));
-        accumulator.add(payload.batchIndex(), payload.territory().chunks());
+        accumulator.add(payload.batchIndex(), payload.territory().chunks(),
+                payload.batchCount(), now);
         if (!accumulator.complete()) {
             return;
         }
@@ -52,24 +59,35 @@ public final class ClientTerritorySync {
     }
 
     /// 单个领地的分片累加器。
+    ///
+    /// 按分片序号去重记录：网络重排可能导致同一分片重复到达，
+    /// 若按到达次数计数会提前判定收齐（§3.3）。
     private static final class Accumulator {
-        private final int expectedBatches;
+        private int expectedBatches;
+        private long lastUpdateMillis;
         private final SyncedTerritory template;
         private final Set<ChunkPos> chunks = new HashSet<>();
-        private int received;
+        private final Set<Integer> receivedIndices = new HashSet<>();
 
         private Accumulator(int expectedBatches, SyncedTerritory template) {
             this.expectedBatches = Math.max(1, expectedBatches);
             this.template = template;
+            this.lastUpdateMillis = System.currentTimeMillis();
         }
 
-        private void add(int batchIndex, Set<ChunkPos> batchChunks) {
+        private void add(int batchIndex, Set<ChunkPos> batchChunks, int batchCount, long now) {
             chunks.addAll(batchChunks);
-            received++;
+            receivedIndices.add(batchIndex);
+            expectedBatches = Math.max(1, batchCount);
+            lastUpdateMillis = now;
+        }
+
+        private long lastUpdateMillis() {
+            return lastUpdateMillis;
         }
 
         private boolean complete() {
-            return received >= expectedBatches;
+            return receivedIndices.size() >= expectedBatches;
         }
 
         private SyncedTerritory merge() {

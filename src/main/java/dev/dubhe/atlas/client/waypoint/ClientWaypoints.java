@@ -81,6 +81,18 @@ public final class ClientWaypoints {
         return cached;
     }
 
+    /// 取指定维度对应的存储：当前维度用活动存储，其他维度按需打开（§11）。
+    private static WaypointStore deathStoreFor(ResourceKey<Level> dimension) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level != null && dimension.equals(minecraft.level.dimension())) {
+            WaypointStore current = store();
+            if (current != null) {
+                return current;
+            }
+        }
+        return WaypointStore.open(minecraft.gameDirectory.toPath(), serverKey(minecraft),
+                dimension);
+    }
     /// 把全部维度的存储写入磁盘。
     private static void flushAll() {
         for (WaypointStore each : STORES.values()) {
@@ -88,10 +100,24 @@ public final class ClientWaypoints {
         }
     }
 
-    /// 已加载的全部维度路径点（导入导出用，规格 §11）。
-    public static List<Waypoint> allAcrossDimensions() {
-        List<Waypoint> result = new ArrayList<>();
+    /// 把内存中已加载的全部维度存储写入磁盘（导出前调用）。
+    public static void flushAllDimensions() {
         for (WaypointStore each : STORES.values()) {
+            each.flush();
+        }
+    }
+    /// 全部维度的路径点（导入导出用，规格 §11）。
+    ///
+    /// 以磁盘文件为准：玩家未访问过的维度其存储不在内存中，
+    /// 仅遍历已加载存储会让导出遗漏其他维度的路径点。
+    public static List<Waypoint> allAcrossDimensions() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return List.of();
+        }
+        List<Waypoint> result = new ArrayList<>();
+        for (WaypointStore each : WaypointStore.openAll(minecraft.gameDirectory.toPath(),
+                serverKey(minecraft))) {
             result.addAll(each.all());
         }
         return result;
@@ -246,11 +272,19 @@ public final class ClientWaypoints {
         }
         Waypoint death = Waypoint.deathPoint(oldPlayer.blockPosition(),
                 oldPlayer.level().dimension());
+        // 不保留历史死亡点时先清掉旧点，再写入本次死亡点（§5.1）；
+        // 顺序反了会把刚写入的新点一并删除，导致死亡点功能失效。
+        // 裁剪必须作用于死亡点自身的维度存储：在下界死亡、复活回主世界时活动存储是主世界。
+        // 非当前维度的存储为临时实例，需立即写入磁盘，否则裁剪结果丢失。
+        if (!AtlasClientConfigs.CONFIG.waypoint.keepDeathPoints) {
+            WaypointStore deathStore = deathStoreFor(death.dimension());
+            deathStore.pruneDeathPoints();
+            if (deathStore != waypointStore) {
+                deathStore.flush();
+            }
+        }
         // 死亡点按自身维度写入：在下界死亡、复活回主世界时不会写错文件（§5.1 / §11）。
         upsertInDimension(death);
-        if (!AtlasClientConfigs.CONFIG.waypoint.keepDeathPoints) {
-            waypointStore.pruneDeathPoints();
-        }
         var newPlayer = event.getNewPlayer();
         if (newPlayer != null) {
             newPlayer.displayClientMessage(

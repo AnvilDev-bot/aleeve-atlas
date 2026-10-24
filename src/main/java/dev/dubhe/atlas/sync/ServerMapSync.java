@@ -24,6 +24,8 @@ public final class ServerMapSync {
 
     /// 摘要聚合状态：按「发起者 + 维度」暂存。
     private static final Map<Key, Aggregation> PENDING = new HashMap<>();
+    /// 聚合器超时（毫秒）：分片丢失时按此时间回收（§3.3）。
+    private static final long AGGREGATION_TIMEOUT_MILLIS = 60_000L;
 
     private ServerMapSync() {
     }
@@ -37,9 +39,13 @@ public final class ServerMapSync {
             return;
         }
         Key key = new Key(sender.getUUID(), payload.dimensionId());
+        long now = System.currentTimeMillis();
+        // 清理超时未收齐的聚合：分片丢失时不应永久占用内存（§3.3）。
+        PENDING.entrySet().removeIf(entry -> now - entry.getValue().lastUpdateMillis()
+                > AGGREGATION_TIMEOUT_MILLIS);
         Aggregation aggregation = PENDING.computeIfAbsent(key,
                 ignored -> new Aggregation(payload.batchCount()));
-        aggregation.add(payload.batchIndex(), payload.entries());
+        aggregation.add(payload.batchIndex(), payload.entries(), payload.batchCount(), now);
         if (!aggregation.complete()) {
             return;
         }
@@ -102,16 +108,28 @@ public final class ServerMapSync {
     }
 
     /// 摘要批次聚合器。
+    ///
+    /// 期望片数随每个分片更新：同一玩家可能在一次聚合未完成时又发起新的摘要上报，
+    /// 若沿用首次的片数，收齐判定会提前或永远不成立（§3.3）。
     private static final class Aggregation {
-        private final int expectedBatches;
+        private int expectedBatches;
+        private long lastUpdateMillis;
         private final Map<Integer, List<ChunkDigestPayload.Entry>> batches = new HashMap<>();
 
         private Aggregation(int expectedBatches) {
             this.expectedBatches = Math.max(1, expectedBatches);
+            this.lastUpdateMillis = System.currentTimeMillis();
         }
 
-        private void add(int index, List<ChunkDigestPayload.Entry> entries) {
+        private void add(int index, List<ChunkDigestPayload.Entry> entries, int batchCount,
+                long now) {
             batches.put(index, entries);
+            expectedBatches = Math.max(1, batchCount);
+            lastUpdateMillis = now;
+        }
+
+        private long lastUpdateMillis() {
+            return lastUpdateMillis;
         }
 
         private boolean complete() {

@@ -5,6 +5,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector4f;
 
 /// 世界坐标 → 屏幕坐标投影（规格 §5.1：游戏内 3D 视界渲染光柱或悬浮图标+距离）。
@@ -32,10 +33,10 @@ public final class WorldProjection {
             return Optional.empty();
         }
 
-        float partialTick = minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false);
         Matrix4f projection = minecraft.gameRenderer.getProjectionMatrix(
                 minecraft.options.fov().get());
-        Matrix4f viewRotation = new Matrix4f().rotation(camera.rotation().conjugate(new org.joml.Quaternionf()));
+        Matrix4f viewRotation = new Matrix4f()
+                .rotation(camera.rotation().conjugate(new Quaternionf()));
 
         // 世界坐标 → 相机相对坐标 → 视空间。
         Vector4f relative = new Vector4f(
