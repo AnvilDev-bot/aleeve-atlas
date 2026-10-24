@@ -48,15 +48,18 @@ public final class AtlasProfiling {
 
     /// 画布平移统计摘要。
     public static String canvasScrollSummary() {
-        return "worldmap scroll: avg=%.3fms max=%.3fms n=%d"
+        return "worldmap scroll: avg=%.3fms max=%.3fms over-budget=%.1f%% (n=%d, budget=8ms)"
                 .formatted(CANVAS_SCROLL.averageMillis(),
-                        CANVAS_SCROLL.maxNanos() / 1_000_000.0, CANVAS_SCROLL.count());
+                        CANVAS_SCROLL.maxNanos() / 1_000_000.0,
+                        CANVAS_SCROLL.overBudgetRatio(CANVAS_BUDGET_NANOS) * 100.0,
+                        CANVAS_SCROLL.count());
     }
 
     /// 世界地图画布统计摘要（供命令输出）。
     public static String canvasSummary() {
-        return "worldmap canvas: avg=%.3fms max=%.3fms n=%d"
+        return "worldmap canvas: avg=%.3fms max=%.3fms over-budget=%.1f%% (n=%d, budget=8ms)"
                 .formatted(CANVAS.averageMillis(), CANVAS.maxNanos() / 1_000_000.0,
+                        CANVAS.overBudgetRatio(CANVAS_BUDGET_NANOS) * 100.0,
                         CANVAS.count());
     }
 
