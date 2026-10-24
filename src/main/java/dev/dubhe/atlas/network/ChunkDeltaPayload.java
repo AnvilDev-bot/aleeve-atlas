@@ -19,6 +19,11 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
         implements CustomPacketPayload {
     /// 单包区块数上限：每区块 16×16 像素压缩后约 1 KiB，取 128 区块留足余量。
     public static final int MAX_CHUNKS_PER_PACKET = 128;
+    /// 单区块压缩数据的解码上限（字节）。
+    ///
+    /// 未压缩为 2 KiB（颜色与高度各 1024 字节），最坏情况下 Deflate 略有膨胀，
+    /// 取 8 KiB 留足余量，同时避免接受异常大的数组（§10）。
+    private static final int MAX_CHUNK_BYTES = 8 * 1024;
 
     public static final Type<ChunkDeltaPayload> TYPE =
             new Type<>(AleeveAtlas.id("chunk_delta"));
@@ -58,7 +63,7 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         List<ChunkData> chunks = new ArrayList<>(size);
                         for (int i = 0; i < size; i++) {
                             chunks.add(new ChunkData(buf.readInt(), buf.readInt(),
-                                    buf.readVarLong(), buf.readByteArray()));
+                                    buf.readVarLong(), buf.readByteArray(MAX_CHUNK_BYTES)));
                         }
                         return new ChunkDeltaPayload(dimension, chunks, batchIndex, batchCount, target);
                     });
