@@ -35,18 +35,6 @@ class TerritoryComponentsTest {
     }
 
     @Test
-    void interiorChunksAreDetected() {
-        Set<ChunkPos> ring = new HashSet<>();
-        for (int x = -1; x <= 1; x++) {
-            for (int z = -1; z <= 1; z++) {
-                ring.add(new ChunkPos(x, z));
-            }
-        }
-        assertTrue(TerritoryComponents.isInterior(ring, new ChunkPos(0, 0)));
-        assertFalse(TerritoryComponents.isInterior(ring, new ChunkPos(1, 0)));
-    }
-
-    @Test
     void anchorStaysInsideConcaveShape() {
         // L 形（凹多边形）：几何重心落在缺口处，加权极点必须选在领地内部。
         Set<ChunkPos> lShape = new HashSet<>();

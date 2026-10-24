@@ -65,12 +65,4 @@ public final class TerritoryComponents {
         }
         return min;
     }
-
-    /// 区块的四个正交邻居是否都在集合内（用于判断内部区块，跳过内部描边）。
-    public static boolean isInterior(Set<ChunkPos> chunks, ChunkPos pos) {
-        return chunks.contains(new ChunkPos(pos.x - 1, pos.z))
-                && chunks.contains(new ChunkPos(pos.x + 1, pos.z))
-                && chunks.contains(new ChunkPos(pos.x, pos.z - 1))
-                && chunks.contains(new ChunkPos(pos.x, pos.z + 1));
-    }
 }
