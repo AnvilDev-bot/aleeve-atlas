@@ -9,6 +9,7 @@ import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
@@ -37,6 +38,14 @@ public final class AtlasClientTick {
                     && minecraft.screen == null) {
                 scrollSelfTestDone = true;
                 AtlasWorldMap.open();
+            }
+        }
+        // 自动化验收：程序化按住玩家列表键，验证混合模式的头像切换（正常游玩不触发）。
+        String holdTab = System.getenv("ALEEVE_ATLAS_HOLD_TAB");
+        if (holdTab != null) {
+            Minecraft minecraft = Minecraft.getInstance();
+            if (minecraft.player != null) {
+                KeyMapping.set(minecraft.options.keyPlayerList.getDefaultKey(), true);
             }
         }
         // 自动化验收：直接连接指定服务器，验证双端握手与协同模式（正常游玩不触发）。

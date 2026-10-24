@@ -108,12 +108,13 @@ public final class RadarRenderer {
             if (!layout.contains(screenX, screenZ, circular)) {
                 continue;
             }
-            if (category == RadarCategory.PLAYER && (showIcons || playerListDown)) {
+            if (category == RadarCategory.PLAYER
+                    && shouldDrawPlayerHead(mode, playerListDown)) {
                 drawPlayerHead(graphics, entity, screenX, screenZ);
                 continue;
             }
-            // 图标模式下生物使用刷怪蛋图标（规格 §6.1：使用对应具体图像）。
-            if (showIcons && category != RadarCategory.ITEM
+            // 图标模式下生物使用刷怪蛋图标；混合联动模式下按住玩家列表键亦可展开（§6.1）。
+            if (expandAllIcons && category != RadarCategory.ITEM
                     && drawEntityIcon(graphics, entity, screenX, screenZ)) {
                 continue;
             }
@@ -199,6 +200,14 @@ public final class RadarRenderer {
         int z = (int) Math.round(screenZ) - ICON_SIZE / 2;
         graphics.renderItem(new ItemStack(egg), x, z);
         return true;
+    }
+
+    /// 是否以玩家头像渲染玩家标记（规格 §6.1）。
+    ///
+    /// 图标模式下恒为头像；混合联动模式下仅在按住玩家列表键时切换为头像。
+    static boolean shouldDrawPlayerHead(RadarDisplayMode mode, boolean playerListDown) {
+        return mode == RadarDisplayMode.ICON
+                || (mode == RadarDisplayMode.HYBRID && playerListDown);
     }
 
     /// 玩家皮肤头像：基础层 + 帽子层（规格 §6.3）。
