@@ -148,16 +148,28 @@ public final class ClientWaypoints {
     /// 在玩家当前位置新建路径点（`N` 键，规格 §8）。
     public static Waypoint createHere(String name) {
         Minecraft minecraft = Minecraft.getInstance();
-        WaypointStore waypointStore = store();
-        if (minecraft.player == null || waypointStore == null) {
+        if (minecraft.player == null || store() == null) {
             return null;
         }
         BlockPos pos = minecraft.player.blockPosition();
         Waypoint waypoint = Waypoint.create(name, pos, minecraft.level.dimension(), 0xFF55FFFF);
-        waypointStore.upsert(waypoint);
+        // 经 add 统一处理写入与自动同步（§5.2）。
+        add(waypoint);
         return waypoint;
     }
 
+    /// 修改已有路径点（启用状态、私密标记等），自动同步策略下广播变更（规格 §5.2）。
+    public static void update(Waypoint waypoint) {
+        WaypointStore waypointStore = store();
+        if (waypointStore == null) {
+            return;
+        }
+        waypointStore.upsert(waypoint);
+        if (AtlasClientConfigs.CONFIG.waypoint.sendPolicy
+                == WaypointSendPolicy.AUTO_SYNC) {
+            share(waypoint);
+        }
+    }
     /// 新增路径点（自动同步策略下发往服务端，规格 §5.2）。
     public static void add(Waypoint waypoint) {
         WaypointStore waypointStore = store();

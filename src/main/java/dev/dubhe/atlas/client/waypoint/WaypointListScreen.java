@@ -104,20 +104,14 @@ public final class WaypointListScreen extends Screen {
     }
 
     private void toggle(Waypoint waypoint) {
-        var store = ClientWaypoints.store();
-        if (store == null) {
-            return;
-        }
-        store.upsert(waypoint.withEnabled(!waypoint.enabled()));
+        // 经 update 触发自动同步：规格 §5.2 要求修改路径点时也广播。
+        ClientWaypoints.update(waypoint.withEnabled(!waypoint.enabled()));
         reloadEntries();
     }
 
     private void toggleShareable(Waypoint waypoint) {
-        var store = ClientWaypoints.store();
-        if (store == null) {
-            return;
-        }
-        store.upsert(waypoint.withShareable(!waypoint.shareable()));
+        // 经 update 触发自动同步：规格 §5.2 要求修改路径点时也广播。
+        ClientWaypoints.update(waypoint.withShareable(!waypoint.shareable()));
         reloadEntries();
     }
 
