@@ -26,6 +26,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.hud.coords", "%s, %s, %s");
         add("aleeve_atlas.hud.time", "%s:%s");
         add("aleeve_atlas.hud.biome_unknown", "?");
+        add("aleeve_atlas.screen.world_map.center", "X %s  Z %s  (%sx)");
 
         add("aleeve_atlas.message.ping_received", "%s sent a ping");
         add("aleeve_atlas.message.waypoint_received", "Waypoint from %2$s accepted: %1$s");

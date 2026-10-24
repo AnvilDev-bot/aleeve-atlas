@@ -149,6 +149,7 @@
   "aleeve_atlas.screen.waypoint_list.share.tip": "Share this waypoint with your team",
   "aleeve_atlas.screen.waypoint_list.show": "Show",
   "aleeve_atlas.screen.world_map": "World Map",
+  "aleeve_atlas.screen.world_map.center": "X %s  Z %s  (%sx)",
   "aleeve_atlas.screen.world_map.hint": "Drag to pan, scroll to zoom, ESC or M to close",
   "aleeve_atlas.screen.world_map.share_team": "Share to Team",
   "aleeve_atlas.screen.world_map.share_team.tip": "Share the nearest waypoint with your team",

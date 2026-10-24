@@ -531,8 +531,9 @@ public final class WorldMapScreen extends Screen {
 
     private void drawOverlayText(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
-        Component center = Component.literal("X %.0f  Z %.0f  (%.1fx)"
-                .formatted(centerX, centerZ, pixelsPerChunk));
+        Component center = Component.translatable("aleeve_atlas.screen.world_map.center",
+                "%.0f".formatted(centerX), "%.0f".formatted(centerZ),
+                "%.1f".formatted(pixelsPerChunk));
         graphics.drawString(minecraft.font, center, 6, 6, 0xFFFFFFFF);
         Component hint = Component.translatable("aleeve_atlas.screen.world_map.hint");
         graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
