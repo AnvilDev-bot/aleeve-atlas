@@ -60,34 +60,29 @@ public final class ClientTerritorySync {
 
     /// 单个领地的分片累加器。
     ///
-    /// 按分片序号去重记录：网络重排可能导致同一分片重复到达，
-    /// 若按到达次数计数会提前判定收齐（§3.3）。
+    /// 收齐判定委托给 {@link BatchTracker}：按分片序号去重，
+    /// 避免网络重排或重传导致提前判定收齐（§3.3）。
     private static final class Accumulator {
-        private int expectedBatches;
-        private long lastUpdateMillis;
+        private final BatchTracker tracker;
         private final SyncedTerritory template;
         private final Set<ChunkPos> chunks = new HashSet<>();
-        private final Set<Integer> receivedIndices = new HashSet<>();
 
         private Accumulator(int expectedBatches, SyncedTerritory template) {
-            this.expectedBatches = Math.max(1, expectedBatches);
+            this.tracker = new BatchTracker(expectedBatches, System.currentTimeMillis());
             this.template = template;
-            this.lastUpdateMillis = System.currentTimeMillis();
         }
 
         private void add(int batchIndex, Set<ChunkPos> batchChunks, int batchCount, long now) {
             chunks.addAll(batchChunks);
-            receivedIndices.add(batchIndex);
-            expectedBatches = Math.max(1, batchCount);
-            lastUpdateMillis = now;
+            tracker.add(batchIndex, batchCount, now);
         }
 
         private long lastUpdateMillis() {
-            return lastUpdateMillis;
+            return tracker.lastUpdateMillis();
         }
 
         private boolean complete() {
-            return receivedIndices.size() >= expectedBatches;
+            return tracker.complete();
         }
 
         private SyncedTerritory merge() {
