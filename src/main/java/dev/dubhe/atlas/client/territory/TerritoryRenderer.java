@@ -24,10 +24,6 @@ import net.minecraft.world.level.Level;
 /// 并按 `zOrder` 决定叠加顺序与边框归属。
 public final class TerritoryRenderer {
     private static final int LABEL_COLOR = 0xFFFFFFFF;
-    /// 虚线边框的节距（像素）：实线段长度与间隔之和。
-    private static final int DASH_PERIOD = 4;
-    /// 虚线边框实线段长度（像素）。
-    private static final int DASH_LENGTH = 2;
 
     private TerritoryRenderer() {
     }
@@ -144,8 +140,8 @@ public final class TerritoryRenderer {
             return;
         }
         int length = horizontal ? width : height;
-        for (int offset = 0; offset < length; offset += DASH_PERIOD) {
-            int dashLength = Math.min(DASH_LENGTH, length - offset);
+        for (int offset : DashSegments.offsets(length)) {
+            int dashLength = DashSegments.lengthAt(length, offset);
             if (horizontal) {
                 fillClipped(graphics, x + offset, y, dashLength, height, color, circular, layout);
             } else {
