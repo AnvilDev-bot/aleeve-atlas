@@ -86,8 +86,13 @@ public final class RadarRenderer {
                     continue;
                 }
                 if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY) {
-                    // CPU 前置剔除：隐身无护甲或位于视锥体外时直接判不可见（§4.2 第 1 条）。
-                    if (VisibilityPreFilter.shouldCull(player, entity)) {
+                    // 状态剔除：隐身且无护甲的目标直接丢弃，不进入渐隐（§4.2 第 1 条）。
+                    // 渐隐期只针对遮挡与移出视野两类情形（§4.2 第 4 条）。
+                    if (VisibilityPreFilter.isHiddenByInvisibility(entity)) {
+                        continue;
+                    }
+                    if (!VisibilityPreFilter.isInViewFrustum(entity)) {
+                        // 移出视野：按渐隐期衰减，避免快速转视角时标点闪烁。
                         opacity = VisibilityFade.opacity(entity);
                         if (opacity <= 0.0F) {
                             continue;
