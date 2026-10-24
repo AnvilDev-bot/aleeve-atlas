@@ -21,10 +21,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /// 绑定实体的标点每 tick 跟随更新位置，过期自动移除。
 public final class ClientPings {
     private static final List<MapPingData> ACTIVE = new CopyOnWriteArrayList<>();
-    /// 两次广播之间的最小间隔（毫秒）：标点属高频事件，需限频避免突发流量（§10）。
-    private static final long BROADCAST_COOLDOWN_MILLIS = 250L;
-    /// 上次广播的时间戳。
-    private static long lastBroadcastMillis;
+    /// 广播限频：标点属高频事件，需限频避免突发流量（§10）。
+    private static final BroadcastCooldown BROADCAST_COOLDOWN = new BroadcastCooldown(250L);
 
     private ClientPings() {
     }
@@ -56,12 +54,9 @@ public final class ClientPings {
         NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, true));
         // 通道复用策略决定是否由本模组广播，避免与外部标点模组重复发送（§3.2.2）。
         // 连续发起时按冷却间隔丢弃后续广播，本地标记仍保留（§10 限频）。
-        if (AtlasSession.synchronizedMode() && PingChannelPolicy.shouldBroadcast()) {
-            long now = System.currentTimeMillis();
-            if (now - lastBroadcastMillis >= BROADCAST_COOLDOWN_MILLIS) {
-                lastBroadcastMillis = now;
-                ClientPacketDistributor.sendToServer(new PingPayload(ping));
-            }
+        if (AtlasSession.synchronizedMode() && PingChannelPolicy.shouldBroadcast()
+                && BROADCAST_COOLDOWN.tryAcquire(System.currentTimeMillis())) {
+            ClientPacketDistributor.sendToServer(new PingPayload(ping));
         }
         return ping;
     }
@@ -113,7 +108,7 @@ public final class ClientPings {
 
     public static void clear() {
         ACTIVE.clear();
-        // 冷却时间戳属会话级状态，切换服务器后从零开始（§10）。
-        lastBroadcastMillis = 0L;
+        // 冷却状态属会话级状态，切换服务器后从零开始（§10）。
+        BROADCAST_COOLDOWN.reset();
     }
 }
