@@ -28,7 +28,7 @@ public final class ServerKey {
         if (integrated != null) {
             String levelId = levelId(integrated.getServerDirectory());
             if (levelId != null && !levelId.isBlank()) {
-                // 用哈希避免存档名中的特殊字符影响路径，同时与多人服务器格式一致。
+                // 取哈希前 64 位：存档名数量有限，碰撞概率可忽略，且缩短目录名长度。
                 return "sp_" + AtlasPaths.hashServerKey(levelId).substring(0, 16);
             }
         }
