@@ -1,12 +1,9 @@
 package dev.dubhe.atlas.ping;
 
 import java.util.UUID;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 临时标点核心数据结构（规格 §3.2.1）。
 ///
@@ -22,9 +19,6 @@ public record MapPingData(
         PingIcon icon,
         long createdAtMillis,
         long lifetimeMillis) {
-
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger("aleeve_atlas/ping");
 
     /// 标点图标类型（规格 §3.2.1：普通标记、危险警告、集合、物资）。
     public enum PingIcon {
@@ -49,68 +43,6 @@ public record MapPingData(
     public MapPingData withPosition(Vec3 newPosition) {
         return new MapPingData(pingId, senderId, senderName, teamColorArgb, dimensionId,
                 newPosition, targetEntityId, icon, createdAtMillis, lifetimeMillis);
-    }
-
-    public CompoundTag save() {
-        CompoundTag tag = new CompoundTag();
-        tag.putString("pingId", pingId.toString());
-        tag.putString("senderId", senderId.toString());
-        tag.putString("senderName", senderName);
-        tag.putInt("teamColor", teamColorArgb);
-        tag.putString("dimension", dimensionId);
-        tag.putDouble("x", position.x);
-        tag.putDouble("y", position.y);
-        tag.putDouble("z", position.z);
-        if (targetEntityId != null) {
-            tag.putString("target", targetEntityId.toString());
-        }
-        tag.putString("icon", icon.name());
-        tag.putLong("createdAt", createdAtMillis);
-        tag.putLong("lifetime", lifetimeMillis);
-        return tag;
-    }
-
-    public static MapPingData load(CompoundTag tag) {
-        String target = tag.getStringOr("target", "");
-        return new MapPingData(
-                UUID.fromString(tag.getStringOr("pingId", UUID.randomUUID().toString())),
-                UUID.fromString(tag.getStringOr("senderId", new UUID(0L, 0L).toString())),
-                tag.getStringOr("senderName", ""),
-                tag.getIntOr("teamColor", 0xFFFFFFFF),
-                tag.getStringOr("dimension", "minecraft:overworld"),
-                new Vec3(tag.getDoubleOr("x", 0.0), tag.getDoubleOr("y", 0.0),
-                        tag.getDoubleOr("z", 0.0)),
-                target.isEmpty() ? null : parseUuid(target, null),
-                parseIcon(tag.getStringOr("icon", PingIcon.NORMAL.name())),
-                tag.getLongOr("createdAt", 0L),
-                tag.getLongOr("lifetime", DEFAULT_LIFETIME_MILLIS));
-    }
-
-    /// 解析 UUID 字符串；格式非法时返回回退值并记录日志。
-    ///
-    /// 标点数据损坏不应中断整批读取，因此单条失败按回退值处理。
-    private static UUID parseUuid(String raw, UUID fallback) {
-        if (raw == null || raw.isEmpty()) {
-            return fallback;
-        }
-        try {
-            return UUID.fromString(raw);
-        } catch (IllegalArgumentException e) {
-            LOGGER.debug("Invalid UUID {} in ping data, using fallback", raw);
-            return fallback;
-        }
-    }
-
-    private static PingIcon parseIcon(String raw) {
-        if (raw == null || raw.isEmpty()) {
-            return PingIcon.NORMAL;
-        }
-        try {
-            return PingIcon.valueOf(raw);
-        } catch (IllegalArgumentException e) {
-            LOGGER.debug("Unknown ping icon {}, falling back to NORMAL", raw);
-            return PingIcon.NORMAL;
-        }
     }
 
     /// 维度键工具：把维度标识写入数据。
