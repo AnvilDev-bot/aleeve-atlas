@@ -10,6 +10,7 @@ import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
 import dev.dubhe.atlas.ping.PingChannelPolicy;
+import dev.dubhe.atlas.team.TeamProviders;
 import dev.dubhe.atlas.territory.SimpleTerritory;
 import dev.dubhe.atlas.waypoint.WaypointTransfer;
 import java.nio.file.Path;
@@ -111,6 +112,9 @@ public final class AtlasClientCommands {
                     Component.translatable("aleeve_atlas.message.ping_channel_duplicate"),
                     false);
         }
+        // 队伍适配层诊断：确认当前实现与所属队伍（§3.1）。
+        player.displayClientMessage(Component.literal(
+                TeamProviders.describe(player.getUUID())), false);
         AtlasProfiling.reset();
         return 1;
     }
