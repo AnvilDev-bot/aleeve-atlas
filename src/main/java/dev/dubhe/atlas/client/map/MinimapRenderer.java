@@ -83,6 +83,12 @@ public final class MinimapRenderer {
             graphics.pose().rotate((float) Math.toRadians(rotationDegrees));
             graphics.pose().translate(-centerX, -centerY);
         }
+        // 旋转后方形纹理的四角会越出小地图边界，用裁剪区限制在方形范围内（§2.2）。
+        // 圆形形态由着色器按半径裁剪，此处仅对方形生效。
+        boolean scissored = !circular && rotationDegrees != 0.0F;
+        if (scissored) {
+            graphics.enableScissor(x, y, x + size, y + size);
+        }
 
         // 整张纹理铺满小地图方形：纹理中心即玩家所在位置（偏移 <1 像素）。
         graphics.blit(mapPipeline, texture.textureId(), x, y, 0.0F, 0.0F,
@@ -97,6 +103,9 @@ public final class MinimapRenderer {
         PingRenderer.renderOnMinimap(graphics, layout, circular);
         RadarRenderer.render(graphics, config, layout, minecraft);
         graphics.pose().popMatrix();
+        if (scissored) {
+            graphics.disableScissor();
+        }
 
         // 叠加层（边框与箭头）不参与地图旋转：
         // 北向锁定时地图固定、箭头随视角转；视角随动时地图已旋转、箭头固定朝上（§2.2）。
