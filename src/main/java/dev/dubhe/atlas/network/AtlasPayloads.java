@@ -54,7 +54,7 @@ public final class AtlasPayloads {
                 ServerMapSync::handleDigest, ClientMapSync::handleDigest);
 
         // 增量分片解压属密集计算，注册为网络线程执行：
-        // 处理器在网络线程完成解压，再用 context.enqueueWork 切回主线程写缓存。
+        // 客户端在处理线程完成解压后入队，由主线程的 tick 出队写缓存。
         PayloadRegistrar deltaRegistrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION)
                 .executesOn(HandlerThread.NETWORK)
                 .optional();
