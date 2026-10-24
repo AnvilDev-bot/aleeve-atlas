@@ -92,13 +92,20 @@ public final class PingRenderer {
         }
         int rippleColor = (alpha << 24) | (ping.teamColorArgb() & 0xFFFFFF);
 
-        // 按角度遍历圆环，复杂度 O(r) 而非 O(r²)，避免多标点同时存在时的绘制开销。
-        int segments = Math.max(12, radius * 8);
-        for (int step = 0; step < segments; step++) {
-            double angle = 2.0 * Math.PI * step / segments;
-            int dx = (int) Math.round(Math.cos(angle) * radius);
-            int dz = (int) Math.round(Math.sin(angle) * radius);
-            graphics.fill(x + dx, z + dz, x + dx + 1, z + dz + 1, rippleColor);
+        // 圆环按行扫描：每行求圆与水平线的交点区间，一次填充覆盖该行左右两段，
+        // 绘制调用数与直径同阶，避免按角度逐点填充造成的重复绘制（§12.1）。
+        for (int dz = -radius; dz <= radius; dz++) {
+            double spanSq = (double) radius * radius - (double) dz * dz;
+            if (spanSq <= 0.0) {
+                continue;
+            }
+            int half = (int) Math.round(Math.sqrt(spanSq));
+            if (half <= 0) {
+                continue;
+            }
+            // 只保留圆环边缘一个像素宽，内部留空以便看出扩散方向。
+            graphics.fill(x - half, z + dz, x - half + 1, z + dz + 1, rippleColor);
+            graphics.fill(x + half, z + dz, x + half + 1, z + dz + 1, rippleColor);
         }
         // 中心标记按图标类型区分（规格 §3.2.1 标点图标类型）。
         int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
