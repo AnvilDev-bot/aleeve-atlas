@@ -77,6 +77,11 @@ public final class MapDimensionCache {
     }
 
     /// 该缓存对应的维度目录（诊断用）。
+    /// 当前驻留的区域文件数（诊断与 LRU 测试用）。
+    public int loadedRegionCount() {
+        return loadedRegions.size();
+    }
+
     public Path dimensionDir() {
         return dimensionDir;
     }
