@@ -186,7 +186,7 @@ public final class TerritoryRenderer {
             if (cached == null) {
                 continue;
             }
-            for (TerritoryRegistry.Component component : cached.components()) {
+            for (TerritoryRegistry.TerritoryComponent component : cached.components()) {
                 if (component.anchor() == null) {
                     continue;
                 }

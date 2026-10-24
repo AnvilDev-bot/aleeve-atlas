@@ -15,8 +15,13 @@ import dev.dubhe.atlas.config.ConfigBounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.ConnectScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -25,8 +30,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /// 客户端 tick 入口（规格 §8）：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class AtlasClientTick {
-    private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/selftest");
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger("aleeve_atlas/selftest");
 
     private AtlasClientTick() {
     }
@@ -79,15 +84,15 @@ public final class AtlasClientTick {
         String serverAddress = System.getenv("ALEEVE_ATLAS_CONNECT_SERVER");
         if (!connectSelfTestDone && serverAddress != null) {
             Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
+            if (minecraft.screen instanceof TitleScreen) {
                 connectSelfTestDone = true;
-                net.minecraft.client.gui.screens.ConnectScreen.startConnecting(
+                ConnectScreen.startConnecting(
                         minecraft.screen,
                         minecraft,
                         ServerAddress.parseString(serverAddress),
-                        new net.minecraft.client.multiplayer.ServerData(
+                        new ServerData(
                                 "atlas_selftest", serverAddress,
-                                net.minecraft.client.multiplayer.ServerData.Type.OTHER),
+                                ServerData.Type.OTHER),
                         false,
                         null);
             }

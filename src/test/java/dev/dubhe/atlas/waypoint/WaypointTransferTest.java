@@ -8,7 +8,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -20,7 +23,7 @@ class WaypointTransferTest {
 
     @Test
     void exportThenImportRoundTripsAllFields() throws IOException {
-        Waypoint original = new Waypoint(java.util.UUID.randomUUID(), "Base",
+        Waypoint original = new Waypoint(UUID.randomUUID(), "Base",
                 new BlockPos(12, 70, -34), Level.OVERWORLD, 0xFF00FF00, "home", true, 300,
                 false, "Aleeve", true);
         Path file = tempDir.resolve("export.nbt");
@@ -58,9 +61,9 @@ class WaypointTransferTest {
     @Test
     void importRejectsForeignFile() throws IOException {
         Path file = tempDir.resolve("foreign.nbt");
-        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
+        CompoundTag tag = new CompoundTag();
         tag.putString("unrelated", "data");
-        net.minecraft.nbt.NbtIo.writeCompressed(tag, file);
+        NbtIo.writeCompressed(tag, file);
 
         assertThrows(IOException.class, () -> WaypointTransfer.importFrom(file));
     }

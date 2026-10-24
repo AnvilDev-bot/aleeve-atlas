@@ -46,7 +46,7 @@ class TerritoryRegistryTest {
 
         TerritoryRegistry.CachedTerritory cached = registry.cached("t2");
         assertEquals(2, cached.components().size(), "飞地必须拆为独立分量（AC-8）");
-        for (TerritoryRegistry.Component component : cached.components()) {
+        for (TerritoryRegistry.TerritoryComponent component : cached.components()) {
             assertTrue(component.anchor() != null);
             assertTrue(component.chunks().contains(component.anchor()));
         }

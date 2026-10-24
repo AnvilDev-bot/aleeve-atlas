@@ -6,13 +6,15 @@ import java.io.ByteArrayOutputStream;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// 区块像素数据的紧凑编解码（规格 §10：地图增量必须按体积上限分片，禁止整块区域塞进单包）。
 ///
 /// 采用 Deflate 压缩 `16 × 16` 的 ARGB 像素数组，通常可将每区块压缩到约 1 KiB。
 public final class ChunkPixelCodec {
-    private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/map/codec");
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger("aleeve_atlas/map/codec");
     private ChunkPixelCodec() {
     }
 

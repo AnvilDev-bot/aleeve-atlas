@@ -7,7 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -61,11 +65,11 @@ class WaypointStoreDimensionTest {
         WaypointStore overworld = WaypointStore.open(tempDir, "key", Level.OVERWORLD);
         Path file = overworld.file();
         Files.createDirectories(file.getParent());
-        net.minecraft.nbt.CompoundTag tag = new net.minecraft.nbt.CompoundTag();
-        net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+        CompoundTag tag = new CompoundTag();
+        ListTag list = new ListTag();
         list.add(Waypoint.create("wrong", BlockPos.ZERO, Level.NETHER, 0xFFFFFFFF).save());
         tag.put("waypoints", list);
-        net.minecraft.nbt.NbtIo.writeCompressed(tag, file);
+        NbtIo.writeCompressed(tag, file);
 
         WaypointStore reopened = WaypointStore.open(tempDir, "key", Level.OVERWORLD);
         assertTrue(reopened.all().isEmpty(), "跨维度条目必须被过滤");
@@ -76,7 +80,7 @@ class WaypointStoreDimensionTest {
         WaypointStore store = WaypointStore.open(tempDir, "key", Level.OVERWORLD);
         Waypoint near = Waypoint.create("near", new BlockPos(0, 64, 0), Level.OVERWORLD,
                 0xFFFFFFFF);
-        Waypoint far = new Waypoint(java.util.UUID.randomUUID(), "far", new BlockPos(1000, 64, 0),
+        Waypoint far = new Waypoint(UUID.randomUUID(), "far", new BlockPos(1000, 64, 0),
                 Level.OVERWORLD, 0xFFFFFFFF, "default", true, 100, false, "", true);
         store.upsert(near);
         store.upsert(far);

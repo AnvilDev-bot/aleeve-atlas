@@ -5,6 +5,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /// 临时标点核心数据结构（规格 §3.2.1）。
 ///
@@ -21,8 +23,8 @@ public record MapPingData(
         long createdAtMillis,
         long lifetimeMillis) {
 
-    private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/ping");
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger("aleeve_atlas/ping");
 
     /// 标点图标类型（规格 §3.2.1：普通标记、危险警告、集合、物资）。
     public enum PingIcon {

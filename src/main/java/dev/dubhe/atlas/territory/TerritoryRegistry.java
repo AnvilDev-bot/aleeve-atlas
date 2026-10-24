@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -108,21 +109,21 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
 
     private void recompute(TerritoryGroup territory) {
         List<Set<ChunkPos>> components = TerritoryComponents.split(territory.chunks());
-        List<Component> computed = new ArrayList<>(components.size());
+        List<TerritoryComponent> computed = new ArrayList<>(components.size());
         float lambda = anchorLambda;
         for (Set<ChunkPos> component : components) {
             ChunkPos anchor = AnchorSelector.select(component, lambda);
-            computed.add(new Component(Set.copyOf(component), anchor));
+            computed.add(new TerritoryComponent(Set.copyOf(component), anchor));
         }
         cache.put(territory.territoryId(), new CachedTerritory(territory, computed));
     }
 
     /// 单个连通分量：区块集合与其名称锚点。
-    public record Component(Set<ChunkPos> chunks, ChunkPos anchor) {
+    public record TerritoryComponent(Set<ChunkPos> chunks, ChunkPos anchor) {
     }
 
     /// 领地及其连通分量缓存。
-    public record CachedTerritory(TerritoryGroup territory, List<Component> components) {
+    public record CachedTerritory(TerritoryGroup territory, List<TerritoryComponent> components) {
     }
 
     /// 局部区块更新后的不可变包装。
@@ -144,7 +145,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         }
 
         @Override
-        public net.minecraft.network.chat.Component displayName() {
+        public Component displayName() {
             return delegate.displayName();
         }
 
@@ -164,7 +165,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
         }
 
         @Override
-        public List<net.minecraft.network.chat.Component> tooltip() {
+        public List<Component> tooltip() {
             return delegate.tooltip();
         }
 

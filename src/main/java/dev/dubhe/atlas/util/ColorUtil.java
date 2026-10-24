@@ -1,9 +1,12 @@
 package dev.dubhe.atlas.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /// 颜色解析工具（规格 §6.2：玩家可自定义 HEX 配色）。
 public final class ColorUtil {
-    private static final org.slf4j.Logger LOGGER =
-            org.slf4j.LoggerFactory.getLogger("aleeve_atlas/util");
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger("aleeve_atlas/util");
     private ColorUtil() {
     }
 

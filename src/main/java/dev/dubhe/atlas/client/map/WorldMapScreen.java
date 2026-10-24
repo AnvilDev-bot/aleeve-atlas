@@ -346,7 +346,7 @@ public final class WorldMapScreen extends Screen {
                 continue;
             }
             int textWidth = minecraft.font.width(group.displayName());
-            for (TerritoryRegistry.Component component : cached.components()) {
+            for (TerritoryRegistry.TerritoryComponent component : cached.components()) {
                 if (component.anchor() == null) {
                     continue;
                 }
@@ -374,7 +374,7 @@ public final class WorldMapScreen extends Screen {
     }
 
     /// 分量内第一个可见区块的屏幕矩形；全部不可见时返回 null。
-    private int[] firstVisibleChunkRect(TerritoryRegistry.Component component) {
+    private int[] firstVisibleChunkRect(TerritoryRegistry.TerritoryComponent component) {
         for (ChunkPos chunk : component.chunks()) {
             int[] rect = chunkScreenRect(chunk);
             if (rect != null) {

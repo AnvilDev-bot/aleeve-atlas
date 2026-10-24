@@ -5,8 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import net.minecraft.world.level.ChunkPos;
+import dev.dubhe.atlas.network.ChunkDeltaPayload;
+import dev.dubhe.atlas.network.ChunkDigestPayload;
 import org.junit.jupiter.api.Test;
 
 /// 区块像素压缩与摘要/差异分片测试（规格 §10 体积约束 / §3.3）。
@@ -25,7 +29,7 @@ class ChunkPixelCodecTest {
     @Test
     void flatTerrainCompressesWell() {
         int[] colors = new int[ChunkMapData.PIXELS];
-        java.util.Arrays.fill(colors, 0xFF4C8B2B);
+        Arrays.fill(colors, 0xFF4C8B2B);
         byte[] packed = ChunkPixelCodec.compress(colors);
         // 单调地形应显著小于原始 1 KiB（16×16×4 字节）。
         assertTrue(packed.length < 256,
@@ -36,7 +40,7 @@ class ChunkPixelCodecTest {
     void compassWithHeightsRoundTripsBothArrays() {
         int[] colors = new int[ChunkMapData.PIXELS];
         int[] heights = new int[ChunkMapData.PIXELS];
-        java.util.Random random = new java.util.Random(7L);
+        Random random = new Random(7L);
         for (int i = 0; i < colors.length; i++) {
             colors[i] = 0xFF000000 | random.nextInt(0xFFFFFF);
             heights[i] = 40 + random.nextInt(60);
@@ -49,32 +53,32 @@ class ChunkPixelCodecTest {
 
     @Test
     void digestSplitRespectsPacketLimit() {
-        java.util.List<dev.dubhe.atlas.network.ChunkDigestPayload.Entry> entries =
-                new java.util.ArrayList<>();
+        List<ChunkDigestPayload.Entry> entries =
+                new ArrayList<>();
         for (int i = 0; i < 3000; i++) {
-            entries.add(new dev.dubhe.atlas.network.ChunkDigestPayload.Entry(i, -i, i));
+            entries.add(new ChunkDigestPayload.Entry(i, -i, i));
         }
-        List<dev.dubhe.atlas.network.ChunkDigestPayload> packets =
-                dev.dubhe.atlas.network.ChunkDigestPayload.split("minecraft:overworld", entries, null);
+        List<ChunkDigestPayload> packets =
+                ChunkDigestPayload.split("minecraft:overworld", entries, null);
         assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.entries().size()).sum();
         assertEquals(3000, total);
         for (var packet : packets) {
             assertTrue(packet.entries().size()
-                    <= dev.dubhe.atlas.network.ChunkDigestPayload.MAX_ENTRIES_PER_PACKET);
+                    <= ChunkDigestPayload.MAX_ENTRIES_PER_PACKET);
         }
     }
 
     @Test
     void deltaSplitRespectsPacketLimit() {
-        java.util.List<dev.dubhe.atlas.network.ChunkDeltaPayload.ChunkData> chunks =
-                new java.util.ArrayList<>();
+        List<ChunkDeltaPayload.ChunkData> chunks =
+                new ArrayList<>();
         byte[] payload = new byte[64];
         for (int i = 0; i < 300; i++) {
-            chunks.add(new dev.dubhe.atlas.network.ChunkDeltaPayload.ChunkData(i, i, i, payload));
+            chunks.add(new ChunkDeltaPayload.ChunkData(i, i, i, payload));
         }
-        List<dev.dubhe.atlas.network.ChunkDeltaPayload> packets =
-                dev.dubhe.atlas.network.ChunkDeltaPayload.split("minecraft:overworld", chunks, null);
+        List<ChunkDeltaPayload> packets =
+                ChunkDeltaPayload.split("minecraft:overworld", chunks, null);
         assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.chunks().size()).sum();
         assertEquals(300, total);

@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
+import dev.dubhe.atlas.api.territory.BorderStyle;
 import java.util.Set;
+import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
@@ -88,7 +90,7 @@ class TerritoryTrackerTest {
 
     private static TerritoryGroup withZOrder(String id, Set<ChunkPos> chunks, int zOrder) {
         return new SimpleTerritory(id, OVERWORLD, chunks, Component.literal(id), 0x33AAFF,
-                0.25F, dev.dubhe.atlas.api.territory.BorderStyle.ofTheme(0x33AAFF),
-                java.util.List.of(), zOrder);
+                0.25F, BorderStyle.ofTheme(0x33AAFF),
+                List.of(), zOrder);
     }
 }
