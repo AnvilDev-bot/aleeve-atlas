@@ -281,6 +281,8 @@ public final class ClientWaypoints {
             each.clear();
         }
         STORES.clear();
+        // 未处理的手动接受请求随登出丢弃，避免跨服务器残留（§5.3）。
+        PENDING.clear();
         store = null;
         currentServerKey = null;
         ticksSinceFlush = 0;
