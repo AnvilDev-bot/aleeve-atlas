@@ -3,7 +3,7 @@ package dev.dubhe.atlas.sync;
 import java.util.HashSet;
 import java.util.Set;
 
-/// 分片收齐判定（规格 §3.3）。
+/// 分片收齐判定。
 ///
 /// 按分片序号去重记录：网络重排或重传会使同一分片多次到达，
 /// 若按到达次数计数会提前判定收齐，导致领地数据缺块即被写入。

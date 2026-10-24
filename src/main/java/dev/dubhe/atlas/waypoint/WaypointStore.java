@@ -23,7 +23,7 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/// 路径点存储（规格 §5.1 / §11）。
+/// 路径点存储。
 ///
 /// 按「服务器标识 → 维度」隔离，与地图缓存同根目录、每维度独立文件，采用 `CompoundTag` 持久化。
 public final class WaypointStore {
@@ -48,14 +48,14 @@ public final class WaypointStore {
         loadFrom(prefetched);
     }
 
-    /// 打开某服务器标识下、指定维度的路径点存储（规格 §11 维度隔离）。
+    /// 打开某服务器标识下、指定维度的路径点存储。
     public static WaypointStore open(Path gameDir, String serverKey, ResourceKey<Level> dimension) {
         Path dir = AtlasPaths.serverRoot(gameDir, serverKey).resolve(DIR_NAME);
         String fileName = sanitize(dimension.identifier().toString()) + ".nbt";
         return new WaypointStore(dir.resolve(fileName), dimension);
     }
 
-    /// 扫描磁盘上该服务器的全部维度存储（规格 §11）。
+    /// 扫描磁盘上该服务器的全部维度存储。
     ///
     /// 导入导出需要覆盖所有维度，仅遍历内存中已加载的存储会遗漏玩家未曾访问的维度。
     public static List<WaypointStore> openAll(Path gameDir, String serverKey) {
@@ -145,7 +145,7 @@ public final class WaypointStore {
         return removed;
     }
 
-    /// 死亡点保留策略（规格 §5.1）：开关关闭时清除历史死亡点。
+    /// 死亡点保留策略：开关关闭时清除历史死亡点。
     public void pruneDeathPoints() {
         boolean changed = waypoints.values().removeIf(Waypoint::deathPoint);
         if (changed) {

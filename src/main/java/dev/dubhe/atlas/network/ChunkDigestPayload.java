@@ -10,7 +10,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/// 区块摘要上报（规格 §3.3 / §10）。
+/// 区块摘要上报。
 ///
 /// 仅上报「区块坐标 + 地图数据版本号」，不含地图数据本体；
 /// 单包体积受限（客户端→服务端 < 32 KiB），超大存档由发送方分批。
@@ -49,13 +49,13 @@ public record ChunkDigestPayload(String dimensionId, List<Entry> entries,
                         UUID sender = buf.readBoolean() ? buf.readUUID() : null;
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
-                        // 批次序号参与移位运算，越界会让接收端掩码失真（§10）。
+                        // 批次序号参与移位运算，越界会让接收端掩码失真。
                         if (batchCount < 1 || batchIndex < 0 || batchIndex >= batchCount) {
                             throw new DecoderException(
                                     "Invalid digest batch index " + batchIndex + " of " + batchCount);
                         }
                         int size = buf.readVarInt();
-                        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
+                        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存。
                         if (size < 0 || size > MAX_ENTRIES_PER_PACKET) {
                             throw new DecoderException("Invalid digest entry count: " + size);
                         }

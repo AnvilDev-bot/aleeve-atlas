@@ -14,14 +14,14 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/// 客户端标点收集与生命周期管理（规格 §3.2）。
+/// 客户端标点收集与生命周期管理。
 ///
 /// 本模组**不内置标点快捷键**：标点由外部模组（如 `Ping Wheel`）或地图界面交互发起，
 /// 经 {@link dev.dubhe.atlas.api.ping.MinimapPingAPI} 推送进来；此处统一维护生命周期与渲染数据。
 /// 绑定实体的标点每 tick 跟随更新位置，过期自动移除。
 public final class ClientPings {
     private static final List<MapPingData> ACTIVE = new CopyOnWriteArrayList<>();
-    /// 广播限频：标点属高频事件，需限频避免突发流量（§10）。
+    /// 广播限频：标点属高频事件，需限频避免突发流量。
     private static final BroadcastCooldown BROADCAST_COOLDOWN = new BroadcastCooldown(250L);
 
     private ClientPings() {
@@ -32,7 +32,7 @@ public final class ClientPings {
         upsert(payload.ping());
     }
 
-    /// 本地发起标点（供世界地图双击/右键与外部模组调用，规格 §2.3 / §3.2.2 Outbound）。
+    /// 本地发起标点：供世界地图双击/右键与外部模组调用，触发对外的标点创建事件。
     public static MapPingData createLocal(Vec3 position, MapPingData.PingIcon icon) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
@@ -52,8 +52,8 @@ public final class ClientPings {
         ACTIVE.removeIf(existing -> existing.pingId().equals(ping.pingId()));
         ACTIVE.add(ping);
         NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, true));
-        // 通道复用策略决定是否由本模组广播，避免与外部标点模组重复发送（§3.2.2）。
-        // 连续发起时按冷却间隔丢弃后续广播，本地标记仍保留（§10 限频）。
+        // 通道复用策略决定是否由本模组广播，避免与外部标点模组重复发送。
+        // 连续发起时按冷却间隔丢弃后续广播，本地标记仍保留。
         if (AtlasSession.synchronizedMode() && PingChannelPolicy.shouldBroadcast()
                 && BROADCAST_COOLDOWN.tryAcquire(System.currentTimeMillis())) {
             ClientPacketDistributor.sendToServer(new PingPayload(ping));
@@ -61,14 +61,14 @@ public final class ClientPings {
         return ping;
     }
 
-    /// 外部模组注入或服务端广播标点（规格 §3.2.2 Inbound）。
+    /// 外部模组注入或服务端广播标点。
     public static void upsert(MapPingData ping) {
         ACTIVE.removeIf(existing -> existing.pingId().equals(ping.pingId()));
         ACTIVE.add(ping);
         NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, false));
     }
 
-    /// 外部模组注入标点，并在接管模式下由本模组统一转发（§3.2.2 通道复用）。
+    /// 外部模组注入标点，并在接管模式下由本模组统一转发。
     ///
     /// `TAKEOVER` 表示外部模组不自行广播、由本模组经队伍同步网络统一转发，
     /// 避免同一次标点被两个系统各广播一次。
@@ -121,7 +121,7 @@ public final class ClientPings {
 
     public static void clear() {
         ACTIVE.clear();
-        // 冷却状态属会话级状态，切换服务器后从零开始（§10）。
+        // 冷却状态属会话级状态，切换服务器后从零开始。
         BROADCAST_COOLDOWN.reset();
     }
 }

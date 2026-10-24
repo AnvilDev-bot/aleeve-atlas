@@ -23,7 +23,7 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 
 
-/// 小地图 HUD 渲染（规格 §2.2）。
+/// 小地图 HUD 渲染。
 ///
 /// 绘制分两步：先铺整张地图纹理（玩家恒在纹理中心），再叠加
 /// {@link AtlasRenderPipelines#MINIMAP_OVERLAY} 着色器层，由片元着色器解析式地
@@ -68,7 +68,7 @@ public final class MinimapRenderer {
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         LocalPlayer player = minecraft.player;
         // 北向锁定：地图固定北朝上、箭头随视角转；
-        // 视角随动：地图绕中心旋转到玩家朝向、箭头固定朝上（规格 §2.2）。
+        // 视角随动：地图绕中心旋转到玩家朝向、箭头固定朝上。
         float rotationDegrees = config.minimap.lockNorth ? 0.0F : -player.getYRot();
         float centerX = x + size / 2.0F;
         float centerY = y + size / 2.0F;
@@ -77,7 +77,7 @@ public final class MinimapRenderer {
                 ? AtlasRenderPipelines.MINIMAP_CIRCLE
                 : RenderPipelines.GUI_TEXTURED;
 
-        // 方形形态旋转后四角会越出小地图边界，需用裁剪区限制（§2.2）。
+        // 方形形态旋转后四角会越出小地图边界，需用裁剪区限制。
         // 裁剪必须在旋转前启用：enableScissor 按当前 pose 变换矩形，
         // 旋转后传入的轴对齐矩形会被变换成负宽高或错位区域。
         boolean scissored = !circular && rotationDegrees != 0.0F;
@@ -96,10 +96,10 @@ public final class MinimapRenderer {
                 size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
                 MapTexture.PIXELS);
 
-        // 领地覆层在地图之上、路径点/雷达之下（规格 §7.3）。
+        // 领地覆层在地图之上、路径点/雷达之下。
         TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
 
-        // 路径点与实体雷达标记绘制在地图之上、边框与箭头之下（规格 §5.1 / §6）。
+        // 路径点与实体雷达标记绘制在地图之上、边框与箭头之下。
         WaypointRenderer.renderOnMinimap(graphics, layout, circular);
         PingRenderer.renderOnMinimap(graphics, layout, circular);
         RadarRenderer.render(graphics, config, layout, minecraft);
@@ -109,7 +109,7 @@ public final class MinimapRenderer {
         }
 
         // 叠加层（边框与箭头）不参与地图旋转：
-        // 北向锁定时地图固定、箭头随视角转；视角随动时地图已旋转、箭头固定朝上（§2.2）。
+        // 北向锁定时地图固定、箭头随视角转；视角随动时地图已旋转、箭头固定朝上。
         float arrowYaw = config.minimap.lockNorth ? player.getYRot() : 0.0F;
         int tint = encodeOverlayTint(arrowYaw, circular);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
@@ -117,7 +117,7 @@ public final class MinimapRenderer {
 
         TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular);
         drawInfo(graphics, config, minecraft, size, x, y);
-        // 记录渲染耗时，供 §12.1 性能验收读取。
+        // 记录渲染耗时，供性能验收读取。
         AtlasProfiling.recordMinimap(
                 System.nanoTime() - startedAt);
     }
@@ -132,7 +132,7 @@ public final class MinimapRenderer {
 
     /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。
     ///
-    /// 按小地图底边到屏幕底部的距离判断，兼容四角预设与自定义偏移（§2.2）。
+    /// 按小地图底边到屏幕底部的距离判断，兼容四角预设与自定义偏移。
     private static boolean isBottomPosition(MinimapPosition position, int y, int size,
             Minecraft minecraft) {
         if (position == MinimapPosition.BOTTOM_LEFT || position == MinimapPosition.BOTTOM_RIGHT) {
@@ -165,7 +165,7 @@ public final class MinimapRenderer {
         if (player == null) {
             return;
         }
-        // 小地图贴屏幕底部时把信息绘制在其上方，否则文字会超出屏幕下边界（§2.2）。
+        // 小地图贴屏幕底部时把信息绘制在其上方，否则文字会超出屏幕下边界。
         boolean above = isBottomPosition(config.minimap.position, y, size, minecraft);
         int lineCount = countInfoLines(config, minecraft);
         int line = above

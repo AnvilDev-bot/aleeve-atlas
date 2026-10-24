@@ -10,10 +10,10 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
-/// 地图增量同步分片（规格 §3.3 / §10：服务端→客户端单包 ≤ 1 MiB）。
+/// 地图增量同步分片。
 ///
 /// 每片携带若干区块的压缩像素数据；接收端按 `batchIndex/batchCount` 逐片写入本地缓存，
-/// 分帧处理以避免接收端帧率骤降（规格 §12.1）。
+/// 分帧处理以避免接收端帧率骤降。
 public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
         int batchIndex, int batchCount, UUID targetPlayer)
         implements CustomPacketPayload {
@@ -22,7 +22,7 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
     /// 单区块压缩数据的解码上限（字节）。
     ///
     /// 未压缩为 2 KiB（颜色与高度各 1024 字节），最坏情况下 Deflate 略有膨胀，
-    /// 取 8 KiB 留足余量，同时避免接受异常大的数组（§10）。
+    /// 取 8 KiB 留足余量，同时避免接受异常大的数组。
     private static final int MAX_CHUNK_BYTES = 8 * 1024;
 
     public static final Type<ChunkDeltaPayload> TYPE =
@@ -55,13 +55,13 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
                         UUID target = buf.readBoolean() ? buf.readUUID() : null;
-                        // 批次序号参与移位运算，越界会让接收端掩码失真（§10）。
+                        // 批次序号参与移位运算，越界会让接收端掩码失真。
                         if (batchCount < 1 || batchIndex < 0 || batchIndex >= batchCount) {
                             throw new DecoderException(
                                     "Invalid delta batch index " + batchIndex + " of " + batchCount);
                         }
                         int size = buf.readVarInt();
-                        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存（§10）。
+                        // 上限与拆包阈值一致：超出说明数据损坏或伪造，直接拒绝避免按声明值分配内存。
                         if (size < 0 || size > MAX_CHUNKS_PER_PACKET) {
                             throw new DecoderException("Invalid delta chunk count: " + size);
                         }
