@@ -265,19 +265,13 @@ public final class WorldMapScreen extends Screen {
             int border = highlighted ? 0xFFFFFFFF : group.borderStyle().colorArgb();
             // 填充：按横向连续路段批量绘制，减少绘制调用。
             for (TerritoryRuns.Run run : TerritoryRuns.of(group.chunks())) {
-                int[] first = chunkScreenRect(new ChunkPos(run.xStart(), run.z()));
-                if (first == null) {
-                    continue;
-                }
-                int x = first[0];
-                int y = first[1];
-                int width = first[2] * run.length();
-                int height = first[3];
-                // 裁剪到视口内，避免超出屏幕的无效填充。
-                int left = Math.max(0, x);
-                int top = Math.max(0, y);
-                int right = Math.min(this.width, x + width);
-                int bottom = Math.min(this.height, y + height);
+                // 按整段两端计算矩形：放大后单个区块可能超出视口，
+                // 若按首区块可见性判断会整段跳过，导致放大地图时领地消失。
+                int[] span = runScreenRect(run);
+                int left = Math.max(0, span[0]);
+                int top = Math.max(0, span[1]);
+                int right = Math.min(this.width, span[0] + span[2]);
+                int bottom = Math.min(this.height, span[1] + span[3]);
                 if (right > left && bottom > top) {
                     graphics.fill(left, top, right, bottom, fill);
                 }
@@ -386,6 +380,18 @@ public final class WorldMapScreen extends Screen {
     }
 
     /// 区块在屏幕上的矩形：`[x, y, width, height]`；完全不可见时返回 null。
+    /// 连续路段的屏幕矩形（不裁剪）：用于把整段填充裁到视口内。
+    private int[] runScreenRect(TerritoryRuns.Run run) {
+        double leftWorld = (run.xStart() << 4);
+        double rightWorld = ((run.xEnd() + 1) << 4);
+        double topWorld = (run.z() << 4);
+        double bottomWorld = ((run.z() + 1) << 4);
+        int x = (int) Math.round(width / 2.0 + (leftWorld - centerX) * pixelsPerChunk);
+        int y = (int) Math.round(height / 2.0 + (topWorld - centerZ) * pixelsPerChunk);
+        int x2 = (int) Math.round(width / 2.0 + (rightWorld - centerX) * pixelsPerChunk);
+        int y2 = (int) Math.round(height / 2.0 + (bottomWorld - centerZ) * pixelsPerChunk);
+        return new int[] { x, y, x2 - x, y2 - y };
+    }
     private int[] chunkScreenRect(ChunkPos chunk) {
         double centerChunkX = (chunk.x << 4) + 8.0;
         double centerChunkZ = (chunk.z << 4) + 8.0;
