@@ -3,7 +3,6 @@ package dev.dubhe.atlas.team;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import net.neoforged.fml.ModList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,20 +53,6 @@ public final class TeamProviders {
     /// 当前生效的队伍实现。
     public static TeamProvider active() {
         return active;
-    }
-
-    /// 已注册的外部实现 ID 列表（诊断与配置提示用）。
-    public static List<String> registeredIds() {
-        List<String> ids = new ArrayList<>();
-        for (TeamProvider provider : REGISTERED) {
-            ids.add(provider.id());
-        }
-        return ids;
-    }
-
-    /// 判断外部队伍模组是否已加载（规格 §3.1 自动替换前提）。
-    public static boolean modLoaded(String modId) {
-        return ModList.get() != null && ModList.get().isLoaded(modId);
     }
 
     /// 当前队伍适配层的诊断描述：实现名与指定玩家所属队伍（§3.1）。
