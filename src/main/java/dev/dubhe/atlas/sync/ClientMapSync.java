@@ -188,6 +188,8 @@ public final class ClientMapSync {
     public static void clear() {
         WRITE_QUEUE.clear();
         RECEIVED_BATCHES.clear();
+        // 带宽预算属会话级状态，切换服务器后从零开始（§9.2）。
+        BUDGET.reset();
     }
 
     /// 估算一个分片的传输字节数（坐标 + 版本 + 像素串 + 包头）。
