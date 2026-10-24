@@ -58,6 +58,16 @@ public final class ClientMapManager {
         textureRegistered = false;
     }
 
+    /// 洞穴模式是否需要在本次 tick 重建分层缓存（§2.1）。
+    ///
+    /// 缓存不区分层高，玩家上下移动超过阈值后继续命中旧缓存会让地图停留在旧层级。
+    /// 非洞穴模式或首次进入洞穴时不重建。
+    static boolean needsCaveRescan(boolean caveMode, Integer previousTop, int currentTop) {
+        if (!caveMode || previousTop == null) {
+            return false;
+        }
+        return Math.abs(currentTop - previousTop) >= CAVE_LAYER_RESCAN_THRESHOLD;
+    }
     /// 每个客户端 tick 调用：采样玩家周围缺失的区块。
     public void tick(ClientLevel level) {
         ensureRegistered();
@@ -83,8 +93,7 @@ public final class ClientMapManager {
         // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式（§2.1）。
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
         int caveTop = minecraft.player.blockPosition().getY() + 8;
-        if (caveMode && caveLayerTop != null
-                && Math.abs(caveTop - caveLayerTop) >= CAVE_LAYER_RESCAN_THRESHOLD) {
+        if (needsCaveRescan(caveMode, caveLayerTop, caveTop)) {
             // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级（§2.1）。
             caveCache.flush();
             caveCache = caveCacheFor(minecraft, currentServerKey, level.dimension());
