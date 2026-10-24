@@ -68,11 +68,11 @@ public final class AtlasClientCommands {
                                                 StringArgumentType.getString(context, "id"),
                                                 false))))
                         .then(Commands.literal("export")
-                                .then(Commands.argument("file", StringArgumentType.string())
+                                .then(Commands.argument("file", StringArgumentType.word())
                                         .executes(context -> exportWaypoints(context.getSource(),
                                                 StringArgumentType.getString(context, "file")))))
                         .then(Commands.literal("import")
-                                .then(Commands.argument("file", StringArgumentType.string())
+                                .then(Commands.argument("file", StringArgumentType.word())
                                         .executes(context -> importWaypoints(context.getSource(),
                                                 StringArgumentType.getString(context, "file"))))))
                 .then(Commands.literal("territory")
@@ -142,8 +142,8 @@ public final class AtlasClientCommands {
         if (waypointStore == null || player == null) {
             return 0;
         }
-        var file = exportDir().resolve(fileName);
         try {
+            var file = resolveExportFile(fileName);
             // 先把内存中的改动写入磁盘：allAcrossDimensions 以磁盘文件为准，
             // 未刷新的近期改动否则不会被导出（§11）。
             ClientWaypoints.flushAllDimensions();
@@ -152,7 +152,8 @@ public final class AtlasClientCommands {
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_exported", file.toString()), false);
             return 1;
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.warn("Failed to export waypoints to {}", fileName, e);
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_export_failed"), false);
             return 0;
@@ -166,8 +167,8 @@ public final class AtlasClientCommands {
         if (waypointStore == null || player == null) {
             return 0;
         }
-        var file = exportDir().resolve(fileName);
         try {
+            var file = resolveExportFile(fileName);
             var imported = WaypointTransfer.importFrom(file);
             var result = WaypointTransfer.merge(imported,
                     ClientWaypoints.allAcrossDimensions());
@@ -182,7 +183,8 @@ public final class AtlasClientCommands {
                     "aleeve_atlas.message.waypoint_imported",
                     result.added().size(), result.replaced().size()), false);
             return 1;
-        } catch (IOException e) {
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.warn("Failed to import waypoints from {}", fileName, e);
             player.displayClientMessage(Component.translatable(
                     "aleeve_atlas.message.waypoint_import_failed"), false);
             return 0;
@@ -193,6 +195,18 @@ public final class AtlasClientCommands {
     private static Path exportDir() {
         return Minecraft.getInstance().gameDirectory.toPath()
                 .resolve("aleeve_atlas_exports");
+    }
+
+    /// 把用户输入的文件名解析为导出目录内的文件，拒绝越出该目录的路径。
+    ///
+    /// 文件名来自命令参数，必须限制为单层文件名，避免 `..` 之类的输入写到其他位置。
+    private static Path resolveExportFile(String fileName) {
+        Path dir = exportDir().normalize();
+        Path resolved = dir.resolve(fileName).normalize();
+        if (!resolved.startsWith(dir) || resolved.equals(dir)) {
+            throw new IllegalArgumentException("Invalid export file name: " + fileName);
+        }
+        return resolved;
     }
 
     /// 注册一个含飞地与内孔洞的演示领地，用于验证 §7.2/§7.3（AC-8）。
