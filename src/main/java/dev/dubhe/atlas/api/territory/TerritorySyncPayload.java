@@ -12,6 +12,9 @@ import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
 
 /// 领地下发负载（规格 §7.1：服务端 API 下发全服/视野内领地区块变更）。
@@ -20,6 +23,7 @@ import net.minecraft.world.level.ChunkPos;
 /// {@link #MAX_CHUNKS_PER_PACKET} 拆分为多个负载依次发送。
 public record TerritorySyncPayload(Action action, SyncedTerritory territory, int batchIndex,
         int batchCount) implements CustomPacketPayload {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/territory");
     /// 单包区块数上限：每区块 8 字节，4096 区块约 32 KiB，远低于 1 MiB 上限。
     public static final int MAX_CHUNKS_PER_PACKET = 4096;
 
@@ -58,7 +62,13 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
         int batchIndex = buf.readInt();
         int batchCount = buf.readInt();
         String territoryId = buf.readUtf(128);
-        Identifier dimensionId = Identifier.parse(buf.readUtf(256));
+        // 维度标识非法时回退主世界，避免解码抛异常导致连接断开（§10）。
+        String rawDimension = buf.readUtf(256);
+        Identifier dimensionId = Identifier.tryParse(rawDimension);
+        if (dimensionId == null) {
+            LOGGER.warn("Invalid dimension id '{}' in territory payload", rawDimension);
+            dimensionId = Level.OVERWORLD.identifier();
+        }
         int themeColor = buf.readInt();
         float fillOpacity = buf.readFloat();
         int zOrder = buf.readInt();
