@@ -46,11 +46,21 @@ public final class WaypointTransfer {
 
     /// 从文件导入路径点；返回导入的条目列表。
     ///
-    /// 按 `type` 字段严格校验文件来源，避免误导入任意 NBT 文件。
+    /// 按 `type` 字段严格校验文件来源，避免误导入任意 NBT 文件；
+    /// 同时校验格式版本，避免旧版客户端解析新版文件时静默丢失字段。
     public static List<Waypoint> importFrom(Path file) throws IOException {
         CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
         if (!ROOT.equals(root.getStringOr("type", ""))) {
             throw new IOException("Not a waypoint export file: " + file);
+        }
+        int format = root.getIntOr("format", 0);
+        if (format > FORMAT_VERSION) {
+            throw new IOException("Waypoint file format " + format
+                    + " is newer than supported version " + FORMAT_VERSION + ": " + file);
+        }
+        if (format < FORMAT_VERSION) {
+            // 旧版文件仍可导入：`load` 对缺失字段取默认值。
+            LOGGER.info("Importing waypoint file with older format {} from {}", format, file);
         }
         ListTag list = root.getListOrEmpty("waypoints");
         return Waypoint.loadAll(list, WaypointTransfer::resolveDimension);

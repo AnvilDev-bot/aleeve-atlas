@@ -69,6 +69,30 @@ class WaypointTransferTest {
     }
 
     @Test
+    void importRejectsNewerFormat() throws IOException {
+        // 旧版客户端不应静默导入新版格式：字段可能缺失或被重新解释。
+        Path file = tempDir.resolve("newer.nbt");
+        CompoundTag tag = new CompoundTag();
+        tag.putString("type", "aleeve_atlas_waypoints");
+        tag.putInt("format", WaypointTransfer.FORMAT_VERSION + 1);
+        NbtIo.writeCompressed(tag, file);
+
+        assertThrows(IOException.class, () -> WaypointTransfer.importFrom(file));
+    }
+
+    @Test
+    void importAcceptsCurrentFormat() throws IOException {
+        // 当前版本必须可导入，确认校验没有把合法文件挡掉。
+        Path file = tempDir.resolve("current.nbt");
+        List<Waypoint> source = List.of(
+                Waypoint.create("home", BlockPos.ZERO, Level.OVERWORLD, 0xFFFFFFFF));
+        WaypointTransfer.exportTo(file, source);
+
+        List<Waypoint> imported = WaypointTransfer.importFrom(file);
+        assertEquals(1, imported.size());
+        assertEquals("home", imported.get(0).name());
+    }
+    @Test
     void mergeAddsNewAndReplacesExisting() {
         Waypoint sharedId = Waypoint.create("old", BlockPos.ZERO, Level.OVERWORLD, 0xFFFFFFFF);
         Waypoint existingOnly = Waypoint.create("existing", new BlockPos(1, 2, 3),
