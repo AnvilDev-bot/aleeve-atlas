@@ -60,7 +60,14 @@ public final class AtlasSession {
         } else {
             maxRadarDistance = serverMaxRadarDistance;
         }
-        nonTeamVisibility = serverVisibility;
+        // 可见性策略为 null 时下游会退化为「全部显示」，属于不安全的默认值，
+        // 因此按最保守的 VISIBLE_ONLY 处理并记录日志（§4.1）。
+        if (serverVisibility == null) {
+            LOGGER.warn("Server sent null visibility policy, falling back to VISIBLE_ONLY");
+            nonTeamVisibility = NonTeamVisibility.VISIBLE_ONLY;
+        } else {
+            nonTeamVisibility = serverVisibility;
+        }
         serverSyncEnabled = syncEnabled;
         mode = syncEnabled ? AtlasMode.SYNCHRONIZED : AtlasMode.STANDALONE;
     }
