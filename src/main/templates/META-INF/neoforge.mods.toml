@@ -30,15 +30,20 @@ versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
-# AnvilLib 依赖：配置/网络/编解码/集成/工具五个模块各自是独立模组，
-# 只需 config 为必需即可保证整套库被安装；其余模块本模组未直接引用，
-# 声明为 optional 以免强制玩家额外安装。
+# 配置模块双端必需；轮盘、渲染和工具模块仅在客户端必需。
 [[dependencies."${mod_id}"]]
 modId = "anvillib_config"
 type = "required"
 versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies."${mod_id}"]]
+modId = "anvillib_wheel"
+type = "required"
+versionRange = "[2.0.0-0,3.0.0)"
+ordering = "AFTER"
+side = "CLIENT"
 
 [[dependencies."${mod_id}"]]
 modId = "anvillib_codec"
@@ -62,8 +67,15 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
-modId = "anvillib_util"
-type = "optional"
+modId = "anvillib_rendering"
+type = "required"
 versionRange = "[2.0.0-0,3.0.0)"
 ordering = "AFTER"
-side = "BOTH"
+side = "CLIENT"
+
+[[dependencies."${mod_id}"]]
+modId = "anvillib_util"
+type = "required"
+versionRange = "[2.0.0-0,3.0.0)"
+ordering = "AFTER"
+side = "CLIENT"

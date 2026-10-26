@@ -15,7 +15,7 @@ public final class AleeveAtlas {
     public static final String MOD_ID = "aleeve_atlas";
 
     /// 网络协议版本，握手包据此判定双端兼容性。
-    public static final String PROTOCOL_VERSION = "2";
+    public static final String PROTOCOL_VERSION = "3";
 
     /// 服务端配置。在 `@Mod` 类加载时注册，此时 `ModList` 已就绪。
     public static final AtlasServerConfig CONFIG =

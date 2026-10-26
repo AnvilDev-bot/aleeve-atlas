@@ -25,10 +25,10 @@ public record MapPingData(
 
     /// 标点图标类型。
     public enum PingIcon {
-        NORMAL,
         DANGER,
-        RALLY,
-        SUPPLY;
+        WARNING,
+        GENERAL,
+        GOTO;
 
         public Component displayName() {
             return Component.translatable("aleeve_atlas.ping.type."
@@ -37,10 +37,10 @@ public record MapPingData(
 
         public int colorArgb() {
             return switch (this) {
-                case NORMAL -> 0xFF55FFFF;
                 case DANGER -> 0xFFFF5555;
-                case RALLY -> 0xFF55FF55;
-                case SUPPLY -> 0xFFFFFF55;
+                case WARNING -> 0xFFFFAA00;
+                case GENERAL -> 0xFF55FFFF;
+                case GOTO -> 0xFF55FF55;
             };
         }
     }

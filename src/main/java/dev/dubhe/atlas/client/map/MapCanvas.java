@@ -78,6 +78,10 @@ public final class MapCanvas {
         return this.originChunkZ;
     }
 
+    int pixelAt(int x, int z) {
+        return this.image.getPixel(x, z);
+    }
+
     /// 以给定区块为中心的视野重建画布；视野未变化时直接返回。
     ///
     /// 原点小幅平移时复用已有像素并只补绘新进入边界的条带，
@@ -118,23 +122,29 @@ public final class MapCanvas {
     private void shiftOrigin(int targetX, int targetZ, MapDimensionCache cache) {
         int shiftChunksX = targetX - this.originChunkX;
         int shiftChunksZ = targetZ - this.originChunkZ;
-        int shiftPixelsX = shiftChunksX * ChunkMapData.SIZE;
-        int shiftPixelsZ = shiftChunksZ * ChunkMapData.SIZE;
-        // 按行搬运重叠区域；遍历顺序与搬移方向相反，避免覆盖尚未读取的像素。
-        int[] rowOrder = CanvasScroll.safeOrder(PIXELS, shiftPixelsZ);
-        int[] colOrder = CanvasScroll.safeOrder(PIXELS, shiftPixelsX);
-        for (int row : rowOrder) {
-            int sourceRow = row - shiftPixelsZ;
-            for (int col : colOrder) {
-                int sourceCol = col - shiftPixelsX;
-                this.image.setPixel(col, row, this.image.getPixel(sourceCol, sourceRow));
-            }
-        }
+        int originShiftPixelsX = shiftChunksX * ChunkMapData.SIZE;
+        int originShiftPixelsZ = shiftChunksZ * ChunkMapData.SIZE;
+        movePixels(this.image, originShiftPixelsX, originShiftPixelsZ);
         this.originChunkX = targetX;
         this.originChunkZ = targetZ;
         this.drawEdgeStrips(cache, shiftChunksX, shiftChunksZ);
         if (this.initialized) {
             this.texture.upload();
+        }
+    }
+
+    /// 原点移动后，同一世界坐标的像素必须保留在新的局部坐标处。
+    static void movePixels(NativeImage image, int originShiftPixelsX, int originShiftPixelsZ) {
+        int contentShiftPixelsX = CanvasScroll.contentShiftForOriginShift(originShiftPixelsX);
+        int contentShiftPixelsZ = CanvasScroll.contentShiftForOriginShift(originShiftPixelsZ);
+        int[] rowOrder = CanvasScroll.safeOrder(image.getHeight(), contentShiftPixelsZ);
+        int[] colOrder = CanvasScroll.safeOrder(image.getWidth(), contentShiftPixelsX);
+        for (int row : rowOrder) {
+            int sourceRow = CanvasScroll.sourceIndexForOriginShift(row, originShiftPixelsZ);
+            for (int col : colOrder) {
+                int sourceCol = CanvasScroll.sourceIndexForOriginShift(col, originShiftPixelsX);
+                image.setPixel(col, row, image.getPixel(sourceCol, sourceRow));
+            }
         }
     }
 

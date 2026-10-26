@@ -40,6 +40,7 @@ public final class AtlasWorldMap {
 
     /// 关闭并释放画布。
     public static void release() {
+        WorldMapScreen.clearActive();
         if (canvas != null) {
             canvas.close();
             canvas = null;

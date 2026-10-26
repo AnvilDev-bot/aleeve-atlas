@@ -120,7 +120,7 @@ public final class PingRenderer {
         MapMarkerRenderer.drawRipple(graphics, x, z, size, rippleColor);
         MapMarkerRenderer.drawDot(graphics, x, z, 10,
                 applyOpacity(ping.icon().colorArgb(), opacity));
-        drawIcon(graphics, x, z, applyOpacity(0xFFFFFFFF, opacity), ping.icon(), opacity);
+        drawIcon(graphics, x, z, applyOpacity(0xFFFFFFFF, opacity), ping.icon());
     }
 
     /// 按不透明度缩放 ARGB 的 alpha 通道。
@@ -137,10 +137,9 @@ public final class PingRenderer {
 
     /// 按标点图标类型绘制中心标记。
     ///
-    /// 四类标点通过颜色与内层符号区分：普通为圆点，
-    /// 危险为叉形，集合为十字，物资为菱形。
+    /// 四类标点通过颜色与内层符号区分：一般为圆点，危险为叉形，警告为菱形，前往为箭头。
     static void drawIcon(GuiGraphics graphics, int x, int z, int color,
-            MapPingData.PingIcon icon, float opacity) {
+            MapPingData.PingIcon icon) {
         switch (icon) {
             case DANGER -> {
                 for (int offset = -2; offset <= 2; offset++) {
@@ -148,11 +147,9 @@ public final class PingRenderer {
                     graphics.fill(x + offset, z - offset, x + offset + 1, z - offset + 1, color);
                 }
             }
-            case RALLY -> {
-                graphics.fill(x - 3, z, x + 4, z + 1, color);
-                graphics.fill(x, z - 3, x + 1, z + 4, color);
-            }
-            case SUPPLY -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
+            case WARNING -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
+            case GOTO -> MapMarkerRenderer.drawArrow(graphics, x, z, 8, 0.0, color);
+            case GENERAL -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
             default -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
         }
     }

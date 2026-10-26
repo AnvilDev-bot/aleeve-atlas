@@ -8,6 +8,16 @@ public final class CanvasScroll {
     private CanvasScroll() {
     }
 
+    /// 原点变化时，重叠内容在纹理中的搬移方向与原点相反。
+    public static int contentShiftForOriginShift(int originShift) {
+        return -originShift;
+    }
+
+    /// 目标像素在旧画布中的来源索引。
+    public static int sourceIndexForOriginShift(int targetIndex, int originShift) {
+        return targetIndex + originShift;
+    }
+
     /// 按方向生成不会自我覆盖的目标位置遍历顺序。
     ///
     /// 目标位置 `p` 的源位置为 `p - shift`：`shift > 0` 表示内容向高索引方向搬移，
@@ -36,7 +46,7 @@ public final class CanvasScroll {
     /// 平移后新进入视野的起始索引（在画布上的边界位置）。
     ///
     /// @param total 每边槽位数
-    /// @param shift 平移的槽位数（正数表示原点增大）
+    /// @param shift 原点变化的槽位数（正数表示原点增大）
     public static int enteredStart(int total, int shift) {
         return shift > 0 ? total - shift : 0;
     }

@@ -27,12 +27,13 @@ class CanvasScrollTest {
     }
 
     @Test
-    void enteredStripsSitOnOppositeSideOfShift() {
+    void enteredStripsSitOppositeTheOriginShift() {
+        int shift = 2;
         // 原点增大时，新区域出现在高索引一侧。
-        Assertions.assertEquals(3, CanvasScroll.enteredStart(5, 2));
+        Assertions.assertEquals(5 - shift, CanvasScroll.enteredStart(5, shift));
         // 原点减小时，新区域出现在低索引一侧。
-        Assertions.assertEquals(0, CanvasScroll.enteredStart(5, -2));
-        Assertions.assertEquals(2, CanvasScroll.enteredCount(2));
-        Assertions.assertEquals(2, CanvasScroll.enteredCount(-2));
+        Assertions.assertEquals(0, CanvasScroll.enteredStart(5, -shift));
+        Assertions.assertEquals(shift, CanvasScroll.enteredCount(shift));
+        Assertions.assertEquals(shift, CanvasScroll.enteredCount(-shift));
     }
 }

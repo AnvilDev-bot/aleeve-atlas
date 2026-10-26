@@ -95,7 +95,7 @@ public final class AtlasClientCommands {
         }
         var target = player.position().add(player.getViewVector(1.0F).scale(12.0));
         var ping = ClientPings.createLocal(target,
-                MapPingData.PingIcon.NORMAL);
+                MapPingData.PingIcon.GENERAL);
         return ping == null ? 0 : 1;
     }
 
