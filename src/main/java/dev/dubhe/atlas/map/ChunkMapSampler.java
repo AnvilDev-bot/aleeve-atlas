@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.map;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -10,10 +11,8 @@ import net.minecraft.world.level.material.MapColor;
 
 /// 区块采样器：把客户端已加载区块转换为 16×16 的地图像素。
 ///
-/// 采样策略：每列自顶向下寻找第一个非空气方块；若该方块为流体，使用其地图色并按深度压暗。
+/// 每列自顶向下寻找具有地图色的方块，陆地按相邻高差调色，水体按深度调色。
 public final class ChunkMapSampler {
-    private static final int SEA_LEVEL = 63;
-
     private ChunkMapSampler() {
     }
 
@@ -40,8 +39,10 @@ public final class ChunkMapSampler {
         int baseZ = pos.getMinBlockZ();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-        for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
-            for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
+        // 原版地图沿 Z 方向比较相邻列高度，因此按 X、Z 的顺序处理像素。
+        for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
+            int previousHeight = Integer.MIN_VALUE;
+            for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
                 int worldX = baseX + localX;
                 int worldZ = baseZ + localZ;
                 int argb = MapPalette.TRANSPARENT;
@@ -50,33 +51,43 @@ public final class ChunkMapSampler {
                 for (int y = topY; y >= minY; y--) {
                     cursor.set(worldX, y, worldZ);
                     BlockState state = chunk.getBlockState(cursor);
-                    if (state.isAir()) {
+                    FluidState fluid = state.getFluidState();
+                    if (state.isAir() || (fluid.isEmpty()
+                            && state.getMapColor(level, cursor) == MapColor.NONE)) {
                         continue;
                     }
-                    FluidState fluid = state.getFluidState();
                     surfaceY = y;
+                    MapColor mapColor = state.getMapColor(level, cursor);
+                    int depth = 0;
                     if (!fluid.isEmpty()) {
-                        MapColor fluidColor = state.getMapColor(level, cursor);
-                        int depth = countFluidDepth(chunk, cursor, y, minY);
-                        argb = MapPalette.waterColor(fluidColor, depth);
-                    } else {
-                        MapColor mapColor = state.getMapColor(level, cursor);
-                        argb = MapPalette.colorOf(mapColor,
-                                MapPalette.brightnessForHeight(y, SEA_LEVEL));
-                        // 植被类方块按生物群系染色。
-                        argb = MapPalette.tintWithBiome(argb, state, level, cursor,
-                                level.getBiome(cursor));
-                        // 地表光照阴影：按方块光照与天光调整明暗。
-                        int light = level.getMaxLocalRawBrightness(cursor.above());
-                        argb = MapPalette.applyLighting(argb, light);
+                        // 水下的非实体方块使用流体本身的地图色，避免显示为透明或方块底色。
+                        state = correctStateForFluidBlock(level, state, cursor);
+                        mapColor = state.getMapColor(level, cursor);
+                        depth = countFluidDepth(chunk, cursor, y, minY);
                     }
+                    int referenceHeight = previousHeight == Integer.MIN_VALUE
+                            ? surfaceY : previousHeight;
+                    MapColor.Brightness brightness = mapColor == MapColor.WATER
+                            ? MapPalette.brightnessForWater(depth, worldX, worldZ)
+                            : MapPalette.brightnessForTerrain(surfaceY, referenceHeight,
+                                    worldX, worldZ);
+                    argb = MapPalette.colorOf(mapColor, brightness);
                     break;
                 }
 
                 data.setPixel(localX, localZ, argb, surfaceY);
+                previousHeight = surfaceY;
             }
         }
         return data;
+    }
+
+    /// 与原版 `MapItem.getCorrectStateForFluidBlock` 一致，选择流体的地图状态。
+    private static BlockState correctStateForFluidBlock(Level level, BlockState state,
+            BlockPos.MutableBlockPos cursor) {
+        FluidState fluid = state.getFluidState();
+        return !fluid.isEmpty() && !state.isFaceSturdy(level, cursor, Direction.UP)
+                ? fluid.createLegacyBlock() : state;
     }
 
     private static int countFluidDepth(LevelChunk chunk, BlockPos.MutableBlockPos cursor,
