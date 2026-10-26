@@ -1,13 +1,14 @@
 package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import java.util.List;
+import dev.dubhe.atlas.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /// 服务端标点处理：校验后广播给同队在线成员。
 public final class ServerPingHandler {
@@ -31,20 +32,15 @@ public final class ServerPingHandler {
                 ping.position(), ping.targetEntityId(), ping.icon(), ping.createdAtMillis(),
                 ping.lifetimeMillis());
 
-        var team = sender.getTeam();
         List<ServerPlayer> recipients = context.player().level().getServer().getPlayerList()
                 .getPlayers().stream()
-                .filter(player -> sameTeam(team, player))
+                .filter(player -> TeamProviders.active()
+                        .sameTeam(sender.getUUID(), player.getUUID()))
                 .toList();
         for (ServerPlayer recipient : recipients) {
             PacketDistributor.sendToPlayer(recipient, new PingBroadcastPayload(verified));
         }
         LOGGER.debug("Broadcast ping from {} to {} player(s)",
                 sender.getGameProfile().name(), recipients.size());
-    }
-
-    private static boolean sameTeam(PlayerTeam team,
-            ServerPlayer player) {
-        return team != null && team == player.getTeam();
     }
 }

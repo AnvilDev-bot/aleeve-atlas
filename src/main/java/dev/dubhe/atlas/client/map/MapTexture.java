@@ -1,16 +1,17 @@
 package dev.dubhe.atlas.client.map;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapPalette;
-import com.mojang.blaze3d.platform.NativeImage;
-import java.util.HashMap;
-import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /// 小地图像素纹理。
 ///
@@ -43,29 +44,29 @@ public final class MapTexture {
     public MapTexture(Identifier textureId) {
         this.textureId = textureId;
         this.image = new NativeImage(PIXELS, PIXELS, false);
-        this.texture = new DynamicTexture(() -> "aleeve_atlas minimap", image);
+        this.texture = new DynamicTexture(() -> "aleeve_atlas minimap", this.image);
     }
 
     /// 注册纹理到纹理管理器；须在客户端资源管理器可用后调用。
     public void register() {
-        Minecraft.getInstance().getTextureManager().register(textureId, texture);
-        initialized = true;
+        Minecraft.getInstance().getTextureManager().register(this.textureId, this.texture);
+        this.initialized = true;
     }
 
     public Identifier textureId() {
-        return textureId;
+        return this.textureId;
     }
 
     public int originPixelX() {
-        return originPixelX;
+        return this.originPixelX;
     }
 
     public int originPixelZ() {
-        return originPixelZ;
+        return this.originPixelZ;
     }
 
     public boolean ready() {
-        return initialized;
+        return this.initialized;
     }
 
     /// 放入一个区块数据；仅当数据版本变化时重绘该区块，上传延后到 `flushDirty`。
@@ -74,24 +75,24 @@ public final class MapTexture {
     /// 违反「仅在区块加载或方块变更时重渲染」。
     public void putChunk(ChunkMapData data) {
         long key = ChunkPos.asLong(data.chunkX(), data.chunkZ());
-        Long drawnVersion = drawnVersions.get(key);
-        source.put(key, data);
-        if (!initialized || !centered) {
+        Long drawnVersion = this.drawnVersions.get(key);
+        this.source.put(key, data);
+        if (!this.initialized || !this.centered) {
             return;
         }
         if (drawnVersion != null && drawnVersion == data.version()) {
             return;
         }
-        drawChunk(data);
-        drawnVersions.put(key, data.version());
-        dirty = true;
+        this.drawChunk(data);
+        this.drawnVersions.put(key, data.version());
+        this.dirty = true;
     }
 
     /// 若有脏区块则上传一次纹理（每 tick 末尾调用）。
     public void flushDirty() {
-        if (dirty && initialized) {
-            upload();
-            dirty = false;
+        if (this.dirty && this.initialized) {
+            this.upload();
+            this.dirty = false;
         }
     }
 
@@ -105,22 +106,22 @@ public final class MapTexture {
     public void centerOn(double worldX, double worldZ) {
         int targetOriginX = (int) Math.floor(worldX) - PIXELS / 2;
         int targetOriginZ = (int) Math.floor(worldZ) - PIXELS / 2;
-        if (!centered) {
-            originPixelX = targetOriginX;
-            originPixelZ = targetOriginZ;
-            centered = true;
-            redrawAll();
+        if (!this.centered) {
+            this.originPixelX = targetOriginX;
+            this.originPixelZ = targetOriginZ;
+            this.centered = true;
+            this.redrawAll();
             return;
         }
-        int driftX = Math.abs(targetOriginX - originPixelX);
-        int driftZ = Math.abs(targetOriginZ - originPixelZ);
+        int driftX = Math.abs(targetOriginX - this.originPixelX);
+        int driftZ = Math.abs(targetOriginZ - this.originPixelZ);
         if (driftX < RECENTER_THRESHOLD_PIXELS && driftZ < RECENTER_THRESHOLD_PIXELS) {
             return;
         }
-        originPixelX = targetOriginX;
-        originPixelZ = targetOriginZ;
-        evictOutsideCoverage();
-        redrawAll();
+        this.originPixelX = targetOriginX;
+        this.originPixelZ = targetOriginZ;
+        this.evictOutsideCoverage();
+        this.redrawAll();
     }
 
     /// 丢弃已移出纹理覆盖范围的区块数据。
@@ -128,9 +129,9 @@ public final class MapTexture {
     /// `source` 若只增不减，长距离跑图后每次重绘都要遍历全部历史区块，
     /// 内存与单帧耗时随游玩时长线性增长。
     private void evictOutsideCoverage() {
-        int originChunkX = Math.floorDiv(originPixelX, ChunkMapData.SIZE);
-        int originChunkZ = Math.floorDiv(originPixelZ, ChunkMapData.SIZE);
-        source.keySet().removeIf(key -> {
+        int originChunkX = Math.floorDiv(this.originPixelX, ChunkMapData.SIZE);
+        int originChunkZ = Math.floorDiv(this.originPixelZ, ChunkMapData.SIZE);
+        this.source.keySet().removeIf(key -> {
             int chunkX = ChunkPos.getX(key);
             int chunkZ = ChunkPos.getZ(key);
             return chunkX < originChunkX || chunkX >= originChunkX + SLOTS
@@ -140,29 +141,29 @@ public final class MapTexture {
 
     /// 清空全部内容（切换服务器或维度时调用）。
     public void clearAll() {
-        source.clear();
-        drawnVersions.clear();
-        centered = false;
-        fill(MapPalette.TRANSPARENT);
-        upload();
+        this.source.clear();
+        this.drawnVersions.clear();
+        this.centered = false;
+        this.fill(MapPalette.TRANSPARENT);
+        this.upload();
     }
 
     private void redrawAll() {
-        fill(MapPalette.TRANSPARENT);
-        drawnVersions.clear();
-        for (ChunkMapData data : source.values()) {
-            drawChunk(data);
-            drawnVersions.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data.version());
+        this.fill(MapPalette.TRANSPARENT);
+        this.drawnVersions.clear();
+        for (ChunkMapData data : this.source.values()) {
+            this.drawChunk(data);
+            this.drawnVersions.put(ChunkPos.asLong(data.chunkX(), data.chunkZ()), data.version());
         }
-        upload();
+        this.upload();
     }
 
     /// 把一个区块的 16×16 像素写入纹理中对应的位置（可能部分或全部在纹理外）。
     private void drawChunk(ChunkMapData data) {
         int chunkPixelX = data.chunkX() * ChunkMapData.SIZE;
         int chunkPixelZ = data.chunkZ() * ChunkMapData.SIZE;
-        int baseX = chunkPixelX - originPixelX;
-        int baseZ = chunkPixelZ - originPixelZ;
+        int baseX = chunkPixelX - this.originPixelX;
+        int baseZ = chunkPixelZ - this.originPixelZ;
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             int y = baseZ + localZ;
             if (y < 0 || y >= PIXELS) {
@@ -173,7 +174,7 @@ public final class MapTexture {
                 if (x < 0 || x >= PIXELS) {
                     continue;
                 }
-                setPixel(x, y, data.colorAt(localX, localZ));
+                this.setPixel(x, y, data.colorAt(localX, localZ));
             }
         }
     }
@@ -181,7 +182,7 @@ public final class MapTexture {
     private void fill(int argb) {
         for (int y = 0; y < PIXELS; y++) {
             for (int x = 0; x < PIXELS; x++) {
-                setPixel(x, y, argb);
+                this.setPixel(x, y, argb);
             }
         }
     }
@@ -191,26 +192,26 @@ public final class MapTexture {
         if (x < 0 || x >= PIXELS || y < 0 || y >= PIXELS) {
             return;
         }
-        image.setPixel(x, PIXELS - 1 - y, argb);
+        this.image.setPixel(x, PIXELS - 1 - y, argb);
     }
 
     private void upload() {
-        if (initialized) {
-            texture.upload();
+        if (this.initialized) {
+            this.texture.upload();
         }
     }
 
     /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。
     public void close() {
-        if (!initialized) {
+        if (!this.initialized) {
             return;
         }
         try {
-            Minecraft.getInstance().getTextureManager().release(textureId);
+            Minecraft.getInstance().getTextureManager().release(this.textureId);
         } catch (Exception e) {
             LOGGER.warn("Failed to release minimap texture", e);
         } finally {
-            initialized = false;
+            this.initialized = false;
         }
     }
 }

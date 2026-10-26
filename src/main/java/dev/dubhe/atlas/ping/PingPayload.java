@@ -1,11 +1,12 @@
 package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AleeveAtlas;
-import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.UUID;
 
 /// 标点分发负载。
 ///

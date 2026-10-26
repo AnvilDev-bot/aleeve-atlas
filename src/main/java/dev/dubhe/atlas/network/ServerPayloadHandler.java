@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.network;
 
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.sync.PlayerPositionHandler;
 import dev.dubhe.atlas.sync.ServerMapSync;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -30,6 +31,7 @@ public final class ServerPayloadHandler {
                 new HandshakePayload(AleeveAtlas.PROTOCOL_VERSION, config.sync.enabled,
                         config.radar.maxRadarDistance, config.radar.nonTeamPlayerVisibility));
         LOGGER.debug("Sent handshake to {}", player.getGameProfile().name());
+        PlayerPositionHandler.sendSnapshot(player);
     }
 
     /// 玩家断开后清理其未收齐的摘要批次聚合，避免服务端内存残留。
@@ -39,6 +41,7 @@ public final class ServerPayloadHandler {
             return;
         }
         ServerMapSync.clear(player.getUUID());
+        PlayerPositionHandler.remove(player);
         LOGGER.debug("Cleared pending map digests for {}",
                 player.getGameProfile().name());
     }

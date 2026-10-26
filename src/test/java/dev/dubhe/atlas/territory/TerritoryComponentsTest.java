@@ -1,13 +1,12 @@
 package dev.dubhe.atlas.territory;
 
+import net.minecraft.world.level.ChunkPos;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.minecraft.world.level.ChunkPos;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 /// 领地连通分量与加权极点锚点测试。
 class TerritoryComponentsTest {
@@ -18,7 +17,7 @@ class TerritoryComponentsTest {
                 new ChunkPos(1, 1),   // 仅对角相接，仍属同一分量（8 邻域）
                 new ChunkPos(2, 2));
         List<Set<ChunkPos>> components = TerritoryComponents.split(chunks);
-        assertEquals(1, components.size());
+        Assertions.assertEquals(1, components.size());
     }
 
     @Test
@@ -27,25 +26,25 @@ class TerritoryComponentsTest {
                 new ChunkPos(0, 0), new ChunkPos(1, 0),
                 new ChunkPos(10, 10), new ChunkPos(11, 10));
         List<Set<ChunkPos>> components = TerritoryComponents.split(chunks);
-        assertEquals(2, components.size(), "互不相连的飞地必须拆分为独立分量");
+        Assertions.assertEquals(2, components.size(), "互不相连的飞地必须拆分为独立分量");
         // 排序稳定：按分量最小区块的 (x, z) 升序。
-        assertEquals(new ChunkPos(0, 0), TerritoryComponents.minOf(components.get(0)));
-        assertEquals(new ChunkPos(10, 10), TerritoryComponents.minOf(components.get(1)));
+        Assertions.assertEquals(new ChunkPos(0, 0), TerritoryComponents.minOf(components.get(0)));
+        Assertions.assertEquals(new ChunkPos(10, 10), TerritoryComponents.minOf(components.get(1)));
     }
 
     @Test
     void anchorStaysInsideConcaveShape() {
         // L 形（凹多边形）：几何重心落在缺口处，加权极点必须选在领地内部。
-        Set<ChunkPos> lShape = new HashSet<>();
+        Set<ChunkPos> shape = new HashSet<>();
         for (int x = 0; x < 4; x++) {
-            lShape.add(new ChunkPos(x, 0));
-            lShape.add(new ChunkPos(x, 1));
+            shape.add(new ChunkPos(x, 0));
+            shape.add(new ChunkPos(x, 1));
         }
         for (int z = 2; z < 5; z++) {
-            lShape.add(new ChunkPos(0, z));
+            shape.add(new ChunkPos(0, z));
         }
-        ChunkPos anchor = AnchorSelector.select(lShape, AnchorSelector.DEFAULT_LAMBDA);
-        assertTrue(lShape.contains(anchor), "锚点必须落在领地内部");
+        ChunkPos anchor = AnchorSelector.select(shape, AnchorSelector.DEFAULT_LAMBDA);
+        Assertions.assertTrue(shape.contains(anchor), "锚点必须落在领地内部");
     }
 
     @Test
@@ -58,7 +57,7 @@ class TerritoryComponentsTest {
         }
         ChunkPos first = AnchorSelector.select(square, 0.4F);
         ChunkPos second = AnchorSelector.select(square, 0.4F);
-        assertEquals(first, second, "重复计算不得产生跳动");
+        Assertions.assertEquals(first, second, "重复计算不得产生跳动");
     }
 
     @Test
@@ -74,12 +73,12 @@ class TerritoryComponentsTest {
             }
         }
         ChunkPos anchor = AnchorSelector.select(ring, AnchorSelector.DEFAULT_LAMBDA);
-        assertTrue(ring.contains(anchor));
-        assertFalse(anchor.equals(new ChunkPos(0, 0)), "孔洞中心不属于领地，不可作为锚点");
+        Assertions.assertTrue(ring.contains(anchor));
+        Assertions.assertFalse(anchor.equals(new ChunkPos(0, 0)), "孔洞中心不属于领地，不可作为锚点");
     }
 
     @Test
     void emptyComponentHasNoAnchor() {
-        assertEquals(null, AnchorSelector.select(Set.of(), 0.4F));
+        Assertions.assertEquals(null, AnchorSelector.select(Set.of(), 0.4F));
     }
 }

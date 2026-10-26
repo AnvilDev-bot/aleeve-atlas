@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 public final class ColorUtil {
     private static final Logger LOGGER =
             LoggerFactory.getLogger("aleeve_atlas/util");
+
     private ColorUtil() {
     }
 

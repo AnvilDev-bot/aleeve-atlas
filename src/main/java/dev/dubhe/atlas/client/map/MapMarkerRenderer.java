@@ -1,7 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import dev.dubhe.atlas.AleeveAtlas;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.Identifier;
 

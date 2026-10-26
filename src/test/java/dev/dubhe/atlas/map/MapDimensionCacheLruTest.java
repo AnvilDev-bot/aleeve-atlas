@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.map;
 
-import java.nio.file.Path;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 /// 区域文件缓存的最久未用淘汰测试。
 ///
@@ -19,53 +19,53 @@ class MapDimensionCacheLruTest {
 
     @Test
     void residentRegionCountDoesNotExceedLimit() {
-        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
         for (int region = 0; region < MAX_REGIONS * 3; region++) {
             cache.put(chunkInRegion(region));
         }
-        assertTrue(cache.loadedRegionCount() <= MAX_REGIONS,
+        Assertions.assertTrue(cache.loadedRegionCount() <= MAX_REGIONS,
                 "驻留区域数不得超过上限，实际 " + cache.loadedRegionCount());
     }
 
     @Test
     void recentlyAccessedRegionSurvivesEviction() {
-        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
         // 先填充到接近上限。
         for (int region = 0; region < MAX_REGIONS - 1; region++) {
             cache.put(chunkInRegion(region));
         }
         // 访问最早的区域（region 0），刷新其淘汰优先级。
-        assertTrue(cache.get(0, 0).isPresent());
+        Assertions.assertTrue(cache.get(0, 0).isPresent());
         // 继续插入足量新区域，迫使淘汰发生。
         for (int region = MAX_REGIONS; region < MAX_REGIONS * 2; region++) {
             cache.put(chunkInRegion(region));
         }
         // 热点区域应仍在内存中：读取不触发区域重载，数据保持一致。
-        assertEquals(0, cache.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF,
+        Assertions.assertEquals(0, cache.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF,
                 "近期访问过的区域不应被淘汰");
     }
 
     @Test
     void leastRecentlyUsedRegionIsEvictedFirst() {
-        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
         for (int region = 0; region < MAX_REGIONS; region++) {
             cache.put(chunkInRegion(region));
         }
         int before = cache.loadedRegionCount();
         // 再插入一个新区域，必然淘汰一个旧区域。
         cache.put(chunkInRegion(MAX_REGIONS * 2));
-        assertTrue(cache.loadedRegionCount() <= Math.max(before, MAX_REGIONS),
+        Assertions.assertTrue(cache.loadedRegionCount() <= Math.max(before, MAX_REGIONS),
                 "淘汰后驻留数不应增长");
         // 被淘汰的区域仍能从磁盘重新加载，数据不丢失。
         for (int region = 0; region < MAX_REGIONS; region++) {
-            assertTrue(cache.get(region * 32, 0).isPresent(),
+            Assertions.assertTrue(cache.get(region * 32, 0).isPresent(),
                     "区域 " + region + " 应可从磁盘恢复");
         }
     }
 
     @Test
     void evictionPersistsDataBeforeDropping() {
-        MapDimensionCache cache = new MapDimensionCache(tempDir);
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
         ChunkMapData first = chunkInRegion(0);
         cache.put(first);
         // 不调用 flush，直接插入足量区域触发淘汰。
@@ -73,9 +73,9 @@ class MapDimensionCacheLruTest {
             cache.put(chunkInRegion(region));
         }
         // 淘汰时应先写入磁盘，重新打开后仍能读到最早的数据。
-        MapDimensionCache reopened = new MapDimensionCache(tempDir);
-        assertTrue(reopened.get(0, 0).isPresent(), "淘汰前必须写入磁盘");
-        assertEquals(0, reopened.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF);
+        MapDimensionCache reopened = new MapDimensionCache(this.tempDir);
+        Assertions.assertTrue(reopened.get(0, 0).isPresent(), "淘汰前必须写入磁盘");
+        Assertions.assertEquals(0, reopened.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF);
     }
 
     /// 构造位于指定区域首区块的数据，颜色低字节编码区域序号便于追溯。

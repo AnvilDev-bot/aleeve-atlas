@@ -1,7 +1,7 @@
 package dev.dubhe.atlas.team;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import dev.anvilcraft.lib.v2.integration.IntegrationManager;
+import dev.dubhe.atlas.AleeveAtlas;
 import net.neoforged.fml.loading.FMLEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

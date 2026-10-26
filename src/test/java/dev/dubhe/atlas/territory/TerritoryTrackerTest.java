@@ -2,17 +2,15 @@ package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Set;
 
 /// 领地进出跟踪测试。
 class TerritoryTrackerTest {
@@ -26,7 +24,7 @@ class TerritoryTrackerTest {
         registry.upsertTerritory(withZOrder("high", shared, 9));
 
         TerritoryGroup resolved = TerritoryTracker.resolveAt(registry, OVERWORLD, 0, 0);
-        assertEquals("high", resolved.territoryId(), "重叠时仅播报最高 zOrder");
+        Assertions.assertEquals("high", resolved.territoryId(), "重叠时仅播报最高 zOrder");
     }
 
     @Test
@@ -37,19 +35,19 @@ class TerritoryTrackerTest {
 
         // 首次进入。
         TerritoryTracker.Change enter = tracker.update(registry, OVERWORLD, 0, 0);
-        assertTrue(enter != null && enter.entered());
-        assertEquals("t", enter.territory().territoryId());
-        assertEquals("t", tracker.currentTerritoryId());
+        Assertions.assertTrue(enter != null && enter.entered());
+        Assertions.assertEquals("t", enter.territory().territoryId());
+        Assertions.assertEquals("t", tracker.currentTerritoryId());
 
         // 原地不动：无变更。
-        assertNull(tracker.update(registry, OVERWORLD, 0, 0));
+        Assertions.assertNull(tracker.update(registry, OVERWORLD, 0, 0));
 
         // 走出领地：产生离开事件并清空状态。
         TerritoryTracker.Change leave = tracker.update(registry, OVERWORLD, 50, 50);
-        assertTrue(leave != null);
-        assertFalse(leave.entered());
-        assertEquals("t", leave.previous().territoryId());
-        assertNull(tracker.currentTerritoryId());
+        Assertions.assertTrue(leave != null);
+        Assertions.assertFalse(leave.entered());
+        Assertions.assertEquals("t", leave.previous().territoryId());
+        Assertions.assertNull(tracker.currentTerritoryId());
     }
 
     @Test
@@ -61,8 +59,8 @@ class TerritoryTrackerTest {
 
         tracker.update(registry, OVERWORLD, 0, 0);
         TerritoryTracker.Change change = tracker.update(registry, OVERWORLD, 1, 0);
-        assertTrue(change != null && change.entered());
-        assertEquals("b", change.territory().territoryId());
+        Assertions.assertTrue(change != null && change.entered());
+        Assertions.assertEquals("b", change.territory().territoryId());
     }
 
     @Test
@@ -73,23 +71,23 @@ class TerritoryTrackerTest {
 
         tracker.update(registry, OVERWORLD, 0, 0);
         tracker.reset();
-        assertNull(tracker.currentTerritoryId());
+        Assertions.assertNull(tracker.currentTerritoryId());
         // 重置后再次进入应重新触发进入事件（跨维度场景）。
         TerritoryTracker.Change again = tracker.update(registry, OVERWORLD, 0, 0);
-        assertTrue(again != null && again.entered());
+        Assertions.assertTrue(again != null && again.entered());
     }
 
     @Test
     void emptyRegistryNeverReports() {
         TerritoryRegistry registry = new TerritoryRegistry();
         TerritoryTracker tracker = new TerritoryTracker();
-        assertNull(tracker.update(registry, OVERWORLD, 0, 0));
-        assertNull(TerritoryTracker.resolveAt(registry, OVERWORLD, 0, 0));
+        Assertions.assertNull(tracker.update(registry, OVERWORLD, 0, 0));
+        Assertions.assertNull(TerritoryTracker.resolveAt(registry, OVERWORLD, 0, 0));
     }
 
-    private static TerritoryGroup withZOrder(String id, Set<ChunkPos> chunks, int zOrder) {
+    private static TerritoryGroup withZOrder(String id, Set<ChunkPos> chunks, int order) {
         return new SimpleTerritory(id, OVERWORLD, chunks, Component.literal(id), 0x33AAFF,
                 0.25F, BorderStyle.ofTheme(0x33AAFF),
-                List.of(), zOrder);
+                List.of(), order);
     }
 }

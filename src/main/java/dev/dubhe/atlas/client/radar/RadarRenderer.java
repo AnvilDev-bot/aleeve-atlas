@@ -7,9 +7,8 @@ import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.config.RadarDisplayMode;
 import dev.dubhe.atlas.map.MapPalette;
+import dev.dubhe.atlas.sync.ClientPlayerPositions;
 import dev.dubhe.atlas.team.TeamProviders;
-import java.util.HashSet;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -21,6 +20,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /// 实体雷达的小地图与世界地图标记渲染。
 ///
@@ -45,12 +50,12 @@ public final class RadarRenderer {
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         renderMarkers(graphics, config, minecraft, new MarkerProjection() {
             @Override
-            public double x(Entity entity) {
+            public double screenX(Entity entity) {
                 return layout.worldToScreenX(entity.getX());
             }
 
             @Override
-            public double y(Entity entity) {
+            public double screenY(Entity entity) {
                 return layout.worldToScreenZ(entity.getZ());
             }
 
@@ -72,12 +77,12 @@ public final class RadarRenderer {
             int viewWidth, int viewHeight) {
         renderMarkers(graphics, config, minecraft, new MarkerProjection() {
             @Override
-            public double x(Entity entity) {
+            public double screenX(Entity entity) {
                 return viewWidth / 2.0 + (entity.getX() - centerX) * pixelsPerChunk;
             }
 
             @Override
-            public double y(Entity entity) {
+            public double screenY(Entity entity) {
                 return viewHeight / 2.0 + (entity.getZ() - centerZ) * pixelsPerChunk;
             }
 
@@ -105,7 +110,19 @@ public final class RadarRenderer {
         int maxDistance = AtlasSession.maxRadarDistance();
         double maxDistanceSq = (double) maxDistance * maxDistance;
 
+        List<Entity> targets = new ArrayList<>();
+        Set<UUID> loadedPlayerIds = new HashSet<>();
         for (Entity entity : level.entitiesForRendering()) {
+            targets.add(entity);
+            loadedPlayerIds.add(entity.getUUID());
+        }
+        for (var remote : ClientPlayerPositions.remotePlayers()) {
+            if (loadedPlayerIds.add(remote.getUUID())) {
+                targets.add(remote);
+            }
+        }
+
+        for (Entity entity : targets) {
             if (entity == player || entity.isRemoved()
                     || entity.distanceToSqr(player) > maxDistanceSq) {
                 continue;
@@ -122,8 +139,8 @@ public final class RadarRenderer {
                     continue;
                 }
             }
-            double screenX = projection.x(entity);
-            double screenY = projection.y(entity);
+            double screenX = projection.screenX(entity);
+            double screenY = projection.screenY(entity);
             if (!projection.contains(screenX, screenY)) {
                 continue;
             }
@@ -162,9 +179,9 @@ public final class RadarRenderer {
 
     /// 地图坐标转换与视口裁剪。
     private interface MarkerProjection {
-        double x(Entity entity);
+        double screenX(Entity entity);
 
-        double y(Entity entity);
+        double screenY(Entity entity);
 
         boolean contains(double x, double y);
 

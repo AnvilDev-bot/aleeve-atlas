@@ -8,6 +8,13 @@ import dev.dubhe.atlas.map.ChunkPixelCodec;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,12 +22,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 客户端地图增量同步。
 ///
@@ -87,8 +88,8 @@ public final class ClientMapSync {
         // 单 tick 计数由 `tick` 统一重置，此处不再重复重置，否则同 tick 内多批差异各自计数。
         // 差异回传给摘要发送者（由服务端按 targetPlayer 精确路由）。
         UUID target = payload.senderId();
-        for (ChunkDeltaPayload packet : ChunkDeltaPayload.split(payload.dimensionId(), deltas,
-                target)) {
+        for (ChunkDeltaPayload packet : ChunkDeltaPayload.splitForUpload(
+                payload.dimensionId(), deltas, target)) {
             int estimated = estimate(packet);
             if (!BUDGET.canSend(estimated)) {
                 // 配额用尽：剩余分片留待下一轮同步，不做无界排队。
@@ -142,6 +143,7 @@ public final class ClientMapSync {
             RECEIVED_BATCHES.values().removeIf(record -> record.firstSeenMillis < cutoff);
         }
     }
+
     /// 解压分片并放入待写队列（网络线程执行）。
     ///
     /// 按 `batchIndex/batchCount` 记录分片到达情况，用于确认一次差异传输是否完整。

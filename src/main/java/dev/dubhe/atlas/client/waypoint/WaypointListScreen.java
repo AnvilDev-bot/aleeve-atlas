@@ -4,9 +4,6 @@ import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.WaypointSendPolicy;
 import dev.dubhe.atlas.waypoint.Waypoint;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,6 +14,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /// 当前维度的路径点管理列表。
 ///
@@ -41,58 +42,58 @@ public final class WaypointListScreen extends Screen {
 
     @Override
     protected void init() {
-        reloadEntries();
+        this.reloadEntries();
     }
 
     @Override
     public void added() {
         super.added();
-        reloadEntries();
+        this.reloadEntries();
     }
 
     void reloadEntries() {
-        entries.clear();
+        this.entries.clear();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level != null) {
             // 管理界面始终只显示当前维度，隐藏条目也保留在列表中。
-            entries.addAll(ClientWaypoints.allInDimension(minecraft.level.dimension()));
+            this.entries.addAll(ClientWaypoints.allInDimension(minecraft.level.dimension()));
         }
-        scrollOffset = Math.min(scrollOffset, maxScrollOffset());
-        rebuildRows();
+        this.scrollOffset = Math.min(this.scrollOffset, this.maxScrollOffset());
+        this.rebuildRows();
     }
 
     private void rebuildRows() {
         clearWidgets();
-        buildRows();
+        this.buildRows();
     }
 
     private void buildRows() {
         boolean synchronizedMode = AtlasSession.synchronizedMode();
-        int visibleRows = visibleRows();
-        int buttonWidth = buttonWidth();
-        int buttonX = buttonsX();
+        int visibleRows = this.visibleRows();
+        int buttonWidth = this.buttonWidth();
+        int buttonX = this.buttonsX();
         int rowIndex = 0;
-        for (int index = scrollOffset; index < entries.size(); index++) {
+        for (int index = this.scrollOffset; index < this.entries.size(); index++) {
             if (rowIndex >= visibleRows) {
                 break;
             }
-            Waypoint waypoint = entries.get(index);
+            Waypoint waypoint = this.entries.get(index);
             int y = LIST_TOP + rowIndex * ROW_HEIGHT;
 
             addRenderableWidget(Button.builder(
                             Component.translatable("aleeve_atlas.screen.waypoint_list.edit"),
-                            button -> edit(waypoint))
+                            button -> this.edit(waypoint))
                     .bounds(buttonX, y, buttonWidth, 20).build());
             addRenderableWidget(Button.builder(
                             Component.translatable(waypoint.enabled()
                                     ? "aleeve_atlas.screen.waypoint_list.hide"
                                     : "aleeve_atlas.screen.waypoint_list.show"),
-                            button -> toggle(waypoint))
+                            button -> this.toggle(waypoint))
                     .bounds(buttonX + buttonWidth + 4, y, buttonWidth, 20).build());
 
             Button share = Button.builder(
                             Component.translatable("aleeve_atlas.screen.waypoint_list.share"),
-                            button -> share(waypoint))
+                            button -> this.share(waypoint))
                     .bounds(buttonX + (buttonWidth + 4) * 2, y, buttonWidth, 20)
                     .tooltip(Tooltip.create(synchronizedMode
                             ? Component.translatable("aleeve_atlas.screen.waypoint_list.share.tip")
@@ -106,21 +107,21 @@ public final class WaypointListScreen extends Screen {
                             Component.translatable(waypoint.shareable()
                                     ? "aleeve_atlas.screen.waypoint_list.public"
                                     : "aleeve_atlas.screen.waypoint_list.private"),
-                            button -> toggleShareable(waypoint))
+                            button -> this.toggleShareable(waypoint))
                     .bounds(buttonX + (buttonWidth + 4) * 3, y, buttonWidth, 20).build());
             addRenderableWidget(Button.builder(
                             Component.translatable("aleeve_atlas.screen.waypoint_list.delete"),
-                            button -> delete(waypoint))
+                            button -> this.delete(waypoint))
                     .bounds(buttonX + (buttonWidth + 4) * 4, y, buttonWidth, 20).build());
             rowIndex++;
         }
 
         addRenderableWidget(Button.builder(
                         Component.translatable("aleeve_atlas.screen.waypoint_list.add"),
-                        button -> create())
+                        button -> this.create())
                 .bounds(width - 126, 8, 120, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("gui.back"),
-                        button -> onClose())
+                        button -> this.onClose())
                 .bounds(width / 2 - 50, height - 28, 100, 20).build());
     }
 
@@ -137,12 +138,12 @@ public final class WaypointListScreen extends Screen {
 
     private void toggle(Waypoint waypoint) {
         ClientWaypoints.update(waypoint.withEnabled(!waypoint.enabled()));
-        reloadEntries();
+        this.reloadEntries();
     }
 
     private void toggleShareable(Waypoint waypoint) {
         ClientWaypoints.update(waypoint.withShareable(!waypoint.shareable()));
-        reloadEntries();
+        this.reloadEntries();
     }
 
     private void share(Waypoint waypoint) {
@@ -151,7 +152,7 @@ public final class WaypointListScreen extends Screen {
         if (minecraft.player != null) {
             minecraft.player.displayClientMessage(
                     Component.translatable("aleeve_atlas.message.waypoint_shared_team",
-                            waypoint.name()), true);
+                            waypoint.displayName().getString()), true);
         }
     }
 
@@ -165,7 +166,7 @@ public final class WaypointListScreen extends Screen {
                 == WaypointSendPolicy.AUTO_SYNC) {
             ClientWaypoints.shareDelete(waypoint);
         }
-        reloadEntries();
+        this.reloadEntries();
     }
 
     @Override
@@ -173,27 +174,27 @@ public final class WaypointListScreen extends Screen {
         graphics.fill(0, 0, width, height, 0xC0101010);
         graphics.drawString(font, title, 12, 12, 0xFFFFFFFF, true);
 
-        if (entries.isEmpty()) {
+        if (this.entries.isEmpty()) {
             graphics.drawString(font,
                     Component.translatable("aleeve_atlas.screen.waypoint_list.empty"),
                     12, LIST_TOP, 0xFFAAAAAA, true);
         } else {
-            for (int row = 0; row < visibleRows(); row++) {
-                int index = scrollOffset + row;
-                if (index >= entries.size()) {
+            for (int row = 0; row < this.visibleRows(); row++) {
+                int index = this.scrollOffset + row;
+                if (index >= this.entries.size()) {
                     break;
                 }
-                Waypoint waypoint = entries.get(index);
+                Waypoint waypoint = this.entries.get(index);
                 int y = LIST_TOP + row * ROW_HEIGHT;
                 int color = waypoint.enabled() ? waypoint.colorArgb() : 0xFF666666;
                 graphics.fill(6, y, 10, y + 18, color);
-                drawWaypointLabel(graphics, waypoint, y, mouseX, mouseY);
+                this.drawWaypointLabel(graphics, waypoint, y, mouseX, mouseY);
             }
         }
         graphics.drawString(font,
                 Component.translatable("aleeve_atlas.screen.waypoint_list.scroll_hint"),
                 12, height - 44, 0xFF888888, true);
-        drawScrollbar(graphics);
+        this.drawScrollbar(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -201,12 +202,12 @@ public final class WaypointListScreen extends Screen {
     private void drawWaypointLabel(GuiGraphics graphics, Waypoint waypoint, int y,
             int mouseX, int mouseY) {
         int labelX = 14;
-        int maxWidth = Math.max(0, buttonsX() - labelX - 6);
+        int maxWidth = Math.max(0, this.buttonsX() - labelX - 6);
         if (maxWidth <= 0) {
             return;
         }
         Component line = Component.literal("%s  (%d, %d, %d)".formatted(
-                        waypoint.name(), waypoint.pos().getX(), waypoint.pos().getY(),
+                        waypoint.displayName().getString(), waypoint.pos().getX(), waypoint.pos().getY(),
                         waypoint.pos().getZ()))
                 .withStyle(waypoint.enabled() ? ChatFormatting.WHITE : ChatFormatting.DARK_GRAY);
         Component death = waypoint.deathPoint()
@@ -219,14 +220,14 @@ public final class WaypointListScreen extends Screen {
                 && mouseY >= y && mouseY < y + ROW_HEIGHT;
         double offset = 0.0;
         if (hovered) {
-            if (!waypoint.id().equals(hoveredLabel)) {
-                hoveredLabel = waypoint.id();
-                hoverStartedAt = System.currentTimeMillis();
+            if (!waypoint.id().equals(this.hoveredLabel)) {
+                this.hoveredLabel = waypoint.id();
+                this.hoverStartedAt = System.currentTimeMillis();
             }
             offset = Math.min(textWidth - maxWidth,
-                    (System.currentTimeMillis() - hoverStartedAt) / 50.0);
-        } else if (waypoint.id().equals(hoveredLabel)) {
-            hoveredLabel = null;
+                    (System.currentTimeMillis() - this.hoverStartedAt) / 50.0);
+        } else if (waypoint.id().equals(this.hoveredLabel)) {
+            this.hoveredLabel = null;
         }
         if (overflow) {
             graphics.enableScissor(12, y, 12 + maxWidth, y + 18);
@@ -244,50 +245,50 @@ public final class WaypointListScreen extends Screen {
 
     private void drawScrollbar(GuiGraphics graphics) {
         int x = width - SCROLLBAR_WIDTH - 4;
-        int trackHeight = listHeight();
+        int trackHeight = this.listHeight();
         graphics.fill(x, LIST_TOP, x + SCROLLBAR_WIDTH, LIST_TOP + trackHeight, 0xFF202020);
-        int thumbHeight = scrollbarThumbHeight();
-        int travel = Math.max(0, maxScrollOffset());
+        int thumbHeight = this.scrollbarThumbHeight();
+        int travel = Math.max(0, this.maxScrollOffset());
         int thumbY = LIST_TOP + (travel == 0 ? 0
-                : Math.round((float) (trackHeight - thumbHeight) * scrollOffset / travel));
+                : Math.round((float) (trackHeight - thumbHeight) * this.scrollOffset / travel));
         graphics.fill(x, thumbY, x + SCROLLBAR_WIDTH, thumbY + thumbHeight, 0xFFAAAAAA);
     }
 
     private int scrollbarThumbHeight() {
-        if (entries.isEmpty()) {
-            return listHeight();
+        if (this.entries.isEmpty()) {
+            return this.listHeight();
         }
-        return Math.min(listHeight(),
-                Math.max(12, listHeight() * visibleRows() / entries.size()));
+        return Math.min(this.listHeight(),
+                Math.max(12, this.listHeight() * this.visibleRows() / this.entries.size()));
     }
 
     private boolean overScrollbar(double mouseX, double mouseY) {
         return mouseX >= width - SCROLLBAR_WIDTH - 6 && mouseX <= width
-                && mouseY >= LIST_TOP && mouseY <= LIST_TOP + listHeight();
+                && mouseY >= LIST_TOP && mouseY <= LIST_TOP + this.listHeight();
     }
 
     private void updateScrollFromMouse(double mouseY) {
-        int maxOffset = maxScrollOffset();
+        int maxOffset = this.maxScrollOffset();
         if (maxOffset <= 0) {
-            scrollOffset = 0;
+            this.scrollOffset = 0;
             return;
         }
-        int thumbHeight = scrollbarThumbHeight();
-        int travel = Math.max(1, listHeight() - thumbHeight);
+        int thumbHeight = this.scrollbarThumbHeight();
+        int travel = Math.max(1, this.listHeight() - thumbHeight);
         double ratio = (mouseY - LIST_TOP - thumbHeight / 2.0) / travel;
         int newOffset = (int) Math.round(Math.max(0.0, Math.min(1.0, ratio)) * maxOffset);
-        if (newOffset != scrollOffset) {
-            scrollOffset = newOffset;
-            rebuildRows();
+        if (newOffset != this.scrollOffset) {
+            this.scrollOffset = newOffset;
+            this.rebuildRows();
         }
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                && overScrollbar(event.x(), event.y())) {
-            scrollbarDragging = true;
-            updateScrollFromMouse(event.y());
+                && this.overScrollbar(event.x(), event.y())) {
+            this.scrollbarDragging = true;
+            this.updateScrollFromMouse(event.y());
             return true;
         }
         return super.mouseClicked(event, doubleClick);
@@ -295,8 +296,8 @@ public final class WaypointListScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        if (scrollbarDragging) {
-            updateScrollFromMouse(event.y());
+        if (this.scrollbarDragging) {
+            this.updateScrollFromMouse(event.y());
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -304,8 +305,8 @@ public final class WaypointListScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        if (scrollbarDragging) {
-            scrollbarDragging = false;
+        if (this.scrollbarDragging) {
+            this.scrollbarDragging = false;
             return true;
         }
         return super.mouseReleased(event);
@@ -314,11 +315,11 @@ public final class WaypointListScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY != 0.0) {
-            int newOffset = Math.max(0, Math.min(maxScrollOffset(),
-                    scrollOffset + (scrollY > 0 ? -1 : 1)));
-            if (newOffset != scrollOffset) {
-                scrollOffset = newOffset;
-                rebuildRows();
+            int newOffset = Math.max(0, Math.min(this.maxScrollOffset(),
+                    this.scrollOffset + (scrollY > 0 ? -1 : 1)));
+            if (newOffset != this.scrollOffset) {
+                this.scrollOffset = newOffset;
+                this.rebuildRows();
             }
             return true;
         }
@@ -330,16 +331,16 @@ public final class WaypointListScreen extends Screen {
     }
 
     private int listHeight() {
-        return visibleRows() * ROW_HEIGHT;
+        return this.visibleRows() * ROW_HEIGHT;
     }
 
     private int maxScrollOffset() {
-        return Math.max(0, entries.size() - visibleRows());
+        return Math.max(0, this.entries.size() - this.visibleRows());
     }
 
     /// 当前首行索引，供界面自检验证拖动结果。
     int scrollOffset() {
-        return scrollOffset;
+        return this.scrollOffset;
     }
 
     private int buttonWidth() {
@@ -347,13 +348,13 @@ public final class WaypointListScreen extends Screen {
     }
 
     private int buttonsX() {
-        return width - (buttonWidth() + 4) * 5 - 22;
+        return width - (this.buttonWidth() + 4) * 5 - 22;
     }
 
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
-            onClose();
+            this.onClose();
             return true;
         }
         return super.keyPressed(event);
@@ -361,7 +362,7 @@ public final class WaypointListScreen extends Screen {
 
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreen(this.parent);
     }
 
     @Override

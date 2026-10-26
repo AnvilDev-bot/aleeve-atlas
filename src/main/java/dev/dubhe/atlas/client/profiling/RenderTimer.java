@@ -22,58 +22,58 @@ public final class RenderTimer {
 
     /// 记录一帧耗时（纳秒）。
     public void record(long nanos) {
-        if (count == samples.length) {
+        if (this.count == this.samples.length) {
             // 覆盖最旧样本。
-            total -= samples[cursor];
+            this.total -= this.samples[this.cursor];
         } else {
-            count++;
+            this.count++;
         }
-        samples[cursor] = nanos;
-        total += nanos;
-        max = Math.max(max, nanos);
-        cursor = (cursor + 1) % samples.length;
+        this.samples[this.cursor] = nanos;
+        this.total += nanos;
+        this.max = Math.max(this.max, nanos);
+        this.cursor = (this.cursor + 1) % this.samples.length;
     }
 
     /// 样本数量。
     public int count() {
-        return count;
+        return this.count;
     }
 
     /// 平均耗时（纳秒）；无样本时返回 0。
     public long averageNanos() {
-        return count == 0 ? 0L : total / count;
+        return this.count == 0 ? 0L : this.total / this.count;
     }
 
     /// 平均耗时（毫秒，保留小数）。
     public double averageMillis() {
-        return averageNanos() / 1_000_000.0;
+        return this.averageNanos() / 1_000_000.0;
     }
 
     /// 历史最大耗时（纳秒）。
     public long maxNanos() {
-        return max;
+        return this.max;
     }
 
     /// 超过阈值的样本占比（0.0 ~ 1.0）。
     public double overBudgetRatio(long budgetNanos) {
-        if (count == 0) {
+        if (this.count == 0) {
             return 0.0;
         }
         int over = 0;
-        for (int index = 0; index < count; index++) {
-            if (samples[index] > budgetNanos) {
+        for (int index = 0; index < this.count; index++) {
+            if (this.samples[index] > budgetNanos) {
                 over++;
             }
         }
-        return (double) over / count;
+        return (double) over / this.count;
     }
 
     /// 清空样本。
     public void reset() {
-        Arrays.fill(samples, 0L);
-        count = 0;
-        cursor = 0;
-        total = 0;
-        max = 0;
+        Arrays.fill(this.samples, 0L);
+        this.count = 0;
+        this.cursor = 0;
+        this.total = 0;
+        this.max = 0;
     }
 }

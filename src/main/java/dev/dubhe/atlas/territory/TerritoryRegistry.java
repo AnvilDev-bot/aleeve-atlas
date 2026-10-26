@@ -1,9 +1,13 @@
 package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.BorderStyle;
-
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.api.territory.TerritoryOverlayApi;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,10 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 
 /// 领地覆层注册中心。
 ///
@@ -30,43 +30,96 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
 
     @Override
     public void upsertTerritory(TerritoryGroup territory) {
-        territories.put(territory.territoryId(), territory);
-        cache.remove(territory.territoryId());
-        recompute(territory);
+        this.territories.put(territory.territoryId(), territory);
+        this.cache.remove(territory.territoryId());
+        this.recompute(territory);
     }
 
     @Override
     public void patchChunks(ResourceKey<Level> dimension, String territoryId,
             Set<ChunkPos> added, Set<ChunkPos> removed) {
-        TerritoryGroup existing = territories.get(territoryId);
-        if (existing == null) {
+        TerritoryGroup existing = this.territories.get(territoryId);
+        if (existing == null || !existing.dimension().equals(dimension)) {
             return;
         }
         Set<ChunkPos> chunks = new HashSet<>(existing.chunks());
         chunks.removeAll(removed);
         chunks.addAll(added);
         TerritoryGroup patched = new PatchedTerritory(existing, chunks);
-        territories.put(territoryId, patched);
-        // 局部更新：仅对受影响领地的分量与锚点重算。
-        cache.remove(territoryId);
-        recompute(patched);
+        this.territories.put(territoryId, patched);
+
+        CachedTerritory previous = this.cache.get(territoryId);
+        if (previous == null) {
+            this.recompute(patched);
+            return;
+        }
+        Set<ChunkPos> affected = new HashSet<>(added);
+        affected.addAll(removed);
+        if (affected.isEmpty()) {
+            return;
+        }
+        Set<ChunkPos> expanded = expandAffected(affected);
+        Set<ChunkPos> recalculationChunks = new HashSet<>();
+        List<TerritoryComponent> components = new ArrayList<>();
+        for (TerritoryComponent component : previous.components()) {
+            if (intersects(expanded, component.chunks())) {
+                recalculationChunks.addAll(component.chunks());
+            } else {
+                components.add(component);
+            }
+        }
+        recalculationChunks.addAll(added);
+        recalculationChunks.removeAll(removed);
+        recalculationChunks.retainAll(chunks);
+        components.addAll(this.computeComponents(recalculationChunks));
+        components.sort(TerritoryRegistry::compareComponents);
+        this.cache.put(territoryId, new CachedTerritory(patched, components));
+    }
+
+    /// 以 8 邻域扩展受影响区域，覆盖新增合并与删除分裂所需的旧分量。
+    private static Set<ChunkPos> expandAffected(Set<ChunkPos> affected) {
+        Set<ChunkPos> expanded = new HashSet<>();
+        for (ChunkPos center : affected) {
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    expanded.add(new ChunkPos(center.x + dx, center.z + dz));
+                }
+            }
+        }
+        return expanded;
+    }
+
+    private static boolean intersects(Set<ChunkPos> first, Set<ChunkPos> second) {
+        for (ChunkPos pos : first) {
+            if (second.contains(pos)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int compareComponents(TerritoryComponent left, TerritoryComponent right) {
+        ChunkPos a = TerritoryComponents.minOf(left.chunks());
+        ChunkPos b = TerritoryComponents.minOf(right.chunks());
+        int byX = Integer.compare(a.x, b.x);
+        return byX != 0 ? byX : Integer.compare(a.z, b.z);
     }
 
     @Override
     public void removeTerritory(String territoryId) {
-        territories.remove(territoryId);
-        cache.remove(territoryId);
+        this.territories.remove(territoryId);
+        this.cache.remove(territoryId);
     }
 
     @Override
     public Set<TerritoryGroup> registeredTerritories() {
-        return Set.copyOf(territories.values());
+        return Set.copyOf(this.territories.values());
     }
 
     /// 该维度下按 zOrder 升序排列的已注册领地。
     public List<TerritoryGroup> orderedForDimension(ResourceKey<Level> dimension) {
         List<TerritoryGroup> result = new ArrayList<>();
-        for (TerritoryGroup territory : territories.values()) {
+        for (TerritoryGroup territory : this.territories.values()) {
             if (territory.dimension().equals(dimension)) {
                 result.add(territory);
             }
@@ -78,7 +131,7 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
     /// 查询某区块命中的全部领地，按 zOrder 从高到低。
     public List<TerritoryGroup> hitAt(ResourceKey<Level> dimension, ChunkPos pos) {
         List<TerritoryGroup> hits = new ArrayList<>();
-        for (TerritoryGroup territory : territories.values()) {
+        for (TerritoryGroup territory : this.territories.values()) {
             if (territory.dimension().equals(dimension) && territory.chunks().contains(pos)) {
                 hits.add(territory);
             }
@@ -89,32 +142,38 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
 
     /// 某领地的分量缓存（含锚点）；未注册返回 {@code null}。
     public CachedTerritory cached(String territoryId) {
-        return cache.get(territoryId);
+        return this.cache.get(territoryId);
     }
 
     /// 设置锚点算法的重心牵引权重。
     public void setAnchorLambda(float lambda) {
         this.anchorLambda = lambda;
-        cache.clear();
-        for (TerritoryGroup territory : territories.values()) {
-            recompute(territory);
+        this.cache.clear();
+        for (TerritoryGroup territory : this.territories.values()) {
+            this.recompute(territory);
         }
     }
 
     public void clear() {
-        territories.clear();
-        cache.clear();
+        this.territories.clear();
+        this.cache.clear();
     }
 
     private void recompute(TerritoryGroup territory) {
-        List<Set<ChunkPos>> components = TerritoryComponents.split(territory.chunks());
+        this.cache.put(territory.territoryId(),
+                new CachedTerritory(territory, this.computeComponents(territory.chunks())));
+    }
+
+    /// 仅计算指定区块集合的分量与锚点，供局部更新复用。
+    private List<TerritoryComponent> computeComponents(Set<ChunkPos> chunks) {
+        List<Set<ChunkPos>> components = TerritoryComponents.split(chunks);
         List<TerritoryComponent> computed = new ArrayList<>(components.size());
-        float lambda = anchorLambda;
+        float lambda = this.anchorLambda;
         for (Set<ChunkPos> component : components) {
             ChunkPos anchor = AnchorSelector.select(component, lambda);
             computed.add(new TerritoryComponent(Set.copyOf(component), anchor));
         }
-        cache.put(territory.territoryId(), new CachedTerritory(territory, computed));
+        return computed;
     }
 
     /// 单个连通分量：区块集合与其名称锚点。
@@ -130,47 +189,47 @@ public final class TerritoryRegistry implements TerritoryOverlayApi {
             implements TerritoryGroup {
         @Override
         public String territoryId() {
-            return delegate.territoryId();
+            return this.delegate.territoryId();
         }
 
         @Override
         public ResourceKey<Level> dimension() {
-            return delegate.dimension();
+            return this.delegate.dimension();
         }
 
         @Override
         public Set<ChunkPos> chunks() {
-            return chunks;
+            return this.chunks;
         }
 
         @Override
         public Component displayName() {
-            return delegate.displayName();
+            return this.delegate.displayName();
         }
 
         @Override
         public int themeColorRgb() {
-            return delegate.themeColorRgb();
+            return this.delegate.themeColorRgb();
         }
 
         @Override
         public float fillOpacity() {
-            return delegate.fillOpacity();
+            return this.delegate.fillOpacity();
         }
 
         @Override
         public BorderStyle borderStyle() {
-            return delegate.borderStyle();
+            return this.delegate.borderStyle();
         }
 
         @Override
         public List<Component> tooltip() {
-            return delegate.tooltip();
+            return this.delegate.tooltip();
         }
 
         @Override
         public int zOrder() {
-            return delegate.zOrder();
+            return this.delegate.zOrder();
         }
     }
 }

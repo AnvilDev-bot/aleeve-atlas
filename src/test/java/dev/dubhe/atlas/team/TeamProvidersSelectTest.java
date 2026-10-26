@@ -1,10 +1,11 @@
 package dev.dubhe.atlas.team;
 
+import net.minecraft.network.chat.Component;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
 import java.util.UUID;
-import net.minecraft.network.chat.Component;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.Test;
 
 /// 队伍实现选择的单元测试。
 ///
@@ -14,14 +15,14 @@ class TeamProvidersSelectTest {
     void autoPrefersRegisteredProvider() {
         TeamProviders.register(new StubProvider("stub_auto"));
         TeamProviders.select("auto");
-        assertEquals("stub_auto", TeamProviders.active().id());
+        Assertions.assertEquals("stub_auto", TeamProviders.active().id());
     }
 
     @Test
     void vanillaForcesBuiltInProvider() {
         TeamProviders.register(new StubProvider("stub_forced"));
         TeamProviders.select("vanilla");
-        assertEquals("vanilla", TeamProviders.active().id());
+        Assertions.assertEquals("vanilla", TeamProviders.active().id());
     }
 
     @Test
@@ -29,22 +30,22 @@ class TeamProvidersSelectTest {
         TeamProviders.register(new StubProvider("stub_a"));
         TeamProviders.register(new StubProvider("stub_b"));
         TeamProviders.select("stub_a");
-        assertEquals("stub_a", TeamProviders.active().id());
+        Assertions.assertEquals("stub_a", TeamProviders.active().id());
     }
 
     @Test
     void unknownIdFallsBackToVanilla() {
         TeamProviders.select("no_such_provider");
-        assertEquals("vanilla", TeamProviders.active().id(), "未知实现必须回退原版");
+        Assertions.assertEquals("vanilla", TeamProviders.active().id(), "未知实现必须回退原版");
     }
 
     @Test
     void blankConfigIsTreatedAsAuto() {
         TeamProviders.register(new StubProvider("stub_blank"));
         TeamProviders.select("");
-        assertEquals("stub_blank", TeamProviders.active().id());
+        Assertions.assertEquals("stub_blank", TeamProviders.active().id());
         TeamProviders.select(null);
-        assertEquals("stub_blank", TeamProviders.active().id());
+        Assertions.assertEquals("stub_blank", TeamProviders.active().id());
     }
 
     /// 最小外部队伍实现，仅用于验证选择逻辑。

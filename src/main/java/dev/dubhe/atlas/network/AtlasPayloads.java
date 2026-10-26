@@ -9,6 +9,8 @@ import dev.dubhe.atlas.ping.PingBroadcastPayload;
 import dev.dubhe.atlas.ping.PingPayload;
 import dev.dubhe.atlas.ping.ServerPingHandler;
 import dev.dubhe.atlas.sync.ClientMapSync;
+import dev.dubhe.atlas.sync.ClientPlayerPositions;
+import dev.dubhe.atlas.sync.PlayerPositionHandler;
 import dev.dubhe.atlas.sync.ServerMapSync;
 import dev.dubhe.atlas.waypoint.WaypointSyncHandler;
 import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
@@ -48,6 +50,10 @@ public final class AtlasPayloads {
         // 路径点同步：收发策略由客户端配置决定。
         registrar.playBidirectional(WaypointSyncPayload.TYPE, WaypointSyncPayload.STREAM_CODEC,
                 WaypointSyncHandler::handle, ClientWaypointSync::handle);
+
+        // 在线玩家位置：客户端周期上报，服务端转发快照与移除消息。
+        registrar.playBidirectional(PlayerPositionPayload.TYPE, PlayerPositionPayload.STREAM_CODEC,
+                PlayerPositionHandler::handle, ClientPlayerPositions::handle);
 
         // 地图增量同步：摘要双向转发（服务端聚合后转发）。
         registrar.playBidirectional(ChunkDigestPayload.TYPE, ChunkDigestPayload.STREAM_CODEC,

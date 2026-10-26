@@ -2,13 +2,12 @@ package dev.dubhe.atlas.network;
 
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
+import net.minecraft.network.FriendlyByteBuf;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.network.FriendlyByteBuf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 /// 地图增量载荷解码的边界校验测试。
 ///
@@ -25,11 +24,11 @@ class ChunkDeltaPayloadDecodeTest {
         ChunkDeltaPayload.STREAM_CODEC.encode(buf, original);
         ChunkDeltaPayload decoded = ChunkDeltaPayload.STREAM_CODEC.decode(buf);
 
-        assertEquals("minecraft:overworld", decoded.dimensionId());
-        assertEquals(1, decoded.chunks().size());
-        assertEquals(3, decoded.chunks().get(0).chunkX());
-        assertEquals(-7, decoded.chunks().get(0).chunkZ());
-        assertEquals(42L, decoded.chunks().get(0).version());
+        Assertions.assertEquals("minecraft:overworld", decoded.dimensionId());
+        Assertions.assertEquals(1, decoded.chunks().size());
+        Assertions.assertEquals(3, decoded.chunks().get(0).chunkX());
+        Assertions.assertEquals(-7, decoded.chunks().get(0).chunkZ());
+        Assertions.assertEquals(42L, decoded.chunks().get(0).version());
     }
 
     @Test
@@ -42,7 +41,7 @@ class ChunkDeltaPayloadDecodeTest {
         buf.writeBoolean(false);
         buf.writeVarInt(ChunkDeltaPayload.MAX_CHUNKS_PER_PACKET + 1);
 
-        assertThrows(DecoderException.class,
+        Assertions.assertThrows(DecoderException.class,
                 () -> ChunkDeltaPayload.STREAM_CODEC.decode(buf));
     }
 
@@ -55,7 +54,7 @@ class ChunkDeltaPayloadDecodeTest {
         buf.writeBoolean(false);
         buf.writeVarInt(-1);
 
-        assertThrows(DecoderException.class,
+        Assertions.assertThrows(DecoderException.class,
                 () -> ChunkDeltaPayload.STREAM_CODEC.decode(buf));
     }
 
@@ -73,7 +72,7 @@ class ChunkDeltaPayloadDecodeTest {
         ChunkDeltaPayload.STREAM_CODEC.encode(buf, original);
         ChunkDeltaPayload decoded = ChunkDeltaPayload.STREAM_CODEC.decode(buf);
 
-        assertEquals(ChunkDeltaPayload.MAX_CHUNKS_PER_PACKET, decoded.chunks().size());
-        assertTrue(decoded.chunks().size() > 0);
+        Assertions.assertEquals(ChunkDeltaPayload.MAX_CHUNKS_PER_PACKET, decoded.chunks().size());
+        Assertions.assertTrue(decoded.chunks().size() > 0);
     }
 }

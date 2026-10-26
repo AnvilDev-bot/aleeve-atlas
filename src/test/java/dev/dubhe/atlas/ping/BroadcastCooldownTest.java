@@ -1,8 +1,6 @@
 package dev.dubhe.atlas.ping;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /// 标点广播限频测试。
@@ -15,47 +13,47 @@ class BroadcastCooldownTest {
     @Test
     void firstBroadcastIsAlwaysAllowed() {
         BroadcastCooldown cooldown = new BroadcastCooldown(COOLDOWN);
-        assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
     }
 
     @Test
     void secondBroadcastWithinCooldownIsRejected() {
         BroadcastCooldown cooldown = new BroadcastCooldown(COOLDOWN);
-        assertTrue(cooldown.tryAcquire(1_000L));
-        assertFalse(cooldown.tryAcquire(1_100L), "冷却期内的广播必须被拒绝");
-        assertFalse(cooldown.tryAcquire(1_249L), "边界前一刻仍应拒绝");
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertFalse(cooldown.tryAcquire(1_100L), "冷却期内的广播必须被拒绝");
+        Assertions.assertFalse(cooldown.tryAcquire(1_249L), "边界前一刻仍应拒绝");
     }
 
     @Test
     void broadcastAtCooldownBoundaryIsAllowed() {
         BroadcastCooldown cooldown = new BroadcastCooldown(COOLDOWN);
-        assertTrue(cooldown.tryAcquire(1_000L));
-        assertTrue(cooldown.tryAcquire(1_250L), "恰好达到冷却间隔时应放行");
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_250L), "恰好达到冷却间隔时应放行");
     }
 
     @Test
     void cooldownRestartsFromLastAllowedTime() {
         // 被拒绝的尝试不应刷新冷却起点，否则连续点击会无限推迟下一次放行。
         BroadcastCooldown cooldown = new BroadcastCooldown(COOLDOWN);
-        assertTrue(cooldown.tryAcquire(1_000L));
-        assertFalse(cooldown.tryAcquire(1_200L));
-        assertFalse(cooldown.tryAcquire(1_240L));
-        assertTrue(cooldown.tryAcquire(1_250L), "冷却起点应为上次放行时刻");
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertFalse(cooldown.tryAcquire(1_200L));
+        Assertions.assertFalse(cooldown.tryAcquire(1_240L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_250L), "冷却起点应为上次放行时刻");
     }
 
     @Test
     void resetAllowsImmediateBroadcast() {
         BroadcastCooldown cooldown = new BroadcastCooldown(COOLDOWN);
-        assertTrue(cooldown.tryAcquire(1_000L));
-        assertFalse(cooldown.tryAcquire(1_100L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertFalse(cooldown.tryAcquire(1_100L));
         cooldown.reset();
-        assertTrue(cooldown.tryAcquire(1_100L), "重置后应立即可广播");
+        Assertions.assertTrue(cooldown.tryAcquire(1_100L), "重置后应立即可广播");
     }
 
     @Test
     void nonPositiveCooldownAllowsEveryBroadcast() {
         BroadcastCooldown cooldown = new BroadcastCooldown(0L);
-        assertTrue(cooldown.tryAcquire(1_000L));
-        assertTrue(cooldown.tryAcquire(1_001L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_000L));
+        Assertions.assertTrue(cooldown.tryAcquire(1_001L));
     }
 }

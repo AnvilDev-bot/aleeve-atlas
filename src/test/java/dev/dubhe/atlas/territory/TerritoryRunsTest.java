@@ -1,12 +1,12 @@
 package dev.dubhe.atlas.territory;
 
+import net.minecraft.world.level.ChunkPos;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.minecraft.world.level.ChunkPos;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 /// 横向路段压缩测试。
 class TerritoryRunsTest {
@@ -17,11 +17,11 @@ class TerritoryRunsTest {
             chunks.add(new ChunkPos(x, 0));
         }
         List<TerritoryRuns.Run> runs = TerritoryRuns.of(chunks);
-        assertEquals(1, runs.size());
-        assertEquals(0, runs.get(0).xStart());
-        assertEquals(4, runs.get(0).xEnd());
-        assertEquals(0, runs.get(0).z());
-        assertEquals(5, runs.get(0).length());
+        Assertions.assertEquals(1, runs.size());
+        Assertions.assertEquals(0, runs.get(0).startX());
+        Assertions.assertEquals(4, runs.get(0).endX());
+        Assertions.assertEquals(0, runs.get(0).z());
+        Assertions.assertEquals(5, runs.get(0).length());
     }
 
     @Test
@@ -30,11 +30,11 @@ class TerritoryRunsTest {
                 new ChunkPos(0, 0), new ChunkPos(1, 0),
                 new ChunkPos(5, 0), new ChunkPos(6, 0));
         List<TerritoryRuns.Run> runs = TerritoryRuns.of(chunks);
-        assertEquals(2, runs.size());
-        assertEquals(0, runs.get(0).xStart());
-        assertEquals(1, runs.get(0).xEnd());
-        assertEquals(5, runs.get(1).xStart());
-        assertEquals(6, runs.get(1).xEnd());
+        Assertions.assertEquals(2, runs.size());
+        Assertions.assertEquals(0, runs.get(0).startX());
+        Assertions.assertEquals(1, runs.get(0).endX());
+        Assertions.assertEquals(5, runs.get(1).startX());
+        Assertions.assertEquals(6, runs.get(1).endX());
     }
 
     @Test
@@ -42,10 +42,10 @@ class TerritoryRunsTest {
         Set<ChunkPos> chunks = Set.of(
                 new ChunkPos(0, 2), new ChunkPos(0, 0), new ChunkPos(0, 1));
         List<TerritoryRuns.Run> runs = TerritoryRuns.of(chunks);
-        assertEquals(3, runs.size());
-        assertEquals(0, runs.get(0).z());
-        assertEquals(1, runs.get(1).z());
-        assertEquals(2, runs.get(2).z());
+        Assertions.assertEquals(3, runs.size());
+        Assertions.assertEquals(0, runs.get(0).z());
+        Assertions.assertEquals(1, runs.get(1).z());
+        Assertions.assertEquals(2, runs.get(2).z());
     }
 
     @Test
@@ -57,12 +57,12 @@ class TerritoryRunsTest {
             }
         }
         // 10000 区块压缩为 100 段，绘制调用减少 100 倍。
-        assertEquals(100, TerritoryRuns.of(chunks).size());
-        assertTrue(TerritoryRuns.compressionRatio(chunks) < 0.02);
+        Assertions.assertEquals(100, TerritoryRuns.of(chunks).size());
+        Assertions.assertTrue(TerritoryRuns.compressionRatio(chunks) < 0.02);
     }
 
     @Test
     void emptySetHasNoRuns() {
-        assertTrue(TerritoryRuns.of(Set.of()).isEmpty());
+        Assertions.assertTrue(TerritoryRuns.of(Set.of()).isEmpty());
     }
 }

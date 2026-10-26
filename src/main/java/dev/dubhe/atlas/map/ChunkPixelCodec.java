@@ -1,12 +1,13 @@
 package dev.dubhe.atlas.map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 区块像素数据的紧凑编解码。
 ///
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 public final class ChunkPixelCodec {
     private static final Logger LOGGER =
             LoggerFactory.getLogger("aleeve_atlas/map/codec");
+
     private ChunkPixelCodec() {
     }
 
@@ -26,42 +28,6 @@ public final class ChunkPixelCodec {
         System.arraycopy(colorBytes, 0, combined, 4, colorBytes.length);
         System.arraycopy(heightBytes, 0, combined, 4 + colorBytes.length, heightBytes.length);
         return combined;
-    }
-
-    /// 解包颜色与高度；格式不符时返回全透明/零高度。
-    public static int[][] decompressWithHeights(byte[] packed) {
-        int[] colors = new int[ChunkMapData.PIXELS];
-        int[] heights = new int[ChunkMapData.PIXELS];
-        if (packed.length < 4) {
-            LOGGER.warn("Chunk pixel payload too short ({} bytes), expected at least 4",
-                    packed.length);
-            return new int[][] { colors, heights };
-        }
-        int colorLength = readInt(packed, 0);
-        if (colorLength < 0 || 4 + colorLength > packed.length) {
-            LOGGER.warn("Chunk pixel payload has invalid color length {} for {} bytes",
-                    colorLength, packed.length);
-            return new int[][] { colors, heights };
-        }
-        byte[] colorBytes = Arrays.copyOfRange(packed, 4, 4 + colorLength);
-        byte[] heightBytes = Arrays.copyOfRange(packed, 4 + colorLength, packed.length);
-        colors = decompress(colorBytes);
-        int[] decodedHeights = decompress(heightBytes);
-        System.arraycopy(decodedHeights, 0, heights, 0,
-                Math.min(decodedHeights.length, heights.length));
-        return new int[][] { colors, heights };
-    }
-
-    private static void writeInt(byte[] target, int offset, int value) {
-        target[offset] = (byte) (value >>> 24);
-        target[offset + 1] = (byte) (value >>> 16);
-        target[offset + 2] = (byte) (value >>> 8);
-        target[offset + 3] = (byte) value;
-    }
-
-    private static int readInt(byte[] source, int offset) {
-        return ((source[offset] & 0xFF) << 24) | ((source[offset + 1] & 0xFF) << 16)
-                | ((source[offset + 2] & 0xFF) << 8) | (source[offset + 3] & 0xFF);
     }
 
     /// 像素数组 → 压缩字节串。
@@ -88,6 +54,30 @@ public final class ChunkPixelCodec {
         } finally {
             deflater.end();
         }
+    }
+
+    /// 解包颜色与高度；格式不符时返回全透明/零高度。
+    public static int[][] decompressWithHeights(byte[] packed) {
+        int[] colors = new int[ChunkMapData.PIXELS];
+        int[] heights = new int[ChunkMapData.PIXELS];
+        if (packed.length < 4) {
+            LOGGER.warn("Chunk pixel payload too short ({} bytes), expected at least 4",
+                    packed.length);
+            return new int[][] { colors, heights };
+        }
+        int colorLength = readInt(packed, 0);
+        if (colorLength < 0 || 4 + colorLength > packed.length) {
+            LOGGER.warn("Chunk pixel payload has invalid color length {} for {} bytes",
+                    colorLength, packed.length);
+            return new int[][] { colors, heights };
+        }
+        byte[] colorBytes = Arrays.copyOfRange(packed, 4, 4 + colorLength);
+        byte[] heightBytes = Arrays.copyOfRange(packed, 4 + colorLength, packed.length);
+        colors = decompress(colorBytes);
+        int[] decodedHeights = decompress(heightBytes);
+        System.arraycopy(decodedHeights, 0, heights, 0,
+                Math.min(decodedHeights.length, heights.length));
+        return new int[][] { colors, heights };
     }
 
     /// 压缩字节串 → 像素数组；失败时返回全透明像素。
@@ -117,5 +107,17 @@ public final class ChunkPixelCodec {
         } finally {
             inflater.end();
         }
+    }
+
+    private static void writeInt(byte[] target, int offset, int value) {
+        target[offset] = (byte) (value >>> 24);
+        target[offset + 1] = (byte) (value >>> 16);
+        target[offset + 2] = (byte) (value >>> 8);
+        target[offset + 3] = (byte) value;
+    }
+
+    private static int readInt(byte[] source, int offset) {
+        return ((source[offset] & 0xFF) << 24) | ((source[offset + 1] & 0xFF) << 16)
+                | ((source[offset + 2] & 0xFF) << 8) | (source[offset + 3] & 0xFF);
     }
 }

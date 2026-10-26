@@ -25,18 +25,18 @@ public final class BatchTracker {
     /// 期望片数只增不减：一片声明 `batchCount=1` 的迟到分片若覆盖已有期望值，
     /// 会让残缺的集合立即被判定收齐。
     public void add(int batchIndex, int batchCount, long now) {
-        receivedIndices.add(batchIndex);
-        expectedBatches = Math.max(expectedBatches, Math.max(1, batchCount));
-        lastUpdateMillis = now;
+        this.receivedIndices.add(batchIndex);
+        this.expectedBatches = Math.max(this.expectedBatches, Math.max(1, batchCount));
+        this.lastUpdateMillis = now;
     }
 
     /// 是否已收齐全部期望分片。
     public boolean complete() {
-        return receivedIndices.size() >= expectedBatches;
+        return this.receivedIndices.size() >= this.expectedBatches;
     }
 
     /// 最近一次收到分片的时间戳。
     public long lastUpdateMillis() {
-        return lastUpdateMillis;
+        return this.lastUpdateMillis;
     }
 }

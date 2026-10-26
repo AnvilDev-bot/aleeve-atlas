@@ -1,9 +1,9 @@
 package dev.dubhe.atlas;
 
+import dev.anvilcraft.lib.v2.config.ConfigManager;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.AtlasServerConfig;
 import dev.dubhe.atlas.team.AtlasIntegrations;
-import dev.anvilcraft.lib.v2.config.ConfigManager;
 import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -15,7 +15,7 @@ public final class AleeveAtlas {
     public static final String MOD_ID = "aleeve_atlas";
 
     /// 网络协议版本，握手包据此判定双端兼容性。
-    public static final String PROTOCOL_VERSION = "1";
+    public static final String PROTOCOL_VERSION = "2";
 
     /// 服务端配置。在 `@Mod` 类加载时注册，此时 `ModList` 已就绪。
     public static final AtlasServerConfig CONFIG =

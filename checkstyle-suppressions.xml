@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+        "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+<suppressions>
+    <!-- 规格公开 API 使用 zOrder，保留该术语并豁免相关命名检查。 -->
+    <suppress checks="MethodNameCheck|MemberNameCheck|RecordComponentNameCheck|LocalVariableNameCheck|ParameterNameCheck"
+              files="(TerritoryGroup|SimpleTerritory|SyncedTerritory|TerritoryRegistry|TerritorySyncPayload)\.java$"/>
+    <!-- Mixin 注入方法必须使用模组前缀，方法名不参与普通命名规则。 -->
+    <suppress checks="MethodNameCheck" files="ClientLevelMixin\.java$"/>
+</suppressions>

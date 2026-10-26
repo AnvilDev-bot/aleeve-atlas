@@ -1,8 +1,9 @@
 package dev.dubhe.atlas.map;
 
-import java.util.Arrays;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.ChunkPos;
+
+import java.util.Arrays;
 
 /// 单个区块的地图数据。
 ///
@@ -35,15 +36,15 @@ public final class ChunkMapData {
     }
 
     public int chunkX() {
-        return chunkX;
+        return this.chunkX;
     }
 
     public int chunkZ() {
-        return chunkZ;
+        return this.chunkZ;
     }
 
     public long version() {
-        return version;
+        return this.version;
     }
 
     public void setVersion(long version) {
@@ -51,29 +52,29 @@ public final class ChunkMapData {
     }
 
     public int colorAt(int localX, int localZ) {
-        return colors[localZ * SIZE + localX];
+        return this.colors[localZ * SIZE + localX];
     }
 
     public int[] colors() {
-        return colors;
+        return this.colors;
     }
 
     public int[] heights() {
-        return heights;
+        return this.heights;
     }
 
     public int heightAt(int localX, int localZ) {
-        return heights[localZ * SIZE + localX];
+        return this.heights[localZ * SIZE + localX];
     }
 
     public void setPixel(int localX, int localZ, int argb, int height) {
         int index = localZ * SIZE + localX;
-        colors[index] = argb;
-        heights[index] = height;
+        this.colors[index] = argb;
+        this.heights[index] = height;
     }
 
     public boolean isEmpty() {
-        for (int color : colors) {
+        for (int color : this.colors) {
             if (color != MapPalette.TRANSPARENT) {
                 return false;
             }
@@ -83,11 +84,11 @@ public final class ChunkMapData {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putInt("x", chunkX);
-        tag.putInt("z", chunkZ);
-        tag.putLong("v", version);
-        tag.putIntArray("c", colors);
-        tag.putIntArray("h", heights);
+        tag.putInt("x", this.chunkX);
+        tag.putInt("z", this.chunkZ);
+        tag.putLong("v", this.version);
+        tag.putIntArray("c", this.colors);
+        tag.putIntArray("h", this.heights);
         return tag;
     }
 
@@ -109,6 +110,6 @@ public final class ChunkMapData {
     }
 
     public ChunkPos pos() {
-        return new ChunkPos(chunkX, chunkZ);
+        return new ChunkPos(this.chunkX, this.chunkZ);
     }
 }

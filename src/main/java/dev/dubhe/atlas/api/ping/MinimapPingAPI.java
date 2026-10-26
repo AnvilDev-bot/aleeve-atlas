@@ -2,8 +2,9 @@ package dev.dubhe.atlas.api.ping;
 
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
-import java.util.UUID;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.UUID;
 
 /// 临时标点接入 API。
 ///

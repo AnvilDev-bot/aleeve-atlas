@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.client.map;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.client.radar.RadarRenderer;
@@ -10,7 +11,6 @@ import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.MinimapPosition;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.ping.PingRenderer;
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
@@ -53,7 +53,7 @@ public final class MinimapRenderer {
         if (!texture.ready()) {
             return;
         }
-        long startedAt = System.nanoTime();
+        final long startedAt = System.nanoTime();
 
         MinimapLayout layout = MinimapLayout.of(config, minecraft);
         if (layout == null) {
@@ -72,7 +72,7 @@ public final class MinimapRenderer {
         float centerX = x + size / 2.0F;
         float centerY = y + size / 2.0F;
 
-        RenderPipeline mapPipeline = circular
+        final RenderPipeline mapPipeline = circular
                 ? AtlasRenderPipelines.MINIMAP_CIRCLE
                 : RenderPipelines.GUI_TEXTURED;
 
@@ -170,6 +170,7 @@ public final class MinimapRenderer {
         }
         return lines;
     }
+
     private static void drawInfo(GuiGraphics graphics, AtlasClientConfig config, Minecraft minecraft,
             int size, int x, int y) {
         LocalPlayer player = minecraft.player;

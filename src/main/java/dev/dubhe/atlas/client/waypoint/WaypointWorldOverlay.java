@@ -2,7 +2,6 @@ package dev.dubhe.atlas.client.waypoint;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.waypoint.Waypoint;
-import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,6 +11,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
+
+import java.util.List;
 
 /// 游戏内 3D 视界路径点标识。
 ///
@@ -59,8 +60,8 @@ public final class WaypointWorldOverlay {
         graphics.fill(x, y - 1, x + 1, y + 1, 0xFF101010);
 
         // 名称与距离。
-        Component label = Component.literal(
-                "%s %dm".formatted(waypoint.name(), Math.round(projected.distance())))
+        Component label = Component.empty().append(waypoint.displayName())
+                .append(" %dm".formatted(Math.round(projected.distance())))
                 .withStyle(ChatFormatting.WHITE);
         int textWidth = minecraft.font.width(label);
         graphics.drawString(minecraft.font, label, x - textWidth / 2, y + ICON_HALF_SIZE + 3,

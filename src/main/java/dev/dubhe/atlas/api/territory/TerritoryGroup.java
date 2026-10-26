@@ -1,11 +1,12 @@
 package dev.dubhe.atlas.api.territory;
 
-import java.util.List;
-import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
+import java.util.Set;
 
 /// 单个领地对象。
 ///

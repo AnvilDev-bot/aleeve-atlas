@@ -1,7 +1,5 @@
 package dev.dubhe.atlas.waypoint;
 
-import java.util.List;
-import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -9,10 +7,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
 
 /// 路径点序列化与可见性过滤测试。
 class WaypointTest {
@@ -26,25 +25,25 @@ class WaypointTest {
         CompoundTag tag = original.save();
         Waypoint restored = Waypoint.load(tag, WaypointTest::resolve);
 
-        assertEquals(original.id(), restored.id());
-        assertEquals("Base", restored.name());
-        assertEquals(new BlockPos(10, 64, -20), restored.pos());
-        assertEquals(OVERWORLD, restored.dimension());
-        assertEquals(0xFF00FF00, restored.colorArgb());
-        assertEquals("home", restored.icon());
-        assertTrue(restored.enabled());
-        assertEquals(300, restored.visibleDistance());
-        assertFalse(restored.deathPoint());
-        assertEquals("Aleeve", restored.sourcePlayer());
-        assertTrue(restored.shareable(), "私密标记必须随序列化保留");
+        Assertions.assertEquals(original.id(), restored.id());
+        Assertions.assertEquals("Base", restored.name());
+        Assertions.assertEquals(new BlockPos(10, 64, -20), restored.pos());
+        Assertions.assertEquals(OVERWORLD, restored.dimension());
+        Assertions.assertEquals(0xFF00FF00, restored.colorArgb());
+        Assertions.assertEquals("home", restored.icon());
+        Assertions.assertTrue(restored.enabled());
+        Assertions.assertEquals(300, restored.visibleDistance());
+        Assertions.assertFalse(restored.deathPoint());
+        Assertions.assertEquals("Aleeve", restored.sourcePlayer());
+        Assertions.assertTrue(restored.shareable(), "私密标记必须随序列化保留");
     }
 
     @Test
     void deathPointFlagSurvivesSerialization() {
         Waypoint death = Waypoint.deathPoint(new BlockPos(0, 70, 0), OVERWORLD);
         Waypoint restored = Waypoint.load(death.save(), WaypointTest::resolve);
-        assertTrue(restored.deathPoint());
-        assertEquals("death", restored.icon());
+        Assertions.assertTrue(restored.deathPoint());
+        Assertions.assertEquals("death", restored.icon());
     }
 
     @Test
@@ -55,9 +54,9 @@ class WaypointTest {
         ListTag list = Waypoint.saveAll(source);
         List<Waypoint> restored = Waypoint.loadAll(list, WaypointTest::resolve);
 
-        assertEquals(2, restored.size());
-        assertEquals("A", restored.get(0).name());
-        assertEquals("B", restored.get(1).name());
+        Assertions.assertEquals(2, restored.size());
+        Assertions.assertEquals("A", restored.get(0).name());
+        Assertions.assertEquals("B", restored.get(1).name());
     }
 
     @Test
@@ -65,7 +64,7 @@ class WaypointTest {
         CompoundTag tag = Waypoint.create("X", BlockPos.ZERO, OVERWORLD, 0xFFFFFFFF).save();
         tag.putString("dim", "not a valid id!");
         Waypoint restored = Waypoint.load(tag, WaypointTest::resolve);
-        assertEquals(OVERWORLD, restored.dimension());
+        Assertions.assertEquals(OVERWORLD, restored.dimension());
     }
 
     private static ResourceKey<Level> resolve(String raw) {
@@ -79,13 +78,13 @@ class WaypointTest {
                 OVERWORLD, 0xFF123456, "default", true, 200, false, "Aleeve", true);
         Waypoint priv = original.withShareable(false);
 
-        assertFalse(priv.shareable(), "切换后应为私密");
-        assertEquals(original.id(), priv.id());
-        assertEquals(original.name(), priv.name());
-        assertEquals(original.pos(), priv.pos());
-        assertEquals(original.colorArgb(), priv.colorArgb());
-        assertEquals(original.visibleDistance(), priv.visibleDistance());
-        assertEquals(original.sourcePlayer(), priv.sourcePlayer());
+        Assertions.assertFalse(priv.shareable(), "切换后应为私密");
+        Assertions.assertEquals(original.id(), priv.id());
+        Assertions.assertEquals(original.name(), priv.name());
+        Assertions.assertEquals(original.pos(), priv.pos());
+        Assertions.assertEquals(original.colorArgb(), priv.colorArgb());
+        Assertions.assertEquals(original.visibleDistance(), priv.visibleDistance());
+        Assertions.assertEquals(original.sourcePlayer(), priv.sourcePlayer());
     }
 
     @Test
@@ -95,17 +94,17 @@ class WaypointTest {
         Waypoint edited = original.withDetails("New", new BlockPos(9, 80, -3),
                 0xFFABCDEF, 500, false, false);
 
-        assertEquals(original.id(), edited.id());
-        assertEquals(OVERWORLD, edited.dimension());
-        assertEquals("custom", edited.icon());
-        assertTrue(edited.deathPoint());
-        assertEquals("Aleeve", edited.sourcePlayer());
-        assertEquals("New", edited.name());
-        assertEquals(new BlockPos(9, 80, -3), edited.pos());
-        assertEquals(0xFFABCDEF, edited.colorArgb());
-        assertEquals(500, edited.visibleDistance());
-        assertFalse(edited.enabled());
-        assertFalse(edited.shareable());
+        Assertions.assertEquals(original.id(), edited.id());
+        Assertions.assertEquals(OVERWORLD, edited.dimension());
+        Assertions.assertEquals("custom", edited.icon());
+        Assertions.assertTrue(edited.deathPoint());
+        Assertions.assertEquals("Aleeve", edited.sourcePlayer());
+        Assertions.assertEquals("New", edited.name());
+        Assertions.assertEquals(new BlockPos(9, 80, -3), edited.pos());
+        Assertions.assertEquals(0xFFABCDEF, edited.colorArgb());
+        Assertions.assertEquals(500, edited.visibleDistance());
+        Assertions.assertFalse(edited.enabled());
+        Assertions.assertFalse(edited.shareable());
     }
 
     @Test
@@ -122,7 +121,7 @@ class WaypointTest {
         list.add(good);
 
         List<Waypoint> loaded = Waypoint.loadAll(list, WaypointTest::resolve);
-        assertEquals(1, loaded.size(), "损坏条目应被跳过");
-        assertEquals("good", loaded.get(0).name());
+        Assertions.assertEquals(1, loaded.size(), "损坏条目应被跳过");
+        Assertions.assertEquals("good", loaded.get(0).name());
     }
 }

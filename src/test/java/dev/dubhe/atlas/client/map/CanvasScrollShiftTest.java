@@ -1,8 +1,6 @@
 package dev.dubhe.atlas.client.map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /// 画布像素搬移的重叠正确性测试。
@@ -20,7 +18,7 @@ class CanvasScrollShiftTest {
         for (int row = 0; row < SIZE; row++) {
             for (int targetCol = 3; targetCol < SIZE; targetCol++) {
                 int sourceCol = targetCol - 3;
-                assertEquals(original[index(row, sourceCol)], grid[row * SIZE + targetCol],
+                Assertions.assertEquals(original[index(row, sourceCol)], grid[row * SIZE + targetCol],
                         "行 " + row + " 目标列 " + targetCol + " 应来自源列 " + sourceCol);
             }
         }
@@ -34,7 +32,7 @@ class CanvasScrollShiftTest {
         for (int row = 0; row < SIZE; row++) {
             for (int targetCol = 0; targetCol < SIZE - 3; targetCol++) {
                 int sourceCol = targetCol + 3;
-                assertEquals(original[index(row, sourceCol)], grid[row * SIZE + targetCol],
+                Assertions.assertEquals(original[index(row, sourceCol)], grid[row * SIZE + targetCol],
                         "行 " + row + " 目标列 " + targetCol + " 应来自源列 " + sourceCol);
             }
         }
@@ -48,7 +46,7 @@ class CanvasScrollShiftTest {
         for (int targetRow = 3; targetRow < SIZE; targetRow++) {
             int sourceRow = targetRow - 3;
             for (int col = 0; col < SIZE; col++) {
-                assertEquals(original[index(sourceRow, col)], grid[targetRow * SIZE + col],
+                Assertions.assertEquals(original[index(sourceRow, col)], grid[targetRow * SIZE + col],
                         "目标行 " + targetRow + " 列 " + col + " 应来自源行 " + sourceRow);
             }
         }
@@ -62,7 +60,7 @@ class CanvasScrollShiftTest {
         for (int targetRow = 0; targetRow < SIZE - 3; targetRow++) {
             int sourceRow = targetRow + 3;
             for (int col = 0; col < SIZE; col++) {
-                assertEquals(original[index(sourceRow, col)], grid[targetRow * SIZE + col],
+                Assertions.assertEquals(original[index(sourceRow, col)], grid[targetRow * SIZE + col],
                         "目标行 " + targetRow + " 列 " + col + " 应来自源行 " + sourceRow);
             }
         }
@@ -72,7 +70,7 @@ class CanvasScrollShiftTest {
     void overlapLengthNeverExceedsGridSize() {
         for (int shift = -SIZE + 1; shift < SIZE; shift++) {
             int overlap = CanvasScroll.overlapLength(SIZE, shift);
-            assertTrue(overlap > 0 && overlap <= SIZE,
+            Assertions.assertTrue(overlap > 0 && overlap <= SIZE,
                     "shift=" + shift + " 时重叠长度应在 (0, " + SIZE + "] 内，实际 " + overlap);
         }
     }

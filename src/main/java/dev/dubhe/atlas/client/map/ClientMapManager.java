@@ -7,6 +7,14 @@ import dev.dubhe.atlas.map.ChunkMapSampler;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.storage.AtlasPaths;
 import dev.dubhe.atlas.storage.ServerKey;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,13 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 客户端地图数据管理器。
 ///
@@ -56,15 +57,15 @@ public final class ClientMapManager {
 
     /// 注册纹理；资源重载后需重新注册。
     public void ensureRegistered() {
-        if (!textureRegistered) {
-            texture.register();
-            textureRegistered = true;
+        if (!this.textureRegistered) {
+            this.texture.register();
+            this.textureRegistered = true;
         }
     }
 
     /// 资源重载后重置注册标志，使下次 tick 重新注册动态纹理。
     public void onResourceReload() {
-        textureRegistered = false;
+        this.textureRegistered = false;
     }
 
     /// 洞穴模式是否需要在本次 tick 重建分层缓存。
@@ -77,6 +78,7 @@ public final class ClientMapManager {
         }
         return Math.abs(currentTop - previousTop) >= CAVE_LAYER_RESCAN_THRESHOLD;
     }
+
     /// 标记某区块需要重新采样。
     ///
     /// 由客户端方块变更监听调用，使地图反映破坏与放置的结果。
@@ -110,38 +112,38 @@ public final class ClientMapManager {
 
     /// 每个客户端 tick 调用：采样玩家周围缺失的区块。
     public void tick(ClientLevel level) {
-        ensureRegistered();
+        this.ensureRegistered();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
         }
         String serverKey = serverKey(minecraft);
-        MapDimensionCache cache = cacheFor(minecraft, serverKey, level.dimension());
-        if (!serverKey.equals(currentServerKey) || !level.dimension().equals(currentDimension)) {
+        final MapDimensionCache cache = this.cacheFor(minecraft, serverKey, level.dimension());
+        if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)) {
             // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据。
-            if (caveCache != null) {
-                caveCache.flush();
+            if (this.caveCache != null) {
+                this.caveCache.flush();
             }
-            currentServerKey = serverKey;
-            currentDimension = level.dimension();
-            caveCache = caveCacheFor(minecraft, serverKey, level.dimension());
-            texture.clearAll();
+            this.currentServerKey = serverKey;
+            this.currentDimension = level.dimension();
+            this.caveCache = this.caveCacheFor(minecraft, serverKey, level.dimension());
+            this.texture.clearAll();
         }
 
-        ChunkPos center = minecraft.player.chunkPosition();
-        texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
+        final ChunkPos center = minecraft.player.chunkPosition();
+        this.texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
         // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式。
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
         int caveTop = minecraft.player.blockPosition().getY() + 8;
-        if (needsCaveRescan(caveMode, caveLayerTop, caveTop)) {
+        if (needsCaveRescan(caveMode, this.caveLayerTop, caveTop)) {
             // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级。
-            caveCache.flush();
-            caveCache = caveCacheFor(minecraft, currentServerKey, level.dimension());
+            this.caveCache.flush();
+            this.caveCache = this.caveCacheFor(minecraft, this.currentServerKey, level.dimension());
         }
-        caveLayerTop = caveMode ? caveTop : null;
+        this.caveLayerTop = caveMode ? caveTop : null;
 
         // 方块变更后先丢弃受影响区块的缓存，下一次采样即会重建这些像素。
-        drainDirtyChunks(cache, caveCache);
+        drainDirtyChunks(cache, this.caveCache);
 
         int sampled = 0;
         int radius = VIEW_CHUNK_RADIUS;
@@ -160,11 +162,11 @@ public final class ClientMapManager {
                     if (!caveMode) {
                         Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
                         if (existing.isPresent()) {
-                            texture.putChunk(existing.get());
+                            this.texture.putChunk(existing.get());
                             continue;
                         }
-                    } else if (caveCache.get(chunkX, chunkZ).isPresent()) {
-                        texture.putChunk(caveCache.get(chunkX, chunkZ).get());
+                    } else if (this.caveCache.get(chunkX, chunkZ).isPresent()) {
+                        this.texture.putChunk(this.caveCache.get(chunkX, chunkZ).get());
                         continue;
                     }
                     ChunkMapData sampledData = ChunkMapSampler.sample(level,
@@ -175,19 +177,19 @@ public final class ClientMapManager {
                     sampledData.setVersion(System.currentTimeMillis());
                     // 分层数据写入独立缓存，不污染地表地图。
                     if (caveMode) {
-                        caveCache.put(sampledData);
+                        this.caveCache.put(sampledData);
                     } else {
                         cache.put(sampledData);
                     }
-                    texture.putChunk(sampledData);
+                    this.texture.putChunk(sampledData);
                     sampled++;
                 }
             }
         }
         // 合并本 tick 的像素改动，只上传一次纹理。
-        texture.flushDirty();
-        if (sampled > 0 && !loggedFirstSample) {
-            loggedFirstSample = true;
+        this.texture.flushDirty();
+        if (sampled > 0 && !this.loggedFirstSample) {
+            this.loggedFirstSample = true;
             LOGGER.info("First map sample written: {} chunk(s) around {},{}, cache dir {}",
                     sampled, center.x, center.z, cache.dimensionDir());
         }
@@ -195,11 +197,11 @@ public final class ClientMapManager {
 
     /// 释放小地图动态纹理（断开连接时调用，避免 GPU 纹理泄漏）。
     public void releaseTexture() {
-        texture.close();
+        this.texture.close();
     }
 
     public MapTexture texture() {
-        return texture;
+        return this.texture;
     }
 
     /// 维度缓存；调用前需保证在客户端主线程。
@@ -208,35 +210,35 @@ public final class ClientMapManager {
         if (minecraft.level == null) {
             return null;
         }
-        return cacheFor(minecraft, serverKey(minecraft), minecraft.level.dimension());
+        return this.cacheFor(minecraft, serverKey(minecraft), minecraft.level.dimension());
     }
 
     public void flush() {
-        for (MapDimensionCache cache : caches.values()) {
+        for (MapDimensionCache cache : this.caches.values()) {
             cache.flush();
         }
         // 洞穴分层缓存独立于地表缓存，必须一并写入磁盘。
-        if (caveCache != null) {
-            caveCache.flush();
+        if (this.caveCache != null) {
+            this.caveCache.flush();
         }
     }
 
     public void clear() {
-        if (caveCache != null) {
-            caveCache.flush();
-            caveCache = null;
+        if (this.caveCache != null) {
+            this.caveCache.flush();
+            this.caveCache = null;
         }
-        caches.clear();
-        currentServerKey = null;
-        currentDimension = null;
+        this.caches.clear();
+        this.currentServerKey = null;
+        this.currentDimension = null;
         // 脏标记属会话级状态：切换服务器后旧坐标不应触发新会话的缓存失效。
         DIRTY_CHUNKS.clear();
-        texture.clearAll();
+        this.texture.clearAll();
     }
 
     private MapDimensionCache cacheFor(Minecraft minecraft, String serverKey, ResourceKey<Level> dimension) {
         String key = serverKey + "/" + dimension.identifier();
-        return caches.computeIfAbsent(key, ignored -> {
+        return this.caches.computeIfAbsent(key, ignored -> {
             Path dir = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
             return new MapDimensionCache(dir);
         });

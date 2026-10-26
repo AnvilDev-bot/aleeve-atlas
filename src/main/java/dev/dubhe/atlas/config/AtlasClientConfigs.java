@@ -1,7 +1,7 @@
 package dev.dubhe.atlas.config;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import dev.anvilcraft.lib.v2.config.ConfigManager;
+import dev.dubhe.atlas.AleeveAtlas;
 
 /// 客户端配置持有者。
 ///

@@ -1,11 +1,12 @@
 package dev.dubhe.atlas.territory;
 
+import net.minecraft.world.level.ChunkPos;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.minecraft.world.level.ChunkPos;
 
 /// 领地区块的横向路段压缩。
 ///
@@ -15,26 +16,26 @@ public final class TerritoryRuns {
     private TerritoryRuns() {
     }
 
-    /// 一条横向连续路段：`z` 行上 `[xStart, xEnd]`（含两端）全部属于领地。
-    public record Run(int xStart, int xEnd, int z) {
+    /// 一条横向连续路段：`z` 行上 `[startX, endX]`（含两端）全部属于领地。
+    public record Run(int startX, int endX, int z) {
         /// 该段包含的区块数。
         public int length() {
-            return xEnd - xStart + 1;
+            return this.endX - this.startX + 1;
         }
     }
 
     /// 把区块集合压缩为横向路段列表。
     ///
-    /// 输出按 `z` 升序、再按 `xStart` 升序排列，保证绘制顺序稳定。
+    /// 输出按 `z` 升序、再按 `startX` 升序排列，保证绘制顺序稳定。
     public static List<Run> of(Set<ChunkPos> chunks) {
         Map<Integer, List<Integer>> rows = new HashMap<>();
         for (ChunkPos pos : chunks) {
             rows.computeIfAbsent(pos.z, ignored -> new ArrayList<>()).add(pos.x);
         }
         List<Run> runs = new ArrayList<>();
-        List<Integer> zValues = new ArrayList<>(rows.keySet());
-        zValues.sort(Integer::compareTo);
-        for (int z : zValues) {
+        List<Integer> sortedZ = new ArrayList<>(rows.keySet());
+        sortedZ.sort(Integer::compareTo);
+        for (int z : sortedZ) {
             List<Integer> xs = rows.get(z);
             xs.sort(Integer::compareTo);
             int start = xs.get(0);

@@ -17,20 +17,20 @@ public final class BroadcastCooldown {
     ///
     /// 首次调用总是放行。
     public boolean tryAcquire(long nowMillis) {
-        if (cooldownMillis <= 0L) {
-            lastAllowedMillis = nowMillis;
+        if (this.cooldownMillis <= 0L) {
+            this.lastAllowedMillis = nowMillis;
             return true;
         }
-        if (lastAllowedMillis != Long.MIN_VALUE
-                && nowMillis - lastAllowedMillis < cooldownMillis) {
+        if (this.lastAllowedMillis != Long.MIN_VALUE
+                && nowMillis - this.lastAllowedMillis < this.cooldownMillis) {
             return false;
         }
-        lastAllowedMillis = nowMillis;
+        this.lastAllowedMillis = nowMillis;
         return true;
     }
 
     /// 重置冷却起点，切换服务器后首次广播不受上一会话影响。
     public void reset() {
-        lastAllowedMillis = Long.MIN_VALUE;
+        this.lastAllowedMillis = Long.MIN_VALUE;
     }
 }

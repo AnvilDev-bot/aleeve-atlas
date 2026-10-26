@@ -46,7 +46,7 @@ public final class MapPalette {
 
     /// 按百分比缩放 RGB 通道，保留 alpha。
     public static int scale(int argb, int percent) {
-        int a = (argb >>> 24) & 0xFF;
+        final int a = (argb >>> 24) & 0xFF;
         int r = (argb >>> 16) & 0xFF;
         int g = (argb >>> 8) & 0xFF;
         int b = argb & 0xFF;

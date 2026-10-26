@@ -1,11 +1,12 @@
 package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
-import java.util.List;
-import java.util.Objects;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
+import java.util.Objects;
 
 /// 领地进出状态跟踪。
 ///
@@ -33,12 +34,12 @@ public final class TerritoryTracker {
             int chunkZ) {
         TerritoryGroup next = resolveAt(registry, dimension, chunkX, chunkZ);
         String nextId = next == null ? null : next.territoryId();
-        if (Objects.equals(nextId, currentTerritoryId)) {
+        if (Objects.equals(nextId, this.currentTerritoryId)) {
             return null;
         }
-        String previousId = currentTerritoryId;
+        String previousId = this.currentTerritoryId;
         TerritoryGroup previous = previousId == null ? null : findById(registry, previousId);
-        currentTerritoryId = nextId;
+        this.currentTerritoryId = nextId;
         if (next != null) {
             return new Change(true, next, previous);
         }
@@ -47,12 +48,12 @@ public final class TerritoryTracker {
 
     /// 清空状态（切换维度或断开连接时调用，避免跨维度误报）。
     public void reset() {
-        currentTerritoryId = null;
+        this.currentTerritoryId = null;
     }
 
     /// 当前所在领地 ID（无则为 null）。
     public String currentTerritoryId() {
-        return currentTerritoryId;
+        return this.currentTerritoryId;
     }
 
     private static TerritoryGroup findById(TerritoryRegistry registry, String id) {

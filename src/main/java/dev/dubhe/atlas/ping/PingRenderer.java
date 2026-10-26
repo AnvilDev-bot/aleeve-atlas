@@ -8,10 +8,11 @@ import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.config.NonTeamVisibility;
 import dev.dubhe.atlas.team.TeamProviders;
-import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.List;
 
 /// 标点地图渲染。
 public final class PingRenderer {

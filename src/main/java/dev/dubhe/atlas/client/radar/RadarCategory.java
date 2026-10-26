@@ -1,14 +1,13 @@
 package dev.dubhe.atlas.client.radar;
 
-import java.util.Locale;
-
 import net.minecraft.network.chat.Component;
-
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+
+import java.util.Locale;
 
 /// 实体雷达分类。
 public enum RadarCategory {

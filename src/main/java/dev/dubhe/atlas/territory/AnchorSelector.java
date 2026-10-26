@@ -1,7 +1,8 @@
 package dev.dubhe.atlas.territory;
 
-import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
+
+import java.util.Set;
 
 /// 领地名称标签锚点计算。
 ///

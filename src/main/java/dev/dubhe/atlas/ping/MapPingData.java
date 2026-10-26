@@ -1,9 +1,10 @@
 package dev.dubhe.atlas.ping;
 
-import java.util.UUID;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.UUID;
 
 /// 临时标点核心数据结构。
 ///
@@ -32,17 +33,17 @@ public record MapPingData(
 
     /// 是否因跟随实体而需要更新位置。
     public boolean followsEntity() {
-        return targetEntityId != null;
+        return this.targetEntityId != null;
     }
 
     /// 相对给定时间是否已过期。
     public boolean expired(long nowMillis) {
-        return nowMillis - createdAtMillis >= lifetimeMillis;
+        return nowMillis - this.createdAtMillis >= this.lifetimeMillis;
     }
 
     public MapPingData withPosition(Vec3 newPosition) {
-        return new MapPingData(pingId, senderId, senderName, teamColorArgb, dimensionId,
-                newPosition, targetEntityId, icon, createdAtMillis, lifetimeMillis);
+        return new MapPingData(this.pingId, this.senderId, this.senderName, this.teamColorArgb, this.dimensionId,
+                newPosition, this.targetEntityId, this.icon, this.createdAtMillis, this.lifetimeMillis);
     }
 
     /// 维度键工具：把维度标识写入数据。

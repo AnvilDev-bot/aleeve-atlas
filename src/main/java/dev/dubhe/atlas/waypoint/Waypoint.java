@@ -1,17 +1,19 @@
 package dev.dubhe.atlas.waypoint;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Function;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Function;
 
 /// 路径点数据。
 ///
@@ -35,6 +37,7 @@ public record Waypoint(
     public static final String DEFAULT_ICON = "default";
     /// 死亡点图标标识。
     public static final String DEATH_ICON = "death";
+    public static final String DEATH_NAME_KEY = "aleeve_atlas.waypoint.death";
     public static final int DEFAULT_VISIBLE_DISTANCE = 256;
 
     /// 新建一个普通路径点。
@@ -46,45 +49,53 @@ public record Waypoint(
 
     /// 新建死亡点。
     public static Waypoint deathPoint(BlockPos pos, ResourceKey<Level> dimension) {
-        return new Waypoint(UUID.randomUUID(), "death", pos, dimension, 0xFFFF5555,
+        return new Waypoint(UUID.randomUUID(), DEATH_NAME_KEY, pos, dimension, 0xFFFF5555,
                 "death", true, DEFAULT_VISIBLE_DISTANCE, true, "", true);
     }
 
+    /// 玩家可见的路径点名称；兼容旧存档中未翻译的死亡点名称。
+    public Component displayName() {
+        if (this.deathPoint && ("death".equals(this.name) || DEATH_NAME_KEY.equals(this.name))) {
+            return Component.translatable(DEATH_NAME_KEY);
+        }
+        return Component.literal(this.name);
+    }
+
     public Waypoint withEnabled(boolean newEnabled) {
-        return new Waypoint(id, name, pos, dimension, colorArgb, icon, newEnabled,
-                visibleDistance, deathPoint, sourcePlayer, shareable);
+        return new Waypoint(this.id, this.name, this.pos, this.dimension, this.colorArgb, this.icon, newEnabled,
+                this.visibleDistance, this.deathPoint, this.sourcePlayer, this.shareable);
     }
 
     /// 更新表单可编辑属性，保留 UUID、维度、图标、死亡点与来源信息。
     public Waypoint withDetails(String newName, BlockPos newPos, int newColorArgb,
             int newVisibleDistance, boolean newEnabled, boolean newShareable) {
-        return new Waypoint(id, newName, newPos, dimension, newColorArgb, icon, newEnabled,
-                newVisibleDistance, deathPoint, sourcePlayer, newShareable);
+        return new Waypoint(this.id, newName, newPos, this.dimension, newColorArgb, this.icon, newEnabled,
+                newVisibleDistance, this.deathPoint, this.sourcePlayer, newShareable);
     }
 
     public Waypoint withSource(String source) {
-        return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
-                deathPoint, source, shareable);
+        return new Waypoint(this.id, this.name, this.pos, this.dimension, this.colorArgb, this.icon, this.enabled, this.visibleDistance,
+                this.deathPoint, source, this.shareable);
     }
 
     public Waypoint withShareable(boolean newShareable) {
-        return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
-                deathPoint, sourcePlayer, newShareable);
+        return new Waypoint(this.id, this.name, this.pos, this.dimension, this.colorArgb, this.icon, this.enabled, this.visibleDistance,
+                this.deathPoint, this.sourcePlayer, newShareable);
     }
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-        tag.putString("id", id.toString());
-        tag.putString("name", name);
-        tag.putLong("pos", pos.asLong());
-        tag.putString("dim", dimension.identifier().toString());
-        tag.putInt("color", colorArgb);
-        tag.putString("icon", icon);
-        tag.putBoolean("enabled", enabled);
-        tag.putInt("visible", visibleDistance);
-        tag.putBoolean("death", deathPoint);
-        tag.putString("source", sourcePlayer);
-        tag.putBoolean("shareable", shareable);
+        tag.putString("id", this.id.toString());
+        tag.putString("name", this.name);
+        tag.putLong("pos", this.pos.asLong());
+        tag.putString("dim", this.dimension.identifier().toString());
+        tag.putInt("color", this.colorArgb);
+        tag.putString("icon", this.icon);
+        tag.putBoolean("enabled", this.enabled);
+        tag.putInt("visible", this.visibleDistance);
+        tag.putBoolean("death", this.deathPoint);
+        tag.putString("source", this.sourcePlayer);
+        tag.putBoolean("shareable", this.shareable);
         return tag;
     }
 

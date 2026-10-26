@@ -1,7 +1,6 @@
 package dev.dubhe.atlas.client.map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /// 翻转 Z 轴的纹理存储与逻辑地图搬移方向测试。
@@ -26,7 +25,7 @@ class CanvasScrollFlipTest {
         int[] moved = fromFlippedTexture(texture);
         for (int targetRow = 0; targetRow < SIZE - logicalShift; targetRow++) {
             for (int col = 0; col < SIZE; col++) {
-                assertEquals(logical[(targetRow + logicalShift) * SIZE + col],
+                Assertions.assertEquals(logical[(targetRow + logicalShift) * SIZE + col],
                         moved[targetRow * SIZE + col]);
             }
         }

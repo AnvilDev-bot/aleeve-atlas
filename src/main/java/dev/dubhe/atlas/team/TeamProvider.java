@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.team;
 
 import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
+import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.UUID;
-import net.minecraft.network.chat.Component;
 
 /// 队伍适配层接口。
 ///

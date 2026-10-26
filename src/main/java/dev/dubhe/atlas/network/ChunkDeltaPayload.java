@@ -2,12 +2,13 @@ package dev.dubhe.atlas.network;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import io.netty.handler.codec.DecoderException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /// 地图增量同步分片。
 ///
@@ -18,6 +19,12 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
         implements CustomPacketPayload {
     /// 单包区块数上限：每区块 16×16 像素压缩后约 1 KiB，取 128 区块留足余量。
     public static final int MAX_CHUNKS_PER_PACKET = 128;
+    /// 客户端上行预算，预留协议头后仍小于 32 KiB。
+    public static final int MAX_UPLOAD_BYTES = 31 * 1024;
+    /// 服务端下行预算，预留协议头后仍小于 1 MiB。
+    private static final int MAX_DOWNLOAD_BYTES = 1024 * 1024 - 1;
+    private static final int PACKET_HEADER_BYTES = 32;
+    private static final int CHUNK_HEADER_BYTES = 24;
     /// 单区块压缩数据的解码上限（字节）。
     ///
     /// 未压缩为 2 KiB（颜色与高度各 1024 字节），最坏情况下 Deflate 略有膨胀，
@@ -50,10 +57,10 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         }
                     },
                     buf -> {
-                        String dimension = buf.readUtf(256);
+                        final String dimension = buf.readUtf(256);
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
-                        UUID target = buf.readBoolean() ? buf.readUUID() : null;
+                        final UUID target = buf.readBoolean() ? buf.readUUID() : null;
                         // 批次序号参与移位运算，越界会让接收端掩码失真。
                         if (batchCount < 1 || batchIndex < 0 || batchIndex >= batchCount) {
                             throw new DecoderException(
@@ -72,17 +79,46 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
                         return new ChunkDeltaPayload(dimension, chunks, batchIndex, batchCount, target);
                     });
 
-    /// 把区块数据切分为符合体积上限的分片。
+    /// 把区块数据切分为服务端下行分片，同时限制区块数与估算字节数。
     public static List<ChunkDeltaPayload> split(String dimensionId, List<ChunkData> chunks,
             UUID targetPlayer) {
-        List<ChunkDeltaPayload> packets = new ArrayList<>();
-        int total = Math.max(1, (chunks.size() + MAX_CHUNKS_PER_PACKET - 1)
-                / MAX_CHUNKS_PER_PACKET);
-        for (int index = 0; index < total; index++) {
-            int from = index * MAX_CHUNKS_PER_PACKET;
-            int to = Math.min(chunks.size(), from + MAX_CHUNKS_PER_PACKET);
-            packets.add(new ChunkDeltaPayload(dimensionId,
-                    List.copyOf(chunks.subList(from, to)), index, total, targetPlayer));
+        return splitWithBudget(dimensionId, chunks, targetPlayer, MAX_DOWNLOAD_BYTES);
+    }
+
+    /// 把区块数据切分为客户端上行分片，保证每包小于 32 KiB。
+    public static List<ChunkDeltaPayload> splitForUpload(String dimensionId, List<ChunkData> chunks,
+            UUID targetPlayer) {
+        return splitWithBudget(dimensionId, chunks, targetPlayer, MAX_UPLOAD_BYTES);
+    }
+
+    private static List<ChunkDeltaPayload> splitWithBudget(String dimensionId, List<ChunkData> chunks,
+            UUID targetPlayer, int maxBytes) {
+        List<List<ChunkData>> batches = new ArrayList<>();
+        List<ChunkData> current = new ArrayList<>();
+        int currentBytes = PACKET_HEADER_BYTES;
+        for (ChunkData chunk : chunks) {
+            int chunkBytes = chunk.pixels().length + CHUNK_HEADER_BYTES;
+            if (PACKET_HEADER_BYTES + chunkBytes > maxBytes) {
+                throw new IllegalArgumentException("Chunk payload exceeds packet byte budget");
+            }
+            if (!current.isEmpty()
+                    && (current.size() >= MAX_CHUNKS_PER_PACKET
+                    || currentBytes + chunkBytes > maxBytes)) {
+                batches.add(List.copyOf(current));
+                current = new ArrayList<>();
+                currentBytes = PACKET_HEADER_BYTES;
+            }
+            current.add(chunk);
+            currentBytes += chunkBytes;
+        }
+        if (!current.isEmpty() || batches.isEmpty()) {
+            batches.add(List.copyOf(current));
+        }
+
+        List<ChunkDeltaPayload> packets = new ArrayList<>(batches.size());
+        for (int index = 0; index < batches.size(); index++) {
+            packets.add(new ChunkDeltaPayload(dimensionId, batches.get(index), index,
+                    batches.size(), targetPlayer));
         }
         return packets;
     }

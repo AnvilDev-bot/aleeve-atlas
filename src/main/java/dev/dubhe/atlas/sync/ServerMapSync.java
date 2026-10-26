@@ -1,18 +1,19 @@
 package dev.dubhe.atlas.sync;
 
 import dev.dubhe.atlas.AleeveAtlas;
-
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import dev.dubhe.atlas.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /// 服务端地图增量同步协调。
 ///
@@ -59,17 +60,15 @@ public final class ServerMapSync {
         }
 
         // 转发完整摘要给同队其他在线成员，由他们回传差异。
-        var team = sender.getTeam();
-        if (team == null) {
-            return;
-        }
         for (ServerPlayer teammate : sender.level().getServer().getPlayerList().getPlayers()) {
-            if (teammate == sender || teammate.getTeam() != team) {
+            if (teammate == sender || !TeamProviders.active()
+                    .sameTeam(sender.getUUID(), teammate.getUUID())) {
                 continue;
             }
-            PacketDistributor.sendToPlayer(teammate,
-                    new ChunkDigestPayload(payload.dimensionId(), completed,
-                            0, 1, sender.getUUID()));
+            for (ChunkDigestPayload packet : ChunkDigestPayload.split(
+                    payload.dimensionId(), completed, sender.getUUID())) {
+                PacketDistributor.sendToPlayer(teammate, packet);
+            }
         }
         LOGGER.debug("Forwarded digest of {} chunk(s) from {} to teammates",
                 completed.size(), sender.getGameProfile().name());
@@ -96,12 +95,9 @@ public final class ServerMapSync {
         if (targetId == null) {
             return;
         }
-        var team = sender.getTeam();
-        if (team == null) {
-            return;
-        }
         ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetId);
-        if (target != null && target != sender && target.getTeam() == team) {
+        if (target != null && target != sender
+                && TeamProviders.active().sameTeam(sender.getUUID(), target.getUUID())) {
             PacketDistributor.sendToPlayer(target, payload);
         }
     }
@@ -129,20 +125,20 @@ public final class ServerMapSync {
 
         private void add(int index, List<ChunkDigestPayload.Entry> entries, int batchCount,
                 long now) {
-            batches.put(index, entries);
-            tracker.add(index, batchCount, now);
+            this.batches.put(index, entries);
+            this.tracker.add(index, batchCount, now);
         }
 
         private long lastUpdateMillis() {
-            return tracker.lastUpdateMillis();
+            return this.tracker.lastUpdateMillis();
         }
 
         private boolean complete() {
-            return tracker.complete();
+            return this.tracker.complete();
         }
 
         private List<ChunkDigestPayload.Entry> entries() {
-            return batches.values().stream().flatMap(List::stream).toList();
+            return this.batches.values().stream().flatMap(List::stream).toList();
         }
     }
 }

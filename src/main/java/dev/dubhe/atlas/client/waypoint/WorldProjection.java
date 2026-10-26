@@ -1,12 +1,13 @@
 package dev.dubhe.atlas.client.waypoint;
 
-import java.util.Optional;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector4f;
+
+import java.util.Optional;
 
 /// 世界坐标 → 屏幕坐标投影。
 ///

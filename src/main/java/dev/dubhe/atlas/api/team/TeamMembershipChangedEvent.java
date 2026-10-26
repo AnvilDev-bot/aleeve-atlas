@@ -1,7 +1,8 @@
 package dev.dubhe.atlas.api.team;
 
-import java.util.UUID;
 import net.neoforged.bus.api.Event;
+
+import java.util.UUID;
 
 /// 队伍成员变更事件。
 ///
@@ -24,14 +25,14 @@ public class TeamMembershipChangedEvent extends Event {
     }
 
     public UUID playerId() {
-        return playerId;
+        return this.playerId;
     }
 
     public String teamId() {
-        return teamId;
+        return this.teamId;
     }
 
     public Change change() {
-        return change;
+        return this.change;
     }
 }

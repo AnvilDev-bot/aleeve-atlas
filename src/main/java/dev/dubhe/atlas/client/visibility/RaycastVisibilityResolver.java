@@ -39,11 +39,11 @@ public final class RaycastVisibilityResolver implements VisibilityResolver {
         double centerX = (box.minX + box.maxX) / 2.0;
         double centerZ = (box.minZ + box.maxZ) / 2.0;
         return new Vec3[] {
-                new Vec3(centerX, box.maxY - 0.1, centerZ),           // 头部
-                new Vec3(centerX, box.minY + (box.maxY - box.minY) * 0.75, centerZ), // 胸口
-                new Vec3(centerX, box.minY + (box.maxY - box.minY) * 0.4, centerZ),  // 腰部
-                new Vec3(box.minX + 0.1, box.minY + 0.6, centerZ),     // 左侧
-                new Vec3(box.maxX - 0.1, box.minY + 0.6, centerZ)      // 右侧
+            new Vec3(centerX, box.maxY - 0.1, centerZ),           // 头部
+            new Vec3(centerX, box.minY + (box.maxY - box.minY) * 0.75, centerZ), // 胸口
+            new Vec3(centerX, box.minY + (box.maxY - box.minY) * 0.4, centerZ),  // 腰部
+            new Vec3(box.minX + 0.1, box.minY + 0.6, centerZ),     // 左侧
+            new Vec3(box.maxX - 0.1, box.minY + 0.6, centerZ)      // 右侧
         };
     }
 

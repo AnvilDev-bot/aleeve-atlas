@@ -5,7 +5,6 @@ import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
-import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.ClickEvent;
@@ -13,6 +12,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+import java.util.UUID;
 
 /// 客户端路径点接收策略。
 ///
@@ -31,6 +32,9 @@ public final class ClientWaypointSync {
             }
             case AUTO_ACCEPT -> accept(waypoint, payload.action());
             case MANUAL_ACCEPT -> promptManual(waypoint, payload.action());
+            default -> {
+                // 新增策略默认不自动接受，避免未知枚举值产生非预期写入。
+            }
         }
     }
 
@@ -47,7 +51,7 @@ public final class ClientWaypointSync {
         }
         NeoForge.EVENT_BUS.post(new WaypointReceivedEvent(waypoint, true));
         notify(Component.translatable("aleeve_atlas.message.waypoint_received",
-                waypoint.name(), waypoint.sourcePlayer()).withStyle(ChatFormatting.GREEN));
+                waypoint.displayName().getString(), waypoint.sourcePlayer()).withStyle(ChatFormatting.GREEN));
     }
 
     private static void promptManual(Waypoint waypoint, WaypointSyncPayload.Action action) {
@@ -68,7 +72,7 @@ public final class ClientWaypointSync {
 
         minecraft.player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.waypoint_shared",
-                        waypoint.name(), waypoint.sourcePlayer(),
+                        waypoint.displayName().getString(), waypoint.sourcePlayer(),
                         waypoint.pos().getX(), waypoint.pos().getY(), waypoint.pos().getZ()),
                 false);
         minecraft.player.displayClientMessage(

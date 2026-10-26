@@ -7,15 +7,16 @@ import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.territory.TerritoryRegistry;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /// 领地覆层渲染。
 ///
@@ -58,7 +59,7 @@ public final class TerritoryRenderer {
                         }
                         int size = Math.max(1, (int) Math.round(16.0 / blocksPerPixel));
                         return new int[] { (int) Math.round(screenX) - size / 2,
-                                (int) Math.round(screenZ) - size / 2, size };
+                            (int) Math.round(screenZ) - size / 2, size };
                     }, circular, layout);
         }
     }
@@ -116,7 +117,30 @@ public final class TerritoryRenderer {
                 borderSegment(graphics, x + size - borderWidth, y, borderWidth, size, border,
                         circular, layout, dashed, false);
             }
+            // 仅通过顶点连接的对角区块补齐共享角点，保持外框连续。
+            for (int dz = -1; dz <= 1; dz += 2) {
+                int[] connector = diagonalConnector(chunks, chunk, dz, x, y, size, borderWidth);
+                if (connector != null) {
+                    fillClipped(graphics, connector[0], connector[1], connector[2], connector[3],
+                            border, circular, layout);
+                }
+            }
         }
+    }
+
+    /// 计算对角共享角点的补角矩形；存在正交桥接或目标区块时返回 null。
+    static int[] diagonalConnector(Set<ChunkPos> chunks, ChunkPos chunk, int dz,
+            int x, int y, int size, int borderWidth) {
+        ChunkPos diagonal = new ChunkPos(chunk.x + 1, chunk.z + dz);
+        if (!chunks.contains(diagonal)
+                || chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))
+                || chunks.contains(new ChunkPos(chunk.x, chunk.z + dz))) {
+            return null;
+        }
+        int half = Math.max(1, borderWidth) / 2;
+        int cornerX = x + size - half;
+        int cornerY = (dz > 0 ? y + size : y) - half;
+        return new int[] { cornerX, cornerY, Math.max(1, borderWidth), Math.max(1, borderWidth) };
     }
 
     /// 统计每个区块命中的最高 `zOrder`。

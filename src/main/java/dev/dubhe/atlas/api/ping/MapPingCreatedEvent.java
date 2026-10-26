@@ -18,11 +18,11 @@ public class MapPingCreatedEvent extends Event {
 
     /// 标点数据（含维度、精确坐标、图标类型与生命周期）。
     public MapPingData ping() {
-        return ping;
+        return this.ping;
     }
 
     /// 是否由本地玩家发起（否则为收到的队友标点）。
     public boolean localPlayerOrigin() {
-        return localPlayerOrigin;
+        return this.localPlayerOrigin;
     }
 }

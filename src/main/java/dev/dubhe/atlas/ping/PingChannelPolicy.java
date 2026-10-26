@@ -2,6 +2,7 @@ package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.PingChannelMode;
+import net.minecraft.network.chat.Component;
 import net.neoforged.fml.ModList;
 
 /// 标点通道复用策略。
@@ -52,6 +53,13 @@ public final class PingChannelPolicy {
     public static boolean duplicateRisk() {
         return externalPingModPresent() && AtlasClientConfigs.CONFIG.ping.channelMode
                 != PingChannelMode.LISTEN_ONLY;
+    }
+
+    /// 标点通道策略的可翻译诊断组件。
+    public static Component describeComponent() {
+        return Component.translatable("aleeve_atlas.diagnostic.ping",
+                AtlasClientConfigs.CONFIG.ping.channelMode, externalPingModPresent(),
+                shouldBroadcast());
     }
 
     /// 当前生效策略的可读描述（诊断用）。

@@ -2,12 +2,13 @@ package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+
+import java.util.List;
+import java.util.Set;
 
 /// 领地对象的最小实现，供 API 调用方与演示使用。
 ///

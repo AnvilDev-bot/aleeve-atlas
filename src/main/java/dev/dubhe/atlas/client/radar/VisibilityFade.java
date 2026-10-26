@@ -2,10 +2,11 @@ package dev.dubhe.atlas.client.radar;
 
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
+import net.minecraft.world.entity.Entity;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import net.minecraft.world.entity.Entity;
 
 /// 可见性渐隐跟踪。
 ///

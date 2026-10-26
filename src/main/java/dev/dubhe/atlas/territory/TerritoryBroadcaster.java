@@ -2,11 +2,12 @@ package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
-import java.util.List;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /// 领地覆层的服务端下发。
 ///
@@ -53,6 +54,7 @@ public final class TerritoryBroadcaster {
     private static SyncedTerritory toSynced(TerritoryGroup territory) {
         return new SyncedTerritory(territory.territoryId(), territory.dimension(),
                 territory.chunks(), territory.displayName(), territory.themeColorRgb(),
-                territory.fillOpacity(), territory.zOrder());
+                territory.fillOpacity(), territory.borderStyle(), territory.tooltip(),
+                territory.zOrder());
     }
 }

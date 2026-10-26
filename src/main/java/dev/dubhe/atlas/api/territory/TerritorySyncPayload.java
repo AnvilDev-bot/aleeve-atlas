@@ -3,10 +3,6 @@ package dev.dubhe.atlas.api.territory;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.territory.SyncedTerritory;
 import io.netty.handler.codec.DecoderException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
@@ -18,6 +14,11 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /// 领地下发负载。
 ///
 /// 单个负载携带一个领地的完整区块集合与展示元数据；区块集合较大时按
@@ -27,6 +28,7 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/territory");
     /// 单包区块数上限：每区块 8 字节，4096 区块约 32 KiB，远低于 1 MiB 上限。
     public static final int MAX_CHUNKS_PER_PACKET = 4096;
+    private static final int MAX_TOOLTIP_LINES = 64;
 
     public static final Type<TerritorySyncPayload> TYPE =
             new Type<>(AleeveAtlas.id("territory_sync"));
@@ -48,6 +50,13 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
         buf.writeUtf(payload.territory.dimension().identifier().toString(), 256);
         buf.writeInt(payload.territory.themeColorRgb());
         buf.writeFloat(payload.territory.fillOpacity());
+        buf.writeInt(payload.territory.borderStyle().colorArgb());
+        buf.writeFloat(payload.territory.borderStyle().width());
+        buf.writeBoolean(payload.territory.borderStyle().dashed());
+        buf.writeVarInt(payload.territory.tooltip().size());
+        for (Component line : payload.territory.tooltip()) {
+            ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf, line);
+        }
         buf.writeInt(payload.territory.zOrder());
         ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.encode(buf,
                 payload.territory.displayName());
@@ -59,10 +68,10 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
     }
 
     private static TerritorySyncPayload read(FriendlyByteBuf buf) {
-        Action action = buf.readEnum(Action.class);
-        int batchIndex = buf.readInt();
-        int batchCount = buf.readInt();
-        String territoryId = buf.readUtf(128);
+        final Action action = buf.readEnum(Action.class);
+        final int batchIndex = buf.readInt();
+        final int batchCount = buf.readInt();
+        final String territoryId = buf.readUtf(128);
         // 维度标识非法时回退主世界，避免解码抛异常导致连接断开。
         String rawDimension = buf.readUtf(256);
         Identifier dimensionId = Identifier.tryParse(rawDimension);
@@ -70,8 +79,17 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
             LOGGER.warn("Invalid dimension id '{}' in territory payload", rawDimension);
             dimensionId = Level.OVERWORLD.identifier();
         }
-        int themeColor = buf.readInt();
-        float fillOpacity = buf.readFloat();
+        final int themeColor = buf.readInt();
+        final float fillOpacity = buf.readFloat();
+        final BorderStyle borderStyle = new BorderStyle(buf.readInt(), buf.readFloat(), buf.readBoolean());
+        int tooltipCount = buf.readVarInt();
+        if (tooltipCount < 0 || tooltipCount > MAX_TOOLTIP_LINES) {
+            throw new DecoderException("Invalid territory tooltip line count: " + tooltipCount);
+        }
+        List<Component> tooltip = new ArrayList<>(tooltipCount);
+        for (int i = 0; i < tooltipCount; i++) {
+            tooltip.add(ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf));
+        }
         int zOrder = buf.readInt();
         Component displayName = ComponentSerialization.TRUSTED_CONTEXT_FREE_STREAM_CODEC.decode(buf);
         int chunkCount = buf.readVarInt();
@@ -87,7 +105,7 @@ public record TerritorySyncPayload(Action action, SyncedTerritory territory, int
             chunks.add(new ChunkPos(buf.readInt(), buf.readInt()));
         }
         SyncedTerritory territory = new SyncedTerritory(territoryId, dimensionId, chunks,
-                displayName, themeColor, fillOpacity, zOrder);
+                displayName, themeColor, fillOpacity, borderStyle, tooltip, zOrder);
         return new TerritorySyncPayload(action, territory, batchIndex, batchCount);
     }
 

@@ -2,12 +2,11 @@ package dev.dubhe.atlas.network;
 
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.DecoderException;
-import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 /// 单区块像素数据的解码上限测试。
 ///
@@ -28,7 +27,7 @@ class ChunkPixelBytesLimitTest {
         ChunkDeltaPayload.STREAM_CODEC.encode(buf, original);
         ChunkDeltaPayload decoded = ChunkDeltaPayload.STREAM_CODEC.decode(buf);
 
-        assertEquals(1024, decoded.chunks().get(0).pixels().length);
+        Assertions.assertEquals(1024, decoded.chunks().get(0).pixels().length);
     }
 
     @Test
@@ -42,7 +41,7 @@ class ChunkPixelBytesLimitTest {
         ChunkDeltaPayload.STREAM_CODEC.encode(buf, original);
         ChunkDeltaPayload decoded = ChunkDeltaPayload.STREAM_CODEC.decode(buf);
 
-        assertEquals(MAX_CHUNK_BYTES, decoded.chunks().get(0).pixels().length);
+        Assertions.assertEquals(MAX_CHUNK_BYTES, decoded.chunks().get(0).pixels().length);
     }
 
     @Test
@@ -60,8 +59,8 @@ class ChunkPixelBytesLimitTest {
         buf.writeVarInt(MAX_CHUNK_BYTES + 1);
         buf.writeBytes(new byte[MAX_CHUNK_BYTES + 1]);
 
-        DecoderException error = assertThrows(DecoderException.class,
+        DecoderException error = Assertions.assertThrows(DecoderException.class,
                 () -> ChunkDeltaPayload.STREAM_CODEC.decode(buf));
-        assertTrue(error.getMessage() != null);
+        Assertions.assertTrue(error.getMessage() != null);
     }
 }

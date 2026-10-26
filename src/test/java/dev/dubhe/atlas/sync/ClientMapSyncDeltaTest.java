@@ -3,10 +3,10 @@ package dev.dubhe.atlas.sync;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 /// 追赶同步的差异计算测试。
 ///
@@ -18,7 +18,7 @@ class ClientMapSyncDeltaTest {
         // 对方摘要为空，两个区块都应回传。
         List<ChunkDeltaPayload.ChunkData> deltas =
                 ClientMapSync.computeDeltas(List.of(), local);
-        assertEquals(2, deltas.size());
+        Assertions.assertEquals(2, deltas.size());
     }
 
     @Test
@@ -28,9 +28,9 @@ class ClientMapSyncDeltaTest {
         List<ChunkDigestPayload.Entry> theirs = List.of(new ChunkDigestPayload.Entry(2, 3, 150L));
         List<ChunkDeltaPayload.ChunkData> deltas =
                 ClientMapSync.computeDeltas(theirs, local);
-        assertEquals(1, deltas.size());
-        assertEquals(2, deltas.get(0).chunkX());
-        assertEquals(3, deltas.get(0).chunkZ());
+        Assertions.assertEquals(1, deltas.size());
+        Assertions.assertEquals(2, deltas.get(0).chunkX());
+        Assertions.assertEquals(3, deltas.get(0).chunkZ());
     }
 
     @Test
@@ -39,8 +39,8 @@ class ClientMapSyncDeltaTest {
         // 对方版本相同或更高，无需回传。
         List<ChunkDigestPayload.Entry> same = List.of(new ChunkDigestPayload.Entry(4, 5, 300L));
         List<ChunkDigestPayload.Entry> newer = List.of(new ChunkDigestPayload.Entry(4, 5, 400L));
-        assertTrue(ClientMapSync.computeDeltas(same, local).isEmpty());
-        assertTrue(ClientMapSync.computeDeltas(newer, local).isEmpty());
+        Assertions.assertTrue(ClientMapSync.computeDeltas(same, local).isEmpty());
+        Assertions.assertTrue(ClientMapSync.computeDeltas(newer, local).isEmpty());
     }
 
     @Test
@@ -50,14 +50,14 @@ class ClientMapSyncDeltaTest {
         List<ChunkDigestPayload.Entry> positive = List.of(new ChunkDigestPayload.Entry(1, 1, 100L));
         List<ChunkDeltaPayload.ChunkData> deltas =
                 ClientMapSync.computeDeltas(positive, local);
-        assertEquals(1, deltas.size(), "(-1,-1) 与 (1,1) 必须视为不同区块");
+        Assertions.assertEquals(1, deltas.size(), "(-1,-1) 与 (1,1) 必须视为不同区块");
     }
 
     @Test
     void chunkKeyDistinguishesAxisOrder() {
         // (x, z) 与 (z, x) 必须是不同的键。
-        assertTrue(ClientMapSync.chunkKey(3, 7) != ClientMapSync.chunkKey(7, 3));
-        assertTrue(ClientMapSync.chunkKey(-3, 7) != ClientMapSync.chunkKey(3, -7));
+        Assertions.assertTrue(ClientMapSync.chunkKey(3, 7) != ClientMapSync.chunkKey(7, 3));
+        Assertions.assertTrue(ClientMapSync.chunkKey(-3, 7) != ClientMapSync.chunkKey(3, -7));
     }
 
     private static ChunkMapData chunk(int chunkX, int chunkZ, long version) {

@@ -17,10 +17,10 @@ public class WaypointReceivedEvent extends Event {
     }
 
     public Waypoint waypoint() {
-        return waypoint;
+        return this.waypoint;
     }
 
     public boolean accepted() {
-        return accepted;
+        return this.accepted;
     }
 }

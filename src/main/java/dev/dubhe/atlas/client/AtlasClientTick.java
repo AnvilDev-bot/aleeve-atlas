@@ -8,7 +8,6 @@ import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
 import dev.dubhe.atlas.sync.ClientMapSync;
 import dev.dubhe.atlas.waypoint.Waypoint;
-import java.util.UUID;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -23,6 +22,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 /// 客户端 tick 入口：在 `ClientTickEvent.Post` 中 while 消费键位。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
@@ -122,12 +123,12 @@ public final class AtlasClientTick {
             return;
         }
         String[] commands = {
-                "execute at @p run summon minecraft:zombie ~3 ~ ~3",
-                "execute at @p run summon minecraft:skeleton ~-3 ~ ~3",
-                "execute at @p run summon minecraft:pig ~2 ~ ~-3",
-                "execute at @p run summon minecraft:cow ~-2 ~ ~-3",
-                "execute at @p run summon minecraft:chicken ~0 ~ ~4",
-                "execute at @p run summon minecraft:oak_boat ~5 ~ ~0"
+            "execute at @p run summon minecraft:zombie ~3 ~ ~3",
+            "execute at @p run summon minecraft:skeleton ~-3 ~ ~3",
+            "execute at @p run summon minecraft:pig ~2 ~ ~-3",
+            "execute at @p run summon minecraft:cow ~-2 ~ ~-3",
+            "execute at @p run summon minecraft:chicken ~0 ~ ~4",
+            "execute at @p run summon minecraft:oak_boat ~5 ~ ~0"
         };
         server.execute(() -> {
             var source = server.createCommandSourceStack();

@@ -1,8 +1,8 @@
 package dev.dubhe.atlas.client.profiling;
 
+import dev.anvilcraft.lib.v2.util.ClientTickRecorder;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.team.TeamProviders;
-import dev.anvilcraft.lib.v2.util.ClientTickRecorder;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

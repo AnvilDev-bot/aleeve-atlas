@@ -1,13 +1,13 @@
 package dev.dubhe.atlas.waypoint;
 
 import io.netty.buffer.Unpooled;
-import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 /// 路径点同步载荷解码的容错测试。
 ///
@@ -25,8 +25,8 @@ class WaypointSyncPayloadDecodeTest {
         WaypointSyncPayload.STREAM_CODEC.encode(buf, payload);
         WaypointSyncPayload decoded = WaypointSyncPayload.STREAM_CODEC.decode(buf);
 
-        assertEquals(WaypointSyncPayload.Action.UPSERT, decoded.action());
-        assertEquals(original, decoded.waypoint());
+        Assertions.assertEquals(WaypointSyncPayload.Action.UPSERT, decoded.action());
+        Assertions.assertEquals(original, decoded.waypoint());
     }
 
     @Test
@@ -48,9 +48,9 @@ class WaypointSyncPayloadDecodeTest {
 
         WaypointSyncPayload decoded = WaypointSyncPayload.STREAM_CODEC.decode(buf);
 
-        assertNotNull(decoded);
-        assertEquals(Level.OVERWORLD, decoded.waypoint().dimension(),
+        Assertions.assertNotNull(decoded);
+        Assertions.assertEquals(Level.OVERWORLD, decoded.waypoint().dimension(),
                 "非法维度标识必须回退主世界");
-        assertEquals("Broken", decoded.waypoint().name(), "其余字段应保持不变");
+        Assertions.assertEquals("Broken", decoded.waypoint().name(), "其余字段应保持不变");
     }
 }

@@ -1,11 +1,12 @@
 package dev.dubhe.atlas.storage;
 
+import net.minecraft.resources.Identifier;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import net.minecraft.resources.Identifier;
 
 /// 数据存储路径布局。
 ///

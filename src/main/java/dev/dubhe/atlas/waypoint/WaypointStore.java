@@ -1,16 +1,6 @@
 package dev.dubhe.atlas.waypoint;
 
 import dev.dubhe.atlas.storage.AtlasPaths;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -22,6 +12,17 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /// 路径点存储。
 ///
@@ -38,14 +39,14 @@ public final class WaypointStore {
     private WaypointStore(Path file, ResourceKey<Level> dimension) {
         this.file = file;
         this.dimension = dimension;
-        load();
+        this.load();
     }
 
     /// 接受已读取的存档内容，避免扫描目录时重复读盘。
     private WaypointStore(Path file, ResourceKey<Level> dimension, CompoundTag prefetched) {
         this.file = file;
         this.dimension = dimension;
-        loadFrom(prefetched);
+        this.loadFrom(prefetched);
     }
 
     /// 打开某服务器标识下、指定维度的路径点存储。
@@ -98,26 +99,26 @@ public final class WaypointStore {
 
     /// 该存储对应的维度。
     public ResourceKey<Level> dimension() {
-        return dimension;
+        return this.dimension;
     }
 
     /// 存储文件路径（诊断与导入导出用）。
     public Path file() {
-        return file;
+        return this.file;
     }
 
     public Collection<Waypoint> all() {
-        return waypoints.values();
+        return this.waypoints.values();
     }
 
     public Optional<Waypoint> get(UUID id) {
-        return Optional.ofNullable(waypoints.get(id));
+        return Optional.ofNullable(this.waypoints.get(id));
     }
 
     /// 该维度下启用且在可见距离内的路径点。
     public List<Waypoint> visibleIn(double x, double z) {
         List<Waypoint> result = new ArrayList<>();
-        for (Waypoint waypoint : waypoints.values()) {
+        for (Waypoint waypoint : this.waypoints.values()) {
             if (!waypoint.enabled()) {
                 continue;
             }
@@ -133,56 +134,56 @@ public final class WaypointStore {
 
     /// 新增或更新路径点。
     public void upsert(Waypoint waypoint) {
-        waypoints.put(waypoint.id(), waypoint);
-        dirty = true;
+        this.waypoints.put(waypoint.id(), waypoint);
+        this.dirty = true;
     }
 
     public boolean remove(UUID id) {
-        boolean removed = waypoints.remove(id) != null;
+        boolean removed = this.waypoints.remove(id) != null;
         if (removed) {
-            dirty = true;
+            this.dirty = true;
         }
         return removed;
     }
 
     /// 死亡点保留策略：开关关闭时清除历史死亡点。
     public void pruneDeathPoints() {
-        boolean changed = waypoints.values().removeIf(Waypoint::deathPoint);
+        boolean changed = this.waypoints.values().removeIf(Waypoint::deathPoint);
         if (changed) {
-            dirty = true;
+            this.dirty = true;
         }
     }
 
     /// 写入磁盘。
     public void flush() {
-        if (!dirty) {
+        if (!this.dirty) {
             return;
         }
         CompoundTag tag = new CompoundTag();
-        tag.putString("dimension", dimension.identifier().toString());
-        tag.put("waypoints", Waypoint.saveAll(waypoints.values()));
+        tag.putString("dimension", this.dimension.identifier().toString());
+        tag.put("waypoints", Waypoint.saveAll(this.waypoints.values()));
         try {
-            Files.createDirectories(file.getParent());
-            NbtIo.writeCompressed(tag, file);
-            dirty = false;
+            Files.createDirectories(this.file.getParent());
+            NbtIo.writeCompressed(tag, this.file);
+            this.dirty = false;
         } catch (IOException e) {
-            LOGGER.warn("Failed to write waypoints {}", file, e);
+            LOGGER.warn("Failed to write waypoints {}", this.file, e);
         }
     }
 
     public void clear() {
-        waypoints.clear();
-        dirty = false;
+        this.waypoints.clear();
+        this.dirty = false;
     }
 
     private void load() {
-        if (!Files.isRegularFile(file)) {
+        if (!Files.isRegularFile(this.file)) {
             return;
         }
         try {
-            loadFrom(NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap()));
+            this.loadFrom(NbtIo.readCompressed(this.file, NbtAccounter.unlimitedHeap()));
         } catch (IOException e) {
-            LOGGER.warn("Failed to read waypoints {}", file, e);
+            LOGGER.warn("Failed to read waypoints {}", this.file, e);
         }
     }
 
@@ -190,17 +191,17 @@ public final class WaypointStore {
     private void loadFrom(CompoundTag tag) {
         if (tag == null) {
             // 调用方读取失败时传入 null，此处返回空存储，避免空指针中断整个目录扫描。
-            LOGGER.warn("Waypoint file {} could not be read, starting with empty store", file);
+            LOGGER.warn("Waypoint file {} could not be read, starting with empty store", this.file);
             return;
         }
         ListTag list = tag.getListOrEmpty("waypoints");
         for (Waypoint waypoint : Waypoint.loadAll(list, WaypointStore::resolveDimension)) {
             // 仅接受属于本存储维度的条目，防止文件被移动后串维度。
-            if (waypoint.dimension().equals(dimension)) {
-                waypoints.put(waypoint.id(), waypoint);
+            if (waypoint.dimension().equals(this.dimension)) {
+                this.waypoints.put(waypoint.id(), waypoint);
             }
         }
-        dirty = false;
+        this.dirty = false;
     }
 
     /// 依次尝试解析维度标识，未知维度回退主世界。

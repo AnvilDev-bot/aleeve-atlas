@@ -5,10 +5,11 @@ import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
 import dev.dubhe.atlas.waypoint.Waypoint;
-import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+
+import java.util.List;
 
 /// 路径点标记渲染。
 ///

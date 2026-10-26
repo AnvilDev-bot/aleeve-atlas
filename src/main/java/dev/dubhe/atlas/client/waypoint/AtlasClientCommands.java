@@ -1,5 +1,8 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.BorderStyle;
@@ -10,15 +13,6 @@ import dev.dubhe.atlas.ping.PingChannelPolicy;
 import dev.dubhe.atlas.team.TeamProviders;
 import dev.dubhe.atlas.territory.SimpleTerritory;
 import dev.dubhe.atlas.waypoint.WaypointTransfer;
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -30,6 +24,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /// 客户端命令。
 ///
@@ -104,21 +105,17 @@ public final class AtlasClientCommands {
         if (player == null) {
             return 0;
         }
-        player.displayClientMessage(Component.literal(
-                AtlasProfiling.minimapSummary()), false);
-        player.displayClientMessage(Component.literal(
-                AtlasProfiling.canvasSummary()), false);
+        player.displayClientMessage(AtlasProfiling.minimapDiagnostic(), false);
+        player.displayClientMessage(AtlasProfiling.canvasDiagnostic(), false);
         // 标点通道诊断：确认是否存在与外部模组重复广播的风险。
-        player.displayClientMessage(Component.literal(
-                PingChannelPolicy.describe()), false);
+        player.displayClientMessage(PingChannelPolicy.describeComponent(), false);
         if (PingChannelPolicy.duplicateRisk()) {
             player.displayClientMessage(
                     Component.translatable("aleeve_atlas.message.ping_channel_duplicate"),
                     false);
         }
         // 队伍适配层诊断：确认当前实现与所属队伍。
-        player.displayClientMessage(Component.literal(
-                TeamProviders.describe(player.getUUID())), false);
+        player.displayClientMessage(TeamProviders.describeComponent(player.getUUID()), false);
         AtlasProfiling.reset();
         return 1;
     }
@@ -215,7 +212,7 @@ public final class AtlasClientCommands {
         if (player == null || source.getLevel() == null) {
             return 0;
         }
-        var dimension = source.getLevel().dimension();
+        final var dimension = source.getLevel().dimension();
         int baseX = player.chunkPosition().x;
         int baseZ = player.chunkPosition().z;
 

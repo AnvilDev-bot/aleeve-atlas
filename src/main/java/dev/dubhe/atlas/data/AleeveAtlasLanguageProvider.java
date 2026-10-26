@@ -1,9 +1,9 @@
 package dev.dubhe.atlas.data;
 
+import dev.anvilcraft.lib.v2.config.ConfigData;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.AtlasServerConfig;
-import dev.anvilcraft.lib.v2.config.ConfigData;
 import net.minecraft.data.PackOutput;
 import net.neoforged.neoforge.common.data.LanguageProvider;
 
@@ -34,6 +34,15 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.message.waypoint_accept", "[Accept]");
         add("aleeve_atlas.message.waypoint_ignore", "[Ignore]");
         add("aleeve_atlas.waypoint.default_name", "Waypoint");
+        add("aleeve_atlas.waypoint.death", "Death Point");
+        add("aleeve_atlas.diagnostic.minimap",
+                "Minimap: avg %s ms, max %s ms, over-budget %s%%, samples %s");
+        add("aleeve_atlas.diagnostic.canvas",
+                "World map canvas: avg %s ms, max %s ms, over-budget %s%%, samples %s");
+        add("aleeve_atlas.diagnostic.ping",
+                "Ping channel: mode %s, external mod %s, atlas broadcast %s");
+        add("aleeve_atlas.diagnostic.team.no_team", "Team: provider %s, player has no team");
+        add("aleeve_atlas.diagnostic.team", "Team: provider %s, team %s, color #%s");
         add("aleeve_atlas.message.waypoint_created", "Waypoint created at %s, %s, %s");
         add("aleeve_atlas.message.death_point_added", "Death point recorded");
 

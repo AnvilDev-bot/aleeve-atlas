@@ -1,12 +1,13 @@
 package dev.dubhe.atlas.territory;
 
+import net.minecraft.world.level.ChunkPos;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.minecraft.world.level.ChunkPos;
 
 /// 领地区块的连通分量判定。
 ///
@@ -14,9 +15,9 @@ import net.minecraft.world.level.ChunkPos;
 /// 拆分后每个连通分量各自独立计算轮廓与名称标签。
 public final class TerritoryComponents {
     private static final int[][] NEIGHBOURS = {
-            { -1, -1 }, { 0, -1 }, { 1, -1 },
-            { -1, 0 }, { 1, 0 },
-            { -1, 1 }, { 0, 1 }, { 1, 1 }
+        { -1, -1 }, { 0, -1 }, { 1, -1 },
+        { -1, 0 }, { 1, 0 },
+        { -1, 1 }, { 0, 1 }, { 1, 1 }
     };
 
     private TerritoryComponents() {

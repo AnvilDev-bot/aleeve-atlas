@@ -1,17 +1,17 @@
 package dev.dubhe.atlas.team;
 
-import dev.dubhe.atlas.AleeveAtlas;
-
 import dev.anvilcraft.lib.v2.integration.Integration;
 import dev.anvilcraft.lib.v2.integration.IntegrationType;
+import dev.dubhe.atlas.AleeveAtlas;
+import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.network.chat.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// FTB Teams 队伍适配。
 ///
@@ -59,8 +59,8 @@ public final class FtbTeamsIntegration {
 
         @Override
         public boolean sameTeam(UUID first, UUID second) {
-            String firstTeam = teamIdOf(first);
-            String secondTeam = teamIdOf(second);
+            String firstTeam = this.teamIdOf(first);
+            String secondTeam = this.teamIdOf(second);
             if (firstTeam != null && secondTeam != null) {
                 return firstTeam.equals(secondTeam);
             }

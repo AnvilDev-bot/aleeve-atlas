@@ -1,14 +1,15 @@
 package dev.dubhe.atlas.team;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /// 原版计分板队伍适配。
 public final class VanillaTeamProvider implements TeamProvider {
@@ -43,8 +44,8 @@ public final class VanillaTeamProvider implements TeamProvider {
 
     @Override
     public boolean sameTeam(UUID first, UUID second) {
-        String firstTeam = teamIdOf(first);
-        return firstTeam != null && firstTeam.equals(teamIdOf(second));
+        String firstTeam = this.teamIdOf(first);
+        return firstTeam != null && firstTeam.equals(this.teamIdOf(second));
     }
 
     @Override

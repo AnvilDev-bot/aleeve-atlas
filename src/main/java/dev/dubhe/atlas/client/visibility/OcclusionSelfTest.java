@@ -2,8 +2,6 @@ package dev.dubhe.atlas.client.visibility;
 
 import com.mojang.authlib.GameProfile;
 import dev.dubhe.atlas.AleeveAtlas;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
@@ -17,6 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 
 /// 遮挡查询的自动化验收探针。
 ///
@@ -150,7 +151,8 @@ public final class OcclusionSelfTest {
 
     private static void settleRestored(Minecraft minecraft) {
         if (phaseTicks < 60) {
-            return;        }
+            return;
+        }
         LOGGER.info("Occlusion self-test: restored{}", OcclusionDiagnostics.describe(target));
         LOGGER.info("Occlusion self-test: completed");
         done = true;

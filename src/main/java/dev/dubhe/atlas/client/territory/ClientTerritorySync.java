@@ -4,14 +4,15 @@ import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritorySyncPayload;
 import dev.dubhe.atlas.sync.BatchTracker;
 import dev.dubhe.atlas.territory.SyncedTerritory;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /// 客户端领地接收与分片重组。
 ///
@@ -73,20 +74,20 @@ public final class ClientTerritorySync {
         }
 
         private void add(int batchIndex, Set<ChunkPos> batchChunks, int batchCount, long now) {
-            chunks.addAll(batchChunks);
-            tracker.add(batchIndex, batchCount, now);
+            this.chunks.addAll(batchChunks);
+            this.tracker.add(batchIndex, batchCount, now);
         }
 
         private long lastUpdateMillis() {
-            return tracker.lastUpdateMillis();
+            return this.tracker.lastUpdateMillis();
         }
 
         private boolean complete() {
-            return tracker.complete();
+            return this.tracker.complete();
         }
 
         private SyncedTerritory merge() {
-            return template.withChunks(chunks);
+            return this.template.withChunks(this.chunks);
         }
     }
 }

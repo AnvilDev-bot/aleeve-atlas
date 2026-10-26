@@ -1,11 +1,11 @@
 package dev.dubhe.atlas.client.map;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import dev.dubhe.atlas.AleeveAtlas;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

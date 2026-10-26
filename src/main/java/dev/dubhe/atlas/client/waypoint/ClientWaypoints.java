@@ -8,12 +8,6 @@ import dev.dubhe.atlas.storage.ServerKey;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import dev.dubhe.atlas.waypoint.WaypointStore;
 import dev.dubhe.atlas.waypoint.WaypointSyncPayload;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -25,6 +19,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /// 客户端路径点管理器。
 ///
@@ -91,6 +92,7 @@ public final class ClientWaypoints {
         return WaypointStore.open(minecraft.gameDirectory.toPath(), serverKey(minecraft),
                 dimension);
     }
+
     /// 把内存中已加载的维度存储写入磁盘。
     private static void flushAll() {
         for (WaypointStore each : STORES.values()) {
@@ -104,6 +106,7 @@ public final class ClientWaypoints {
     public static void flushAllDimensions() {
         flushAll();
     }
+
     /// 全部维度的路径点（导入导出用）。
     ///
     /// 以磁盘文件为准：玩家未访问过的维度其存储不在内存中，

@@ -1,8 +1,6 @@
 package dev.dubhe.atlas.client.map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /// 小地图旋转方向与固定北向模式测试。
@@ -17,8 +15,8 @@ class MinimapOrientationTest {
             double rotation = Math.toRadians(MinimapRenderer.mapRotationDegrees(yaw, false));
             double rotatedX = forwardX * Math.cos(rotation) - forwardZ * Math.sin(rotation);
             double rotatedY = forwardX * Math.sin(rotation) + forwardZ * Math.cos(rotation);
-            assertEquals(0.0, rotatedX, 1.0E-6, "yaw=" + yaw);
-            assertTrue(rotatedY < 0.0, "yaw=" + yaw + " 时玩家朝向应在屏幕上方");
+            Assertions.assertEquals(0.0, rotatedX, 1.0E-6, "yaw=" + yaw);
+            Assertions.assertTrue(rotatedY < 0.0, "yaw=" + yaw + " 时玩家朝向应在屏幕上方");
         }
     }
 }

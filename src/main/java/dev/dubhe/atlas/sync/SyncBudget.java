@@ -16,34 +16,34 @@ public final class SyncBudget {
 
     /// 重置窗口（切换服务器或维度时调用）。
     public void reset() {
-        windowStartMillis = System.currentTimeMillis();
-        bytesSentInWindow = 0;
-        packetsThisTick = 0;
+        this.windowStartMillis = System.currentTimeMillis();
+        this.bytesSentInWindow = 0;
+        this.packetsThisTick = 0;
     }
 
     /// 每 tick 开始前调用，重置单 tick 计数。
     public void beginTick() {
-        packetsThisTick = 0;
+        this.packetsThisTick = 0;
     }
 
     /// 判断当前是否允许发送指定大小的分片。
     public boolean canSend(int bytes) {
-        if (packetsThisTick >= MAX_PACKETS_PER_TICK) {
+        if (this.packetsThisTick >= MAX_PACKETS_PER_TICK) {
             return false;
         }
         long now = System.currentTimeMillis();
-        if (now - windowStartMillis >= 1000L) {
-            windowStartMillis = now;
-            bytesSentInWindow = 0;
+        if (now - this.windowStartMillis >= 1000L) {
+            this.windowStartMillis = now;
+            this.bytesSentInWindow = 0;
         }
         int budget = AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond;
-        return bytesSentInWindow + bytes <= budget;
+        return this.bytesSentInWindow + bytes <= budget;
     }
 
     /// 记录已发送的字节数。
     public void record(int bytes) {
-        bytesSentInWindow += bytes;
-        packetsThisTick++;
+        this.bytesSentInWindow += bytes;
+        this.packetsThisTick++;
     }
 
     /// 同步推送间隔（tick），取自服务端配置。

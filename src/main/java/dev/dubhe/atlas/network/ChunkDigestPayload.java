@@ -2,12 +2,13 @@ package dev.dubhe.atlas.network;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import io.netty.handler.codec.DecoderException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 /// 区块摘要上报。
 ///
@@ -44,8 +45,8 @@ public record ChunkDigestPayload(String dimensionId, List<Entry> entries,
                         }
                     },
                     buf -> {
-                        String dimension = buf.readUtf(256);
-                        UUID sender = buf.readBoolean() ? buf.readUUID() : null;
+                        final String dimension = buf.readUtf(256);
+                        final UUID sender = buf.readBoolean() ? buf.readUUID() : null;
                         int batchIndex = buf.readVarInt();
                         int batchCount = buf.readVarInt();
                         // 批次序号参与移位运算，越界会让接收端掩码失真。

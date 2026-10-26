@@ -1,17 +1,16 @@
 package dev.dubhe.atlas.territory;
 
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /// 领地注册中心测试。
 class TerritoryRegistryTest {
@@ -29,10 +28,10 @@ class TerritoryRegistryTest {
         registry.upsertTerritory(territory("t1", chunks));
 
         TerritoryRegistry.CachedTerritory cached = registry.cached("t1");
-        assertTrue(cached != null);
-        assertEquals(1, cached.components().size());
+        Assertions.assertTrue(cached != null);
+        Assertions.assertEquals(1, cached.components().size());
         ChunkPos anchor = cached.components().get(0).anchor();
-        assertTrue(chunks.contains(anchor), "锚点必须位于领地内部");
+        Assertions.assertTrue(chunks.contains(anchor), "锚点必须位于领地内部");
     }
 
     @Test
@@ -44,10 +43,10 @@ class TerritoryRegistryTest {
         registry.upsertTerritory(territory("t2", chunks));
 
         TerritoryRegistry.CachedTerritory cached = registry.cached("t2");
-        assertEquals(2, cached.components().size(), "飞地必须拆为独立分量（AC-8）");
+        Assertions.assertEquals(2, cached.components().size(), "飞地必须拆为独立分量（AC-8）");
         for (TerritoryRegistry.TerritoryComponent component : cached.components()) {
-            assertTrue(component.anchor() != null);
-            assertTrue(component.chunks().contains(component.anchor()));
+            Assertions.assertTrue(component.anchor() != null);
+            Assertions.assertTrue(component.chunks().contains(component.anchor()));
         }
     }
 
@@ -61,10 +60,29 @@ class TerritoryRegistryTest {
         registry.patchChunks(OVERWORLD, "a", Set.of(new ChunkPos(2, 0)), Set.of());
 
         TerritoryGroup patched = find(registry, "a");
-        assertTrue(patched.chunks().contains(new ChunkPos(2, 0)));
-        assertEquals(3, patched.chunks().size());
+        Assertions.assertTrue(patched.chunks().contains(new ChunkPos(2, 0)));
+        Assertions.assertEquals(3, patched.chunks().size());
         // 另一领地不受影响。
-        assertEquals(1, find(registry, "b").chunks().size());
+        Assertions.assertEquals(1, find(registry, "b").chunks().size());
+    }
+
+    @Test
+    void patchChunksKeepsUnaffectedComponentCache() {
+        TerritoryRegistry registry = new TerritoryRegistry();
+        Set<ChunkPos> chunks = Set.of(
+                new ChunkPos(0, 0), new ChunkPos(1, 0),
+                new ChunkPos(100, 100), new ChunkPos(101, 100));
+        registry.upsertTerritory(territory("local", chunks));
+        TerritoryRegistry.TerritoryComponent unaffected = registry.cached("local").components()
+                .stream().filter(component -> component.chunks().contains(new ChunkPos(100, 100)))
+                .findFirst().orElseThrow();
+
+        registry.patchChunks(OVERWORLD, "local", Set.of(new ChunkPos(2, 0)), Set.of());
+
+        TerritoryRegistry.TerritoryComponent preserved = registry.cached("local").components()
+                .stream().filter(component -> component.chunks().contains(new ChunkPos(100, 100)))
+                .findFirst().orElseThrow();
+        Assertions.assertSame(unaffected, preserved, "未受影响的飞地必须保留原缓存对象");
     }
 
     @Test
@@ -73,8 +91,8 @@ class TerritoryRegistryTest {
         registry.upsertTerritory(territory("gone", Set.of(new ChunkPos(0, 0))));
         registry.removeTerritory("gone");
 
-        assertTrue(registry.registeredTerritories().isEmpty());
-        assertNull(registry.cached("gone"));
+        Assertions.assertTrue(registry.registeredTerritories().isEmpty());
+        Assertions.assertNull(registry.cached("gone"));
     }
 
     @Test
@@ -85,10 +103,10 @@ class TerritoryRegistryTest {
         registry.upsertTerritory(withZOrder(territory("high", shared), 5));
 
         List<TerritoryGroup> hits = registry.hitAt(OVERWORLD, new ChunkPos(0, 0));
-        assertEquals(2, hits.size());
+        Assertions.assertEquals(2, hits.size());
         // 高 zOrder 在前。
-        assertEquals("high", hits.get(0).territoryId());
-        assertEquals("low", hits.get(1).territoryId());
+        Assertions.assertEquals("high", hits.get(0).territoryId());
+        Assertions.assertEquals("low", hits.get(1).territoryId());
     }
 
     @Test
@@ -107,8 +125,8 @@ class TerritoryRegistryTest {
         ChunkPos after = registry.cached("t").components().get(0).anchor();
 
         // 参数变化后缓存被重建，锚点仍必须在领地内。
-        assertTrue(chunks.contains(before));
-        assertTrue(chunks.contains(after));
+        Assertions.assertTrue(chunks.contains(before));
+        Assertions.assertTrue(chunks.contains(after));
     }
 
     private static TerritoryGroup find(TerritoryRegistry registry, String id) {
@@ -124,9 +142,9 @@ class TerritoryRegistryTest {
         return SimpleTerritory.of(id, OVERWORLD, chunks, Component.literal(id), 0x33AAFF);
     }
 
-    private static TerritoryGroup withZOrder(TerritoryGroup delegate, int zOrder) {
+    private static TerritoryGroup withZOrder(TerritoryGroup delegate, int order) {
         return new SimpleTerritory(delegate.territoryId(), delegate.dimension(),
                 delegate.chunks(), delegate.displayName(), delegate.themeColorRgb(),
-                delegate.fillOpacity(), delegate.borderStyle(), delegate.tooltip(), zOrder);
+                delegate.fillOpacity(), delegate.borderStyle(), delegate.tooltip(), order);
     }
 }

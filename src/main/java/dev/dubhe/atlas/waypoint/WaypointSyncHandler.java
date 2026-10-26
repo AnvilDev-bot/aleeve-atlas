@@ -1,13 +1,14 @@
 package dev.dubhe.atlas.waypoint;
 
 import dev.dubhe.atlas.AleeveAtlas;
-
-import java.util.List;
+import dev.dubhe.atlas.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /// 服务端路径点转发。
 ///
@@ -31,13 +32,10 @@ public final class WaypointSyncHandler {
         WaypointSyncPayload verified =
                 new WaypointSyncPayload(payload.action(), waypoint);
 
-        var team = sender.getTeam();
-        if (team == null) {
-            return;
-        }
         List<ServerPlayer> recipients = sender.level().getServer().getPlayerList().getPlayers()
                 .stream()
-                .filter(player -> player != sender && player.getTeam() == team)
+                .filter(player -> player != sender && TeamProviders.active()
+                        .sameTeam(sender.getUUID(), player.getUUID()))
                 .toList();
         for (ServerPlayer recipient : recipients) {
             PacketDistributor.sendToPlayer(recipient, verified);

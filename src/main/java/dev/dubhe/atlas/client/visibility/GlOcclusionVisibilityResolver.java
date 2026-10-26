@@ -7,10 +7,6 @@ import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.client.radar.VisibilityGate;
 import dev.dubhe.atlas.client.radar.VisibilityPreFilter;
 import dev.dubhe.atlas.config.NonTeamVisibility;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.state.LevelRenderState;
@@ -25,6 +21,11 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4fStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /// GPU 硬件遮挡查询实现。
 ///
@@ -57,30 +58,30 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
 
     /// 初始化 GL 查询资源，失败时由选择器保留射线实现。
     public boolean initialize() {
-        if (initialized) {
-            return active;
+        if (this.initialized) {
+            return this.active;
         }
-        initialized = true;
+        this.initialized = true;
         try {
-            active = renderer.open();
+            this.active = this.renderer.open();
         } catch (RuntimeException e) {
-            active = false;
+            this.active = false;
             LOGGER.warn("Occlusion query initialization failed", e);
         }
-        if (!active) {
-            LOGGER.warn("Occlusion query unavailable: {}", renderer.failureReason());
+        if (!this.active) {
+            LOGGER.warn("Occlusion query unavailable: {}", this.renderer.failureReason());
         }
-        return active;
+        return this.active;
     }
 
     public boolean active() {
-        return active;
+        return this.active;
     }
 
     @Override
     public boolean isVisible(Level level, Player observer, Entity target) {
         // 只读异步结果；pending 期间沿用上一有效值，从未取得结果时默认不可见。
-        return cache.isVisible(target.getUUID());
+        return this.cache.isVisible(target.getUUID());
     }
 
     @Override
@@ -90,12 +91,12 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
 
     /// 目标最近一次读取到的查询样本数，供诊断输出。
     public int samplesOf(UUID id) {
-        return cache.samples(id);
+        return this.cache.samples(id);
     }
 
     /// 目标是否有查询尚未读完。
     public boolean isPending(UUID id) {
-        return cache.isPending(id);
+        return this.cache.isPending(id);
     }
 
     /// 每帧提交与轮询遮挡查询。
@@ -111,7 +112,7 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
     }
 
     private void render(RenderLevelStageEvent.AfterEntities event) {
-        if (!active) {
+        if (!this.active) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -122,26 +123,26 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
             return;
         }
         if (AtlasSession.nonTeamVisibility() != NonTeamVisibility.VISIBLE_ONLY) {
-            cache.clear();
+            this.cache.clear();
             return;
         }
-        frame++;
+        this.frame++;
         long started = System.nanoTime();
         try {
-            pollReady();
+            this.pollReady();
             List<VisibilityPreFilter.Target> targets = VisibilityPreFilter.selectOcclusionTargets(
-                    minecraft, renderState, observer, frame);
+                    minecraft, renderState, observer, this.frame);
             if (!targets.isEmpty()) {
-                issueQueries(targets, event);
-                int error = renderer.consumeError();
+                this.issueQueries(targets, event);
+                int error = this.renderer.consumeError();
                 if (error != 0) {
                     throw new IllegalStateException("GL error after occlusion submission: 0x"
                             + Integer.toHexString(error));
                 }
             }
-            prune();
+            this.prune();
         } catch (RuntimeException e) {
-            disable(e);
+            this.disable(e);
         } finally {
             AtlasProfiling.recordOcclusion(System.nanoTime() - started);
         }
@@ -150,28 +151,28 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
     /// 读取已就绪的查询；未就绪的目标保留上一判定。
     private void pollReady() {
         long now = System.currentTimeMillis();
-        for (VisibilityResultCache.Entry entry : cache.all()) {
+        for (VisibilityResultCache.Entry entry : this.cache.all()) {
             if (!entry.pending || entry.slot < 0) {
                 continue;
             }
-            int samples = renderer.poll(entry.slot);
+            int samples = this.renderer.poll(entry.slot);
             if (samples < 0) {
                 continue;
             }
-            cache.complete(entry, OcclusionProxyRenderer.passesThreshold(samples), samples, now);
+            this.cache.complete(entry, OcclusionProxyRenderer.passesThreshold(samples), samples, now);
         }
     }
 
     /// 为目标分配查询槽位并提交代理盒。
     private void issueQueries(List<VisibilityPreFilter.Target> targets,
             RenderLevelStageEvent.AfterEntities event) {
-        Set<Integer> occupied = cache.occupiedSlots();
+        Set<Integer> occupied = this.cache.occupiedSlots();
         Matrix4fStack stack = RenderSystem.getModelViewStack();
         stack.pushMatrix();
         try {
             stack.set(event.getModelViewMatrix());
             for (VisibilityPreFilter.Target target : targets) {
-                VisibilityResultCache.Entry entry = cache.observe(target.id(), frame);
+                VisibilityResultCache.Entry entry = this.cache.observe(target.id(), this.frame);
                 // 上一帧查询尚未完成时保留旧结果，不覆盖查询对象。
                 if (entry.pending) {
                     continue;
@@ -180,11 +181,11 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
                 if (slot < 0) {
                     break;
                 }
-                cache.attach(entry, slot);
+                this.cache.attach(entry, slot);
                 occupied.add(slot);
-                if (!renderer.submit(slot, target.box(),
+                if (!this.renderer.submit(slot, target.box(),
                         event.getLevelRenderState().cameraRenderState.pos)) {
-                    cache.cancel(entry);
+                    this.cache.cancel(entry);
                 }
             }
         } finally {
@@ -204,24 +205,24 @@ public final class GlOcclusionVisibilityResolver implements VisibilityResolver {
     /// 清理长期不再出现的目标，避免缓存与查询槽位泄漏。
     private void prune() {
         List<VisibilityResultCache.Entry> removed = new ArrayList<>();
-        cache.prune(frame, MAX_AGE_FRAMES, removed);
+        this.cache.prune(this.frame, MAX_AGE_FRAMES, removed);
     }
 
     /// 查询或绘制失败后释放 GL 资源，并切换到射线实现。
     private void disable(RuntimeException error) {
         LOGGER.warn("Occlusion query failed; switching to raycast visibility", error);
-        renderer.close();
-        cache.clear();
-        active = false;
+        this.renderer.close();
+        this.cache.clear();
+        this.active = false;
         VisibilityGate.setResolver(new RaycastVisibilityResolver());
     }
 
     /// 释放查询资源并清空跨会话状态。
     public void close() {
-        renderer.close();
-        cache.clear();
-        frame = 0;
-        initialized = false;
-        active = false;
+        this.renderer.close();
+        this.cache.clear();
+        this.frame = 0;
+        this.initialized = false;
+        this.active = false;
     }
 }

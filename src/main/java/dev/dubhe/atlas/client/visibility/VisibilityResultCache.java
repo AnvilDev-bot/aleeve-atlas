@@ -31,10 +31,10 @@ public final class VisibilityResultCache {
 
     /// 登记本帧仍存在的目标，返回其记录。
     public Entry observe(UUID id, long frame) {
-        Entry entry = entries.get(id);
+        Entry entry = this.entries.get(id);
         if (entry == null) {
             entry = new Entry();
-            entries.put(id, entry);
+            this.entries.put(id, entry);
         }
         entry.lastSeenFrame = frame;
         return entry;
@@ -48,7 +48,7 @@ public final class VisibilityResultCache {
 
     /// 写入已就绪的查询结果，归还池槽位。
     public void complete(Entry entry, boolean visible, long nowMillis) {
-        complete(entry, visible, 0, nowMillis);
+        this.complete(entry, visible, 0, nowMillis);
     }
 
     /// 写入已就绪的查询结果，同时记录原始样本数。
@@ -64,7 +64,7 @@ public final class VisibilityResultCache {
 
     /// 最近一次读取到的样本数；没有结果时为 0。
     public int samples(UUID id) {
-        Entry entry = entries.get(id);
+        Entry entry = this.entries.get(id);
         return entry == null ? 0 : entry.samples;
     }
 
@@ -76,19 +76,19 @@ public final class VisibilityResultCache {
 
     /// 当前应采用的可见性：pending 期间沿用上一有效值，未取得结果时默认不可见。
     public boolean isVisible(UUID id) {
-        Entry entry = entries.get(id);
+        Entry entry = this.entries.get(id);
         return entry != null && entry.visible;
     }
 
     /// 该目标是否仍处于 pending 状态。
     public boolean isPending(UUID id) {
-        Entry entry = entries.get(id);
+        Entry entry = this.entries.get(id);
         return entry != null && entry.pending;
     }
 
     /// 最近一次确认可见距今的毫秒数；从未可见时返回 {@link Long#MAX_VALUE}。
     public long millisSinceVisible(UUID id, long nowMillis) {
-        Entry entry = entries.get(id);
+        Entry entry = this.entries.get(id);
         if (entry == null || entry.lastVisibleMillis == 0L) {
             return Long.MAX_VALUE;
         }
@@ -97,7 +97,7 @@ public final class VisibilityResultCache {
 
     /// 移除超过保留期限且不在 pending 的目标，返回被移除的目标以便回收查询。
     public void prune(long frame, int maxAgeFrames, List<Entry> removed) {
-        Iterator<Map.Entry<UUID, Entry>> iterator = entries.entrySet().iterator();
+        Iterator<Map.Entry<UUID, Entry>> iterator = this.entries.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<UUID, Entry> current = iterator.next();
             Entry entry = current.getValue();
@@ -111,7 +111,7 @@ public final class VisibilityResultCache {
 
     /// 移除非 pending 的目标，用于维度或会话切换时丢弃陈旧判定。
     public void clearIdle(List<Entry> removed) {
-        Iterator<Map.Entry<UUID, Entry>> iterator = entries.entrySet().iterator();
+        Iterator<Map.Entry<UUID, Entry>> iterator = this.entries.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<UUID, Entry> current = iterator.next();
             if (current.getValue().pending) {
@@ -124,22 +124,22 @@ public final class VisibilityResultCache {
 
     /// 收集全部记录，用于释放资源。
     public List<Entry> all() {
-        return List.copyOf(entries.values());
+        return List.copyOf(this.entries.values());
     }
 
     /// 清空全部记录。
     public void clear() {
-        entries.clear();
+        this.entries.clear();
     }
 
     public int size() {
-        return entries.size();
+        return this.entries.size();
     }
 
     /// 查询占用中的池槽位，避免重复分配。
     public Set<Integer> occupiedSlots() {
         Set<Integer> slots = new HashSet<>();
-        for (Entry entry : entries.values()) {
+        for (Entry entry : this.entries.values()) {
             if (entry.slot >= 0) {
                 slots.add(entry.slot);
             }

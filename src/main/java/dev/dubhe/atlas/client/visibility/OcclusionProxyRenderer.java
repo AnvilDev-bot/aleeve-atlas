@@ -10,7 +10,6 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.dubhe.atlas.AleeveAtlas;
-import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -26,6 +25,8 @@ import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Locale;
 
 /// 遮挡查询的代理包围盒绘制。
 ///
@@ -74,40 +75,40 @@ public final class OcclusionProxyRenderer {
 
     /// 检查当前 GL 后端是否支持遮挡查询并分配查询对象。
     public boolean open() {
-        if (queries != null) {
+        if (this.queries != null) {
             return true;
         }
-        if (unavailable) {
+        if (this.unavailable) {
             return false;
         }
         if (!RenderSystem.isOnRenderThread()) {
-            return disable("not on the render thread");
+            return this.disable("not on the render thread");
         }
         String backend = RenderSystem.getDevice().getBackendName();
         if (backend == null || !backend.toLowerCase(Locale.ROOT).contains("opengl")) {
-            return disable("backend is " + backend);
+            return this.disable("backend is " + backend);
         }
         if (!GL.getCapabilities().OpenGL15) {
-            return disable("OpenGL 1.5 occlusion queries unsupported");
+            return this.disable("OpenGL 1.5 occlusion queries unsupported");
         }
         int counterBits = GL15C.glGetQueryi(GL15C.GL_SAMPLES_PASSED,
                 GL15C.GL_QUERY_COUNTER_BITS);
         if (counterBits <= 0) {
-            return disable("GL_SAMPLES_PASSED has no counter bits");
+            return this.disable("GL_SAMPLES_PASSED has no counter bits");
         }
         int error = GL11C.glGetError();
         if (error != GL11C.GL_NO_ERROR) {
-            return disable("GL error during capability probe: 0x"
+            return this.disable("GL error during capability probe: 0x"
                     + Integer.toHexString(error));
         }
-        queries = new int[MAX_QUERIES];
-        for (int i = 0; i < queries.length; i++) {
-            queries[i] = GL15C.glGenQueries();
+        this.queries = new int[MAX_QUERIES];
+        for (int i = 0; i < this.queries.length; i++) {
+            this.queries[i] = GL15C.glGenQueries();
         }
         error = GL11C.glGetError();
         if (error != GL11C.GL_NO_ERROR) {
-            releaseQueries();
-            return disable("GL error while creating queries: 0x"
+            this.releaseQueries();
+            return this.disable("GL error while creating queries: 0x"
                     + Integer.toHexString(error));
         }
         LOGGER.info("Occlusion queries enabled: GL_SAMPLES_PASSED with {} counter bits, "
@@ -117,24 +118,24 @@ public final class OcclusionProxyRenderer {
 
     /// 当前是否可用。
     public boolean available() {
-        return queries != null && !unavailable;
+        return this.queries != null && !this.unavailable;
     }
 
     /// 不可用的原因。
     public String failureReason() {
-        return failureReason;
+        return this.failureReason;
     }
 
     private boolean disable(String reason) {
-        unavailable = true;
-        failureReason = reason;
+        this.unavailable = true;
+        this.failureReason = reason;
         LOGGER.warn("Occlusion queries disabled: {}", reason);
         return false;
     }
 
     /// 提交一次代理盒查询；查询对象绑定到指定池槽位。
     public boolean submit(int slot, AABB box, Vec3 cameraPos) {
-        if (!available() || slot < 0 || slot >= queries.length) {
+        if (!this.available() || slot < 0 || slot >= this.queries.length) {
             return false;
         }
         if (GL15C.glGetQueryi(GL15C.GL_SAMPLES_PASSED, GL15C.GL_CURRENT_QUERY) != 0) {
@@ -148,7 +149,7 @@ public final class OcclusionProxyRenderer {
         double maxY = box.maxY - cameraPos.y;
         double maxZ = box.maxZ - cameraPos.z;
 
-        GL15C.glBeginQuery(GL15C.GL_SAMPLES_PASSED, queries[slot]);
+        GL15C.glBeginQuery(GL15C.GL_SAMPLES_PASSED, this.queries[slot]);
         try {
             drawBox(minX, minY, minZ, maxX, maxY, maxZ);
         } finally {
@@ -159,20 +160,20 @@ public final class OcclusionProxyRenderer {
 
     /// 读取已就绪的样本数；结果不可用时返回 -1。
     public int poll(int slot) {
-        if (!available() || slot < 0 || slot >= queries.length) {
+        if (!this.available() || slot < 0 || slot >= this.queries.length) {
             return -1;
         }
-        int available = GL15C.glGetQueryObjectui(queries[slot],
+        int available = GL15C.glGetQueryObjectui(this.queries[slot],
                 GL15C.GL_QUERY_RESULT_AVAILABLE);
         if (available == 0) {
             return -1;
         }
-        return GL15C.glGetQueryObjectui(queries[slot], GL15C.GL_QUERY_RESULT);
+        return GL15C.glGetQueryObjectui(this.queries[slot], GL15C.GL_QUERY_RESULT);
     }
 
     /// 读取并清除最近一次 GL 错误，供调用方决定是否降级。
     public int consumeError() {
-        return available() ? GL11C.glGetError() : GL11C.GL_NO_ERROR;
+        return this.available() ? GL11C.glGetError() : GL11C.GL_NO_ERROR;
     }
 
     /// 样本数是否达到可见阈值。
@@ -182,17 +183,17 @@ public final class OcclusionProxyRenderer {
 
     /// 释放全部查询对象。
     public void close() {
-        releaseQueries();
-        unavailable = false;
-        failureReason = "";
+        this.releaseQueries();
+        this.unavailable = false;
+        this.failureReason = "";
     }
 
     private void releaseQueries() {
-        if (queries == null) {
+        if (this.queries == null) {
             return;
         }
-        int[] ids = queries;
-        queries = null;
+        int[] ids = this.queries;
+        this.queries = null;
         if (RenderSystem.isOnRenderThread()) {
             GL15C.glDeleteQueries(ids);
         } else {

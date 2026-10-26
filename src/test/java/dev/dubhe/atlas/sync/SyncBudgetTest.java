@@ -1,8 +1,6 @@
 package dev.dubhe.atlas.sync;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /// 同步发送预算测试。
@@ -16,10 +14,10 @@ class SyncBudgetTest {
         budget.beginTick();
         // 单 tick 最多 4 个分片。
         for (int i = 0; i < 4; i++) {
-            assertTrue(budget.canSend(1), "第 " + (i + 1) + " 个分片应被允许");
+            Assertions.assertTrue(budget.canSend(1), "第 " + (i + 1) + " 个分片应被允许");
             budget.record(1);
         }
-        assertFalse(budget.canSend(1), "同一 tick 的第 5 个分片必须被拒绝");
+        Assertions.assertFalse(budget.canSend(1), "同一 tick 的第 5 个分片必须被拒绝");
     }
 
     @Test
@@ -30,9 +28,9 @@ class SyncBudgetTest {
         for (int i = 0; i < 4; i++) {
             budget.record(1);
         }
-        assertFalse(budget.canSend(1));
+        Assertions.assertFalse(budget.canSend(1));
         budget.beginTick();
-        assertTrue(budget.canSend(1), "新 tick 必须重置分片计数");
+        Assertions.assertTrue(budget.canSend(1), "新 tick 必须重置分片计数");
     }
 
     @Test
@@ -41,13 +39,13 @@ class SyncBudgetTest {
         budget.reset();
         budget.beginTick();
         // 单次请求超过每秒配额时直接拒绝，避免超额发送后才中断。
-        assertFalse(budget.canSend(Integer.MAX_VALUE),
+        Assertions.assertFalse(budget.canSend(Integer.MAX_VALUE),
                 "超过每秒字节配额的单次请求必须被拒绝");
     }
 
     @Test
     void intervalTicksIsAtLeastTen() {
         // 服务端默认 40 tick，实现侧不允许低于 10，避免同步过于频繁。
-        assertTrue(SyncBudget.intervalTicks() >= 10);
+        Assertions.assertTrue(SyncBudget.intervalTicks() >= 10);
     }
 }

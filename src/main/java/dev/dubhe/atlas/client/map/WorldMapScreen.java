@@ -7,8 +7,8 @@ import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.client.AtlasKeyMappings;
 import dev.dubhe.atlas.client.radar.RadarRenderer;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
-import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
 import dev.dubhe.atlas.client.waypoint.WaypointEditScreen;
+import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
 import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
@@ -20,9 +20,6 @@ import dev.dubhe.atlas.ping.PingRenderer;
 import dev.dubhe.atlas.territory.TerritoryRegistry;
 import dev.dubhe.atlas.territory.TerritoryRuns;
 import dev.dubhe.atlas.waypoint.Waypoint;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -44,6 +41,10 @@ import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /// 全屏世界地图。
 ///
@@ -87,13 +88,13 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     protected void init() {
-        if (!canvas.ready()) {
-            canvas.register();
+        if (!this.canvas.ready()) {
+            this.canvas.register();
         }
-        refreshCanvas();
-        addTeamButtons();
+        this.refreshCanvas();
+        this.addTeamButtons();
         active = this;
-        verifyScrollIfRequested();
+        this.verifyScrollIfRequested();
     }
 
     /// 自检：按环境变量指定的步数连续平移，验证像素搬移路径。
@@ -101,7 +102,7 @@ public final class WorldMapScreen extends Screen {
     /// 仅用于自动化验收，正常游玩不触发。
     private void verifyScrollIfRequested() {
         String raw = System.getenv("ALEEVE_ATLAS_SCROLL_SELFTEST");
-        if (raw == null || cache == null) {
+        if (raw == null || this.cache == null) {
             return;
         }
         int steps;
@@ -113,17 +114,17 @@ public final class WorldMapScreen extends Screen {
         }
         // 以玩家位置为基准，按小步长连续平移，模拟真实拖拽的位移节奏。
         // 步长 1 区块用于验证阈值缓存是否按预期减少重建次数。
-        double startX = centerX;
-        double startZ = centerZ;
+        double startX = this.centerX;
+        double startZ = this.centerZ;
         for (int i = 1; i <= steps; i++) {
-            centerX = startX + i * ChunkMapData.SIZE;
-            centerZ = startZ + (i % 2 == 0 ? i : -i) * ChunkMapData.SIZE;
-            refreshCanvas();
+            this.centerX = startX + i * ChunkMapData.SIZE;
+            this.centerZ = startZ + (i % 2 == 0 ? i : -i) * ChunkMapData.SIZE;
+            this.refreshCanvas();
         }
         // 平移结束后回到原点，便于截图核对画面是否与平移前一致。
-        centerX = startX;
-        centerZ = startZ;
-        refreshCanvas();
+        this.centerX = startX;
+        this.centerZ = startZ;
+        this.refreshCanvas();
     }
 
     @Override
@@ -156,7 +157,7 @@ public final class WorldMapScreen extends Screen {
         int buttonHeight = 20;
         int x = width - buttonWidth - 6;
         int y = 6;
-        Button share = Button.builder(label, button -> shareNearestWaypoint())
+        Button share = Button.builder(label, button -> this.shareNearestWaypoint())
                 .bounds(x, y, buttonWidth, buttonHeight)
                 .tooltip(Tooltip.create(synchronizedMode
                         ? Component.translatable("aleeve_atlas.screen.world_map.share_team.tip")
@@ -173,7 +174,7 @@ public final class WorldMapScreen extends Screen {
                 .bounds(x - buttonWidth - 6, y, buttonWidth, 20).build());
         addRenderableWidget(Button.builder(
                         Component.translatable("aleeve_atlas.screen.world_map.client_config"),
-                        button -> openClientConfig())
+                        button -> this.openClientConfig())
                 .bounds(x - (buttonWidth + 6) * 2, y, buttonWidth, 20).build());
     }
 
@@ -192,8 +193,8 @@ public final class WorldMapScreen extends Screen {
         Waypoint nearest = null;
         double bestDistance = Double.MAX_VALUE;
         for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
-            double dx = waypoint.pos().getX() + 0.5 - centerX;
-            double dz = waypoint.pos().getZ() + 0.5 - centerZ;
+            double dx = waypoint.pos().getX() + 0.5 - this.centerX;
+            double dz = waypoint.pos().getZ() + 0.5 - this.centerZ;
             double distance = dx * dx + dz * dz;
             if (distance < bestDistance) {
                 bestDistance = distance;
@@ -208,7 +209,7 @@ public final class WorldMapScreen extends Screen {
         ClientWaypoints.share(nearest);
         minecraft.player.displayClientMessage(
                 Component.translatable("aleeve_atlas.message.waypoint_shared_team",
-                        nearest.name()), true);
+                        nearest.displayName().getString()), true);
     }
 
     @Override
@@ -219,12 +220,12 @@ public final class WorldMapScreen extends Screen {
         // 黑色背景代表未探索区域。不调用 renderBackground：模糊背景每帧只允许一次。
         graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
 
-        if (canvas.ready()) {
-            int canvasOriginPixelX = canvas.originChunkX() * ChunkMapData.SIZE;
-            int canvasOriginPixelZ = canvas.originChunkZ() * ChunkMapData.SIZE;
+        if (this.canvas.ready()) {
+            int canvasOriginPixelX = this.canvas.originChunkX() * ChunkMapData.SIZE;
+            int canvasOriginPixelZ = this.canvas.originChunkZ() * ChunkMapData.SIZE;
             // 视口左上角对应的世界坐标：屏幕像素 / 每区块像素 = 世界方块偏移。
-            double topLeftWorldX = centerX - (double) viewWidth / 2.0 / pixelsPerChunk;
-            double topLeftWorldZ = centerZ - (double) viewHeight / 2.0 / pixelsPerChunk;
+            double topLeftWorldX = this.centerX - (double) viewWidth / 2.0 / this.pixelsPerChunk;
+            double topLeftWorldZ = this.centerZ - (double) viewHeight / 2.0 / this.pixelsPerChunk;
 
             // 画布在世界坐标中的覆盖范围，与视口求交，避免采样越界导致画面拉伸。
             double canvasLeft = canvasOriginPixelX;
@@ -233,34 +234,34 @@ public final class WorldMapScreen extends Screen {
             double canvasBottom = canvasOriginPixelZ + MapCanvas.PIXELS;
             double visibleLeft = Math.max(topLeftWorldX, canvasLeft);
             double visibleTop = Math.max(topLeftWorldZ, canvasTop);
-            double visibleRight = Math.min(topLeftWorldX + (double) viewWidth / pixelsPerChunk,
+            double visibleRight = Math.min(topLeftWorldX + (double) viewWidth / this.pixelsPerChunk,
                     canvasRight);
-            double visibleBottom = Math.min(topLeftWorldZ + (double) viewHeight / pixelsPerChunk,
+            double visibleBottom = Math.min(topLeftWorldZ + (double) viewHeight / this.pixelsPerChunk,
                     canvasBottom);
             if (visibleRight > visibleLeft && visibleBottom > visibleTop) {
-                int screenX = (int) Math.round((visibleLeft - topLeftWorldX) * pixelsPerChunk);
-                int screenY = (int) Math.round((visibleTop - topLeftWorldZ) * pixelsPerChunk);
-                int screenWidth = (int) Math.round((visibleRight - visibleLeft) * pixelsPerChunk);
-                int screenHeight = (int) Math.round((visibleBottom - visibleTop) * pixelsPerChunk);
+                int screenX = (int) Math.round((visibleLeft - topLeftWorldX) * this.pixelsPerChunk);
+                int screenY = (int) Math.round((visibleTop - topLeftWorldZ) * this.pixelsPerChunk);
+                int screenWidth = (int) Math.round((visibleRight - visibleLeft) * this.pixelsPerChunk);
+                int screenHeight = (int) Math.round((visibleBottom - visibleTop) * this.pixelsPerChunk);
                 int u = (int) Math.round(visibleLeft - canvasLeft);
                 int v = (int) Math.round(visibleTop - canvasTop);
-                int uWidth = (int) Math.round(visibleRight - visibleLeft);
-                int vHeight = (int) Math.round(visibleBottom - visibleTop);
-                graphics.blit(RenderPipelines.GUI_TEXTURED, canvas.textureId(), screenX, screenY,
-                        u, v, screenWidth, screenHeight, uWidth, vHeight, MapCanvas.PIXELS,
+                int pixelWidth = (int) Math.round(visibleRight - visibleLeft);
+                int pixelHeight = (int) Math.round(visibleBottom - visibleTop);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, this.canvas.textureId(), screenX, screenY,
+                        u, v, screenWidth, screenHeight, pixelWidth, pixelHeight, MapCanvas.PIXELS,
                         MapCanvas.PIXELS);
             }
         }
 
-        drawTerritories(graphics, mouseX, mouseY);
-        drawWaypoints(graphics);
-        drawPings(graphics);
+        this.drawTerritories(graphics, mouseX, mouseY);
+        this.drawWaypoints(graphics);
+        this.drawPings(graphics);
         RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
-                Minecraft.getInstance(), centerX, centerZ, pixelsPerChunk, width, height);
-        drawPlayerMarker(graphics);
-        drawOverlayText(graphics);
+                Minecraft.getInstance(), this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
+        this.drawPlayerMarker(graphics);
+        this.drawOverlayText(graphics);
         // 组件渲染后再绘制领地标签，确保标签位于最上层。
-        drawTerritoryLabels(graphics);
+        this.drawTerritoryLabels(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 
@@ -278,7 +279,7 @@ public final class WorldMapScreen extends Screen {
         if (groups.isEmpty()) {
             return;
         }
-        ChunkPos hovered = chunkAtScreen(mouseX, mouseY);
+        ChunkPos hovered = this.chunkAtScreen(mouseX, mouseY);
         List<TerritoryGroup> hoveredGroups = hovered == null ? List.of()
                 : registry.hitAt(dimension, hovered);
 
@@ -290,7 +291,7 @@ public final class WorldMapScreen extends Screen {
             for (TerritoryRuns.Run run : TerritoryRuns.of(group.chunks())) {
                 // 按整段两端计算矩形：放大后单个区块可能超出视口，
                 // 若按首区块可见性判断会整段跳过，导致放大地图时领地消失。
-                int[] span = runScreenRect(run);
+                int[] span = this.runScreenRect(run);
                 int left = Math.max(0, span[0]);
                 int top = Math.max(0, span[1]);
                 int right = Math.min(this.width, span[0] + span[2]);
@@ -301,11 +302,11 @@ public final class WorldMapScreen extends Screen {
             }
             // 边框：仅在与非领地交界处逐区块描边。
             for (ChunkPos chunk : group.chunks()) {
-                int[] rect = chunkScreenRect(chunk);
+                int[] rect = this.chunkScreenRect(chunk);
                 if (rect == null) {
                     continue;
                 }
-                drawChunkOutline(graphics, group, chunk, rect, border);
+                this.drawChunkOutline(graphics, group, chunk, rect, border);
             }
         }
 
@@ -316,7 +317,7 @@ public final class WorldMapScreen extends Screen {
                 lines.add(group.displayName().copy().withStyle(ChatFormatting.AQUA));
                 lines.addAll(group.tooltip());
             }
-            drawTooltipLines(graphics, minecraft, lines, mouseX, mouseY);
+            this.drawTooltipLines(graphics, minecraft, lines, mouseX, mouseY);
         }
     }
 
@@ -349,7 +350,7 @@ public final class WorldMapScreen extends Screen {
     /// 仅保留色块，避免大量飞地标签相互重叠（AC-10）。
     private void drawTerritoryLabels(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null || pixelsPerChunk < MIN_PIXELS_FOR_LABEL) {
+        if (minecraft.level == null || this.pixelsPerChunk < MIN_PIXELS_FOR_LABEL) {
             return;
         }
         TerritoryRegistry registry = AtlasTerritory.clientRegistry();
@@ -369,14 +370,14 @@ public final class WorldMapScreen extends Screen {
                 }
                 // 分量的屏幕像素面积不足以容纳文本时隐藏标签。
                 // 面积单位为平方像素，右侧以文本宽度的 8 倍作为阈值，避免细长分量也显示标签。
-                if (component.chunks().size() * pixelsPerChunk * pixelsPerChunk
+                if (component.chunks().size() * this.pixelsPerChunk * this.pixelsPerChunk
                         < textWidth * 8.0F) {
                     continue;
                 }
                 // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见。
-                int[] rect = chunkScreenRect(component.anchor());
+                int[] rect = this.chunkScreenRect(component.anchor());
                 if (rect == null) {
-                    rect = firstVisibleChunkRect(component);
+                    rect = this.firstVisibleChunkRect(component);
                 }
                 if (rect == null) {
                     continue;
@@ -394,7 +395,7 @@ public final class WorldMapScreen extends Screen {
     /// 分量内第一个可见区块的屏幕矩形；全部不可见时返回 null。
     private int[] firstVisibleChunkRect(TerritoryRegistry.TerritoryComponent component) {
         for (ChunkPos chunk : component.chunks()) {
-            int[] rect = chunkScreenRect(chunk);
+            int[] rect = this.chunkScreenRect(chunk);
             if (rect != null) {
                 return rect;
             }
@@ -405,22 +406,23 @@ public final class WorldMapScreen extends Screen {
     /// 区块在屏幕上的矩形：`[x, y, width, height]`；完全不可见时返回 null。
     /// 连续路段的屏幕矩形（不裁剪）：用于把整段填充裁到视口内。
     private int[] runScreenRect(TerritoryRuns.Run run) {
-        double leftWorld = (run.xStart() << 4);
-        double rightWorld = ((run.xEnd() + 1) << 4);
+        double leftWorld = (run.startX() << 4);
+        double rightWorld = ((run.endX() + 1) << 4);
         double topWorld = (run.z() << 4);
         double bottomWorld = ((run.z() + 1) << 4);
-        int x = (int) Math.round(width / 2.0 + (leftWorld - centerX) * pixelsPerChunk);
-        int y = (int) Math.round(height / 2.0 + (topWorld - centerZ) * pixelsPerChunk);
-        int x2 = (int) Math.round(width / 2.0 + (rightWorld - centerX) * pixelsPerChunk);
-        int y2 = (int) Math.round(height / 2.0 + (bottomWorld - centerZ) * pixelsPerChunk);
+        int x = (int) Math.round(width / 2.0 + (leftWorld - this.centerX) * this.pixelsPerChunk);
+        int y = (int) Math.round(height / 2.0 + (topWorld - this.centerZ) * this.pixelsPerChunk);
+        int x2 = (int) Math.round(width / 2.0 + (rightWorld - this.centerX) * this.pixelsPerChunk);
+        int y2 = (int) Math.round(height / 2.0 + (bottomWorld - this.centerZ) * this.pixelsPerChunk);
         return new int[] { x, y, x2 - x, y2 - y };
     }
+
     private int[] chunkScreenRect(ChunkPos chunk) {
         double centerChunkX = (chunk.x << 4) + 8.0;
         double centerChunkZ = (chunk.z << 4) + 8.0;
-        double screenX = width / 2.0 + (centerChunkX - centerX) * pixelsPerChunk;
-        double screenY = height / 2.0 + (centerChunkZ - centerZ) * pixelsPerChunk;
-        int size = Math.max(1, Math.round(ChunkMapData.SIZE * pixelsPerChunk));
+        double screenX = width / 2.0 + (centerChunkX - this.centerX) * this.pixelsPerChunk;
+        double screenY = height / 2.0 + (centerChunkZ - this.centerZ) * this.pixelsPerChunk;
+        int size = Math.max(1, Math.round(ChunkMapData.SIZE * this.pixelsPerChunk));
         int x = (int) Math.round(screenX) - size / 2;
         int y = (int) Math.round(screenY) - size / 2;
         if (x + size < 0 || x > width || y + size < 0 || y > height) {
@@ -439,17 +441,17 @@ public final class WorldMapScreen extends Screen {
         int y = rect[1];
         int size = rect[2];
         if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
-            drawBorderSegment(graphics, x, y, size, borderWidth, color, dashed, true);
+            this.drawBorderSegment(graphics, x, y, size, borderWidth, color, dashed, true);
         }
         if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
-            drawBorderSegment(graphics, x, y + size - borderWidth, size, borderWidth, color,
+            this.drawBorderSegment(graphics, x, y + size - borderWidth, size, borderWidth, color,
                     dashed, true);
         }
         if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
-            drawBorderSegment(graphics, x, y, borderWidth, size, color, dashed, false);
+            this.drawBorderSegment(graphics, x, y, borderWidth, size, color, dashed, false);
         }
         if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
-            drawBorderSegment(graphics, x + size - borderWidth, y, borderWidth, size, color,
+            this.drawBorderSegment(graphics, x + size - borderWidth, y, borderWidth, size, color,
                     dashed, false);
         }
     }
@@ -477,8 +479,8 @@ public final class WorldMapScreen extends Screen {
         if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
             return null;
         }
-        double worldX = screenToWorldX(mouseX);
-        double worldZ = screenToWorldZ(mouseY);
+        double worldX = this.screenToWorldX(mouseX);
+        double worldZ = this.screenToWorldZ(mouseY);
         return new ChunkPos((int) Math.floor(worldX) >> 4, (int) Math.floor(worldZ) >> 4);
     }
 
@@ -496,9 +498,9 @@ public final class WorldMapScreen extends Screen {
         }
         for (var waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
             double screenX = width / 2.0
-                    + (waypoint.pos().getX() + 0.5 - centerX) * pixelsPerChunk;
+                    + (waypoint.pos().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
             double screenY = height / 2.0
-                    + (waypoint.pos().getZ() + 0.5 - centerZ) * pixelsPerChunk;
+                    + (waypoint.pos().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
             if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
                 continue;
             }
@@ -522,8 +524,8 @@ public final class WorldMapScreen extends Screen {
             if (opacity <= 0.0F) {
                 continue;
             }
-            double screenX = width / 2.0 + (ping.position().x - centerX) * pixelsPerChunk;
-            double screenY = height / 2.0 + (ping.position().z - centerZ) * pixelsPerChunk;
+            double screenX = width / 2.0 + (ping.position().x - this.centerX) * this.pixelsPerChunk;
+            double screenY = height / 2.0 + (ping.position().z - this.centerZ) * this.pixelsPerChunk;
             if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
                 continue;
             }
@@ -533,12 +535,12 @@ public final class WorldMapScreen extends Screen {
 
     /// 屏幕坐标 → 世界坐标（X 轴）。
     private double screenToWorldX(double screenX) {
-        return centerX + (screenX - width / 2.0) / pixelsPerChunk;
+        return this.centerX + (screenX - width / 2.0) / this.pixelsPerChunk;
     }
 
     /// 屏幕坐标 → 世界坐标（Z 轴）。
     private double screenToWorldZ(double screenY) {
-        return centerZ + (screenY - height / 2.0) / pixelsPerChunk;
+        return this.centerZ + (screenY - height / 2.0) / this.pixelsPerChunk;
     }
 
     /// 背景由 {@link #render} 自行填充，避免父类每帧二次模糊（1.21.11 限制）。
@@ -552,8 +554,8 @@ public final class WorldMapScreen extends Screen {
         if (minecraft.player == null) {
             return;
         }
-        double screenX = width / 2.0 + (minecraft.player.getX() - centerX) * pixelsPerChunk;
-        double screenY = height / 2.0 + (minecraft.player.getZ() - centerZ) * pixelsPerChunk;
+        double screenX = width / 2.0 + (minecraft.player.getX() - this.centerX) * this.pixelsPerChunk;
+        double screenY = height / 2.0 + (minecraft.player.getZ() - this.centerZ) * this.pixelsPerChunk;
         if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
             return;
         }
@@ -565,8 +567,8 @@ public final class WorldMapScreen extends Screen {
     private void drawOverlayText(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         Component center = Component.translatable("aleeve_atlas.screen.world_map.center",
-                "%.0f".formatted(centerX), "%.0f".formatted(centerZ),
-                "%.1f".formatted(pixelsPerChunk));
+                "%.0f".formatted(this.centerX), "%.0f".formatted(this.centerZ),
+                "%.1f".formatted(this.pixelsPerChunk));
         graphics.drawString(minecraft.font, center, 6, 32, 0xFFFFFFFF);
         Component hint = Component.translatable("aleeve_atlas.screen.world_map.hint");
         graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
@@ -579,19 +581,19 @@ public final class WorldMapScreen extends Screen {
         }
         // 双击左键在地图位置创建路径点。
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && doubleClick) {
-            createWaypointAt(event.x(), event.y());
-            dragging = false;
+            this.createWaypointAt(event.x(), event.y());
+            this.dragging = false;
             return true;
         }
         // 右键在该位置发起临时标点，并通知外部模组。
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
-            createPingAt(event.x(), event.y());
+            this.createPingAt(event.x(), event.y());
             return true;
         }
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            dragging = true;
-            lastMouseX = event.x();
-            lastMouseY = event.y();
+            this.dragging = true;
+            this.lastMouseX = event.x();
+            this.lastMouseY = event.y();
             return true;
         }
         return false;
@@ -603,26 +605,26 @@ public final class WorldMapScreen extends Screen {
         if (minecraft.player == null || minecraft.level == null) {
             return;
         }
-        double worldX = screenToWorldX(screenX);
-        double worldZ = screenToWorldZ(screenY);
+        double worldX = this.screenToWorldX(screenX);
+        double worldZ = this.screenToWorldZ(screenY);
         // 远距离位置取下限高度，近似地表的 Y 值由地图缓存提供。
-        int y = surfaceYAt(worldX, worldZ);
+        int y = this.surfaceYAt(worldX, worldZ);
         BlockPos pos = new BlockPos((int) Math.floor(worldX), y, (int) Math.floor(worldZ));
         minecraft.setScreen(new WaypointEditScreen(this, pos));
     }
 
     /// 在世界地图指定位置发起临时标点。
     private void createPingAt(double screenX, double screenY) {
-        double worldX = screenToWorldX(screenX);
-        double worldZ = screenToWorldZ(screenY);
-        int y = surfaceYAt(worldX, worldZ);
+        double worldX = this.screenToWorldX(screenX);
+        double worldZ = this.screenToWorldZ(screenY);
+        int y = this.surfaceYAt(worldX, worldZ);
         ClientPings.createLocal(new Vec3(worldX, y, worldZ), MapPingData.PingIcon.NORMAL);
     }
 
     /// 由地图缓存推断地表高度；无数据时回退到海平面以上默认值。
     private int surfaceYAt(double worldX, double worldZ) {
         ChunkPos pos = new ChunkPos((int) Math.floor(worldX) >> 4, (int) Math.floor(worldZ) >> 4);
-        var data = cache == null ? null : cache.get(pos.x, pos.z).orElse(null);
+        var data = this.cache == null ? null : this.cache.get(pos.x, pos.z).orElse(null);
         if (data == null) {
             return 64;
         }
@@ -634,11 +636,11 @@ public final class WorldMapScreen extends Screen {
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
         if (super.mouseReleased(event)) {
-            dragging = false;
+            this.dragging = false;
             return true;
         }
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            dragging = false;
+            this.dragging = false;
             return true;
         }
         return false;
@@ -646,13 +648,13 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        if (dragging) {
+        if (this.dragging) {
             // 事件携带的是从按下点起的总位移，因此用相邻事件差得到帧增量。
-            centerX -= (event.x() - lastMouseX) / pixelsPerChunk;
-            centerZ -= (event.y() - lastMouseY) / pixelsPerChunk;
-            lastMouseX = event.x();
-            lastMouseY = event.y();
-            refreshCanvas();
+            this.centerX -= (event.x() - this.lastMouseX) / this.pixelsPerChunk;
+            this.centerZ -= (event.y() - this.lastMouseY) / this.pixelsPerChunk;
+            this.lastMouseX = event.x();
+            this.lastMouseY = event.y();
+            this.refreshCanvas();
             return true;
         }
         return super.mouseDragged(event, dragX, dragY);
@@ -661,12 +663,12 @@ public final class WorldMapScreen extends Screen {
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY != 0.0) {
-            float previous = pixelsPerChunk;
-            pixelsPerChunk = ConfigBounds.clamp(
-                    (float) (pixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
+            float previous = this.pixelsPerChunk;
+            this.pixelsPerChunk = ConfigBounds.clamp(
+                    (float) (this.pixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
                     MIN_PIXELS_PER_CHUNK, MAX_PIXELS_PER_CHUNK);
-            if (previous != pixelsPerChunk) {
-                refreshCanvas();
+            if (previous != this.pixelsPerChunk) {
+                this.refreshCanvas();
             }
             return true;
         }
@@ -678,7 +680,7 @@ public final class WorldMapScreen extends Screen {
         // ESC 与呼出键均可关闭世界地图。
         if (event.key() == GLFW.GLFW_KEY_ESCAPE
                 || AtlasKeyMappings.OPEN_WORLD_MAP.matches(event)) {
-            onClose();
+            this.onClose();
             return true;
         }
         return super.keyPressed(event);
@@ -696,8 +698,8 @@ public final class WorldMapScreen extends Screen {
 
     /// 按当前视野中心重绘画布。
     private void refreshCanvas() {
-        int centerChunkX = (int) Math.floor(centerX / ChunkMapData.SIZE);
-        int centerChunkZ = (int) Math.floor(centerZ / ChunkMapData.SIZE);
-        canvas.setCenter(centerChunkX, centerChunkZ, cache);
+        int centerChunkX = (int) Math.floor(this.centerX / ChunkMapData.SIZE);
+        int centerChunkZ = (int) Math.floor(this.centerZ / ChunkMapData.SIZE);
+        this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache);
     }
 }

@@ -4,12 +4,6 @@ import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.visibility.OcclusionProxyRenderer;
 import dev.dubhe.atlas.config.NonTeamVisibility;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -27,6 +21,13 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.FrameGraphSetupEvent;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /// 可见性判定的 CPU 前置剔除。
 ///
@@ -62,7 +63,7 @@ public final class VisibilityPreFilter {
             return true;
         }
         for (EquipmentSlot slot : new EquipmentSlot[] { EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-                EquipmentSlot.LEGS, EquipmentSlot.FEET }) {
+            EquipmentSlot.LEGS, EquipmentSlot.FEET }) {
             if (!living.getItemBySlot(slot).isEmpty()) {
                 return false;
             }

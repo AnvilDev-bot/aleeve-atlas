@@ -2,17 +2,16 @@ package dev.dubhe.atlas.map;
 
 import dev.dubhe.atlas.network.ChunkDeltaPayload;
 import dev.dubhe.atlas.network.ChunkDigestPayload;
+import net.minecraft.world.level.ChunkPos;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import net.minecraft.world.level.ChunkPos;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.Test;
 
 /// 区块像素压缩与摘要/差异分片测试。
 class ChunkPixelCodecTest {
@@ -24,7 +23,7 @@ class ChunkPixelCodecTest {
             colors[i] = 0xFF000000 | random.nextInt(0xFFFFFF);
         }
         int[] restored = ChunkPixelCodec.decompress(ChunkPixelCodec.compress(colors));
-        assertArrayEquals(colors, restored);
+        Assertions.assertArrayEquals(colors, restored);
     }
 
     @Test
@@ -33,7 +32,7 @@ class ChunkPixelCodecTest {
         Arrays.fill(colors, 0xFF4C8B2B);
         byte[] packed = ChunkPixelCodec.compress(colors);
         // 单调地形应显著小于原始 1 KiB（16×16×4 字节）。
-        assertTrue(packed.length < 256,
+        Assertions.assertTrue(packed.length < 256,
                 "expected strong compression, got " + packed.length + " bytes");
     }
 
@@ -48,8 +47,8 @@ class ChunkPixelCodecTest {
         }
         int[][] decoded = ChunkPixelCodec.decompressWithHeights(
                 ChunkPixelCodec.compress(colors, heights));
-        assertArrayEquals(colors, decoded[0]);
-        assertArrayEquals(heights, decoded[1]);
+        Assertions.assertArrayEquals(colors, decoded[0]);
+        Assertions.assertArrayEquals(heights, decoded[1]);
     }
 
     @Test
@@ -64,8 +63,8 @@ class ChunkPixelCodecTest {
         }
         int[][] decoded = ChunkPixelCodec.decompressWithHeights(
                 ChunkPixelCodec.compress(colors, heights));
-        assertArrayEquals(colors, decoded[0]);
-        assertArrayEquals(heights, decoded[1], "负高度与极值必须无损往返");
+        Assertions.assertArrayEquals(colors, decoded[0]);
+        Assertions.assertArrayEquals(heights, decoded[1], "负高度与极值必须无损往返");
     }
 
     @Test
@@ -77,11 +76,11 @@ class ChunkPixelCodecTest {
         }
         List<ChunkDigestPayload> packets =
                 ChunkDigestPayload.split("minecraft:overworld", entries, null);
-        assertEquals(3, packets.size());
+        Assertions.assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.entries().size()).sum();
-        assertEquals(3000, total);
+        Assertions.assertEquals(3000, total);
         for (var packet : packets) {
-            assertTrue(packet.entries().size()
+            Assertions.assertTrue(packet.entries().size()
                     <= ChunkDigestPayload.MAX_ENTRIES_PER_PACKET);
         }
     }
@@ -98,14 +97,14 @@ class ChunkPixelCodecTest {
         Set<Integer> seenIndexes = new HashSet<>();
         Set<Integer> seenChunks = new HashSet<>();
         for (var packet : packets) {
-            assertTrue(seenIndexes.add(packet.batchIndex()), "批次序号不得重复");
-            assertEquals(packets.size(), packet.batchCount());
+            Assertions.assertTrue(seenIndexes.add(packet.batchIndex()), "批次序号不得重复");
+            Assertions.assertEquals(packets.size(), packet.batchCount());
             for (var entry : packet.entries()) {
-                assertTrue(seenChunks.add(entry.chunkX()), "条目不得跨分片重复");
+                Assertions.assertTrue(seenChunks.add(entry.chunkX()), "条目不得跨分片重复");
             }
         }
-        assertEquals(packets.size(), seenIndexes.size(), "批次序号数量应与分片数一致");
-        assertEquals(2500, seenChunks.size(), "所有条目必须恰好出现一次");
+        Assertions.assertEquals(packets.size(), seenIndexes.size(), "批次序号数量应与分片数一致");
+        Assertions.assertEquals(2500, seenChunks.size(), "所有条目必须恰好出现一次");
     }
 
     @Test
@@ -118,9 +117,9 @@ class ChunkPixelCodecTest {
         }
         List<ChunkDeltaPayload> packets =
                 ChunkDeltaPayload.split("minecraft:overworld", chunks, null);
-        assertEquals(3, packets.size());
+        Assertions.assertEquals(3, packets.size());
         int total = packets.stream().mapToInt(packet -> packet.chunks().size()).sum();
-        assertEquals(300, total);
+        Assertions.assertEquals(300, total);
     }
 
     @Test
@@ -129,7 +128,7 @@ class ChunkPixelCodecTest {
         long packed = (long) pos.x << 32 | (pos.z & 0xFFFFFFFFL);
         int x = (int) (packed >> 32);
         int z = (int) packed;
-        assertEquals(pos.x, x);
-        assertEquals(pos.z, z);
+        Assertions.assertEquals(pos.x, x);
+        Assertions.assertEquals(pos.z, z);
     }
 }

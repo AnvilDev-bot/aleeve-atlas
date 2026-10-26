@@ -1,5 +1,7 @@
 package dev.dubhe.atlas.client.profiling;
 
+import net.minecraft.network.chat.Component;
+
 /// 模组内渲染性能统计入口。
 ///
 /// 各处渲染路径通过本类记录耗时；诊断命令读取统计结果用于验收。
@@ -88,6 +90,24 @@ public final class AtlasProfiling {
                 .formatted(MINIMAP.averageMillis(), MINIMAP.maxNanos() / 1_000_000.0,
                         MINIMAP.overBudgetRatio(MINIMAP_BUDGET_NANOS) * 100.0,
                         MINIMAP.count());
+    }
+
+    /// 小地图性能的可翻译诊断组件，供玩家命令使用。
+    public static Component minimapDiagnostic() {
+        return Component.translatable("aleeve_atlas.diagnostic.minimap",
+                "%.3f".formatted(MINIMAP.averageMillis()),
+                "%.3f".formatted(MINIMAP.maxNanos() / 1_000_000.0),
+                "%.1f".formatted(MINIMAP.overBudgetRatio(MINIMAP_BUDGET_NANOS) * 100.0),
+                MINIMAP.count());
+    }
+
+    /// 世界地图画布性能的可翻译诊断组件。
+    public static Component canvasDiagnostic() {
+        return Component.translatable("aleeve_atlas.diagnostic.canvas",
+                "%.3f".formatted(CANVAS.averageMillis()),
+                "%.3f".formatted(CANVAS.maxNanos() / 1_000_000.0),
+                "%.1f".formatted(CANVAS.overBudgetRatio(CANVAS_BUDGET_NANOS) * 100.0),
+                CANVAS.count());
     }
 
     public static void reset() {

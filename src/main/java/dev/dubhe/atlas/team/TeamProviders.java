@@ -1,10 +1,12 @@
 package dev.dubhe.atlas.team;
 
+import net.minecraft.network.chat.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 队伍适配层的实现注册与选择。
 ///
@@ -53,6 +55,17 @@ public final class TeamProviders {
     /// 当前生效的队伍实现。
     public static TeamProvider active() {
         return active;
+    }
+
+    /// 队伍诊断的可翻译组件，供玩家命令使用。
+    public static Component describeComponent(UUID playerId) {
+        TeamProvider provider = active();
+        String teamId = provider.teamIdOf(playerId);
+        if (teamId == null) {
+            return Component.translatable("aleeve_atlas.diagnostic.team.no_team", provider.id());
+        }
+        return Component.translatable("aleeve_atlas.diagnostic.team", provider.id(), teamId,
+                "%06X".formatted(provider.teamColor(teamId) & 0xFFFFFF));
     }
 
     /// 当前队伍适配层的诊断描述：实现名与指定玩家所属队伍。

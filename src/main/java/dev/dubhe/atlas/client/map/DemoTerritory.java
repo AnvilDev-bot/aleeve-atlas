@@ -3,12 +3,13 @@ package dev.dubhe.atlas.client.map;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.BorderStyle;
 import dev.dubhe.atlas.territory.SimpleTerritory;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ChunkPos;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /// 临时演示领地注入（仅用于验收 AC-8/9/10，验证后应移除）。
 ///

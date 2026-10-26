@@ -12,7 +12,7 @@ public record BorderStyle(int colorArgb, float width, boolean dashed) {
 
     /// 边框样式的玩家可见名称。
     public Component displayName() {
-        String key = dashed ? "aleeve_atlas.territory.border.dashed"
+        String key = this.dashed ? "aleeve_atlas.territory.border.dashed"
                 : "aleeve_atlas.territory.border.solid";
         return Component.translatable(key);
     }

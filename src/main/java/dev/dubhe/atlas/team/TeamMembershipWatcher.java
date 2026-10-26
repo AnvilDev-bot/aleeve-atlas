@@ -2,9 +2,6 @@ package dev.dubhe.atlas.team;
 
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.api.team.TeamMembershipChangedEvent;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -14,6 +11,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /// 队伍成员变更监测。
 ///

@@ -123,7 +123,7 @@ public final class WaypointUiSelfTest {
         int visibleRows = Math.max(1, (screen.height - 36 - 56) / 24);
         ensureScrollbarEntries(screen, visibleRows);
         int bottom = 36 + visibleRows * 24 - 4;
-        int previous = screen.scrollOffset();
+        final int previous = screen.scrollOffset();
         MouseButtonEvent start = new MouseButtonEvent(screen.width - 7, 40,
                 new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0));
         if (!screen.mouseClicked(start, false)) {

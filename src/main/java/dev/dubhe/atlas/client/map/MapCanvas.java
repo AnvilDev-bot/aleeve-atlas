@@ -1,10 +1,10 @@
 package dev.dubhe.atlas.client.map;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.atlas.client.profiling.AtlasProfiling;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapDimensionCache;
 import dev.dubhe.atlas.map.MapPalette;
-import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -46,36 +46,36 @@ public final class MapCanvas {
     public MapCanvas(Identifier textureId) {
         this.textureId = textureId;
         this.image = new NativeImage(PIXELS, PIXELS, false);
-        this.texture = new DynamicTexture(() -> "aleeve_atlas world map", image);
+        this.texture = new DynamicTexture(() -> "aleeve_atlas world map", this.image);
     }
 
     public void register() {
-        Minecraft.getInstance().getTextureManager().register(textureId, texture);
-        initialized = true;
+        Minecraft.getInstance().getTextureManager().register(this.textureId, this.texture);
+        this.initialized = true;
     }
 
     /// 资源重载后标记为未初始化，使下次打开世界地图时重新注册纹理。
     ///
     /// 资源重载会清空纹理管理器，若继续认为纹理有效，画布会渲染为空白。
     public void onResourceReload() {
-        initialized = false;
-        positioned = false;
+        this.initialized = false;
+        this.positioned = false;
     }
 
     public Identifier textureId() {
-        return textureId;
+        return this.textureId;
     }
 
     public boolean ready() {
-        return initialized;
+        return this.initialized;
     }
 
     public int originChunkX() {
-        return originChunkX;
+        return this.originChunkX;
     }
 
     public int originChunkZ() {
-        return originChunkZ;
+        return this.originChunkZ;
     }
 
     /// 以给定区块为中心的视野重建画布；视野未变化时直接返回。
@@ -85,39 +85,39 @@ public final class MapCanvas {
     public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache) {
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
-        if (positioned && targetX == originChunkX && targetZ == originChunkZ) {
+        if (this.positioned && targetX == this.originChunkX && targetZ == this.originChunkZ) {
             return;
         }
         // 渲染端按画布原点与视野中心的差值补偿，因此画布可略滞后于视野。
         // 位移不足阈值时跳过重绘，降低拖拽过程中的重建频率。
-        if (positioned
-                && Math.abs(targetX - originChunkX) < RECENTER_THRESHOLD_CHUNKS
-                && Math.abs(targetZ - originChunkZ) < RECENTER_THRESHOLD_CHUNKS) {
+        if (this.positioned
+                && Math.abs(targetX - this.originChunkX) < RECENTER_THRESHOLD_CHUNKS
+                && Math.abs(targetZ - this.originChunkZ) < RECENTER_THRESHOLD_CHUNKS) {
             return;
         }
         long startedAt = System.nanoTime();
         // 仅当已有画布内容且位移在覆盖范围内时才复用像素，首次定位与大幅跳转走全量重绘。
-        boolean scrolled = positioned
-                && Math.abs(targetX - originChunkX) < CHUNKS_PER_SIDE
-                && Math.abs(targetZ - originChunkZ) < CHUNKS_PER_SIDE
-                && (targetX != originChunkX || targetZ != originChunkZ);
+        boolean scrolled = this.positioned
+                && Math.abs(targetX - this.originChunkX) < CHUNKS_PER_SIDE
+                && Math.abs(targetZ - this.originChunkZ) < CHUNKS_PER_SIDE
+                && (targetX != this.originChunkX || targetZ != this.originChunkZ);
         if (scrolled) {
             long scrollStartedAt = System.nanoTime();
-            shiftOrigin(targetX, targetZ, cache);
+            this.shiftOrigin(targetX, targetZ, cache);
             AtlasProfiling.recordCanvasScroll(System.nanoTime() - scrollStartedAt);
         } else {
-            originChunkX = targetX;
-            originChunkZ = targetZ;
-            redraw(cache);
-            positioned = true;
+            this.originChunkX = targetX;
+            this.originChunkZ = targetZ;
+            this.redraw(cache);
+            this.positioned = true;
         }
         AtlasProfiling.recordCanvas(System.nanoTime() - startedAt);
     }
 
     /// 平移到新原点：先把重叠区域按区块粒度搬移，再补绘边缘条带。
     private void shiftOrigin(int targetX, int targetZ, MapDimensionCache cache) {
-        int shiftChunksX = targetX - originChunkX;
-        int shiftChunksZ = targetZ - originChunkZ;
+        int shiftChunksX = targetX - this.originChunkX;
+        int shiftChunksZ = targetZ - this.originChunkZ;
         int shiftPixelsX = shiftChunksX * ChunkMapData.SIZE;
         int shiftPixelsZ = shiftChunksZ * ChunkMapData.SIZE;
         // 按行搬运重叠区域；遍历顺序与搬移方向相反，避免覆盖尚未读取的像素。
@@ -127,14 +127,14 @@ public final class MapCanvas {
             int sourceRow = row - shiftPixelsZ;
             for (int col : colOrder) {
                 int sourceCol = col - shiftPixelsX;
-                image.setPixel(col, row, image.getPixel(sourceCol, sourceRow));
+                this.image.setPixel(col, row, this.image.getPixel(sourceCol, sourceRow));
             }
         }
-        originChunkX = targetX;
-        originChunkZ = targetZ;
-        drawEdgeStrips(cache, shiftChunksX, shiftChunksZ);
-        if (initialized) {
-            texture.upload();
+        this.originChunkX = targetX;
+        this.originChunkZ = targetZ;
+        this.drawEdgeStrips(cache, shiftChunksX, shiftChunksZ);
+        if (this.initialized) {
+            this.texture.upload();
         }
     }
 
@@ -150,7 +150,7 @@ public final class MapCanvas {
             for (int i = 0; i < count; i++) {
                 int dx = firstDx + i;
                 for (int dz = 0; dz < CHUNKS_PER_SIDE; dz++) {
-                    redrawChunk(dx, dz, cache);
+                    this.redrawChunk(dx, dz, cache);
                 }
             }
         }
@@ -167,7 +167,7 @@ public final class MapCanvas {
                             continue;
                         }
                     }
-                    redrawChunk(dx, dz, cache);
+                    this.redrawChunk(dx, dz, cache);
                 }
             }
         }
@@ -175,30 +175,30 @@ public final class MapCanvas {
 
     /// 按画布局部坐标重绘单个区块槽位。
     private void redrawChunk(int dx, int dz, MapDimensionCache cache) {
-        int chunkX = originChunkX + dx;
-        int chunkZ = originChunkZ + dz;
+        int chunkX = this.originChunkX + dx;
+        int chunkZ = this.originChunkZ + dz;
         int baseX = dx * ChunkMapData.SIZE;
         int baseZ = dz * ChunkMapData.SIZE;
         ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
         if (data != null) {
-            drawChunk(data, baseX, baseZ);
+            this.drawChunk(data, baseX, baseZ);
         } else {
             // 未探索且未被队友同步的区块绘制网格底纹。
-            drawUnexplored(baseX, baseZ);
+            this.drawUnexplored(baseX, baseZ);
         }
     }
 
     private void redraw(MapDimensionCache cache) {
-        fill(MapPalette.TRANSPARENT);
+        this.fill(MapPalette.TRANSPARENT);
         if (cache != null) {
             for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
                 for (int dz = 0; dz < CHUNKS_PER_SIDE; dz++) {
-                    redrawChunk(dx, dz, cache);
+                    this.redrawChunk(dx, dz, cache);
                 }
             }
         }
-        if (initialized) {
-            texture.upload();
+        if (this.initialized) {
+            this.texture.upload();
         }
     }
 
@@ -207,7 +207,7 @@ public final class MapCanvas {
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
                 boolean line = (localX & 3) == 0 || (localZ & 3) == 0;
-                setPixel(baseX + localX, baseZ + localZ,
+                this.setPixel(baseX + localX, baseZ + localZ,
                         line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
             }
         }
@@ -216,7 +216,7 @@ public final class MapCanvas {
     private void drawChunk(ChunkMapData data, int baseX, int baseZ) {
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-                setPixel(baseX + localX, baseZ + localZ, data.colorAt(localX, localZ));
+                this.setPixel(baseX + localX, baseZ + localZ, data.colorAt(localX, localZ));
             }
         }
     }
@@ -224,7 +224,7 @@ public final class MapCanvas {
     private void fill(int argb) {
         for (int y = 0; y < PIXELS; y++) {
             for (int x = 0; x < PIXELS; x++) {
-                setPixel(x, y, argb);
+                this.setPixel(x, y, argb);
             }
         }
     }
@@ -233,22 +233,22 @@ public final class MapCanvas {
         if (x < 0 || x >= PIXELS || y < 0 || y >= PIXELS) {
             return;
         }
-        image.setPixel(x, PIXELS - 1 - y, argb);
+        this.image.setPixel(x, PIXELS - 1 - y, argb);
     }
 
     /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。
     public void close() {
-        if (!initialized) {
+        if (!this.initialized) {
             return;
         }
         try {
-            Minecraft.getInstance().getTextureManager().release(textureId);
+            Minecraft.getInstance().getTextureManager().release(this.textureId);
         } catch (Exception e) {
             LOGGER.warn("Failed to release world map canvas", e);
         } finally {
-            initialized = false;
+            this.initialized = false;
             // 关闭后画布内容失效，重新打开时必须走全量重绘。
-            positioned = false;
+            this.positioned = false;
         }
     }
 }

@@ -1,7 +1,7 @@
 package dev.dubhe.atlas.client;
 
-import dev.dubhe.atlas.AleeveAtlas;
 import com.mojang.blaze3d.platform.InputConstants;
+import dev.dubhe.atlas.AleeveAtlas;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

@@ -58,47 +58,47 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
 
     /// 世界坐标 → 小地图屏幕坐标（X 轴）。
     public double worldToScreenX(double worldX) {
-        double centerScreenX = x + size / 2.0;
-        return centerScreenX + (worldX - centerWorldX) / COVERED_BLOCKS * size;
+        double centerScreenX = this.x + this.size / 2.0;
+        return centerScreenX + (worldX - this.centerWorldX) / COVERED_BLOCKS * this.size;
     }
 
     /// 世界坐标 → 小地图屏幕坐标（Z 轴）。
     public double worldToScreenZ(double worldZ) {
-        double centerScreenZ = y + size / 2.0;
-        return centerScreenZ + (worldZ - centerWorldZ) / COVERED_BLOCKS * size;
+        double centerScreenZ = this.y + this.size / 2.0;
+        return centerScreenZ + (worldZ - this.centerWorldZ) / COVERED_BLOCKS * this.size;
     }
 
     /// 判断屏幕坐标是否落在小地图范围内（圆形形态下按圆形判定）。
     public boolean contains(double screenX, double screenZ, boolean circular) {
-        double centerX = x + size / 2.0;
-        double centerZ = y + size / 2.0;
+        double centerX = this.x + this.size / 2.0;
+        double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
         if (circular) {
-            return Math.sqrt(dx * dx + dz * dz) <= size / 2.0;
+            return Math.sqrt(dx * dx + dz * dz) <= this.size / 2.0;
         }
-        return Math.abs(dx) <= size / 2.0 && Math.abs(dz) <= size / 2.0;
+        return Math.abs(dx) <= this.size / 2.0 && Math.abs(dz) <= this.size / 2.0;
     }
 
     /// 按当前地图旋转角判断坐标是否落在可视范围内，供标记分类使用。
     public boolean containsRotated(double screenX, double screenZ, boolean circular) {
-        return containsRotated(screenX, screenZ, circular, currentRotationDegrees());
+        return this.containsRotated(screenX, screenZ, circular, currentRotationDegrees());
     }
 
     /// 按指定地图旋转角判断坐标是否落在可视范围内。
     public boolean containsRotated(double screenX, double screenZ, boolean circular,
             double rotationDegrees) {
-        double centerX = x + size / 2.0;
-        double centerZ = y + size / 2.0;
+        double centerX = this.x + this.size / 2.0;
+        double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
         if (circular) {
-            return Math.sqrt(dx * dx + dz * dz) <= size / 2.0;
+            return Math.sqrt(dx * dx + dz * dz) <= this.size / 2.0;
         }
         double radians = Math.toRadians(rotationDegrees);
         double rotatedX = dx * Math.cos(radians) - dz * Math.sin(radians);
         double rotatedZ = dx * Math.sin(radians) + dz * Math.cos(radians);
-        return Math.abs(rotatedX) <= size / 2.0 && Math.abs(rotatedZ) <= size / 2.0;
+        return Math.abs(rotatedX) <= this.size / 2.0 && Math.abs(rotatedZ) <= this.size / 2.0;
     }
 
     /// 把标记中心限制在地图边界内，并为标记半径预留边距。
@@ -106,17 +106,17 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
     /// 圆形地图按半径缩放，方形地图按旋转后的最大坐标轴等比缩放；
     /// 标记方向保持不变，旋转后的中心仍落在可视方框内。
     public double[] fitInside(double screenX, double screenZ, boolean circular, double margin) {
-        return fitInside(screenX, screenZ, circular, margin, currentRotationDegrees());
+        return this.fitInside(screenX, screenZ, circular, margin, currentRotationDegrees());
     }
 
     /// 按指定地图旋转角约束标记中心，供方向与旋转边界测试使用。
     public double[] fitInside(double screenX, double screenZ, boolean circular, double margin,
             double rotationDegrees) {
-        double centerX = x + size / 2.0;
-        double centerZ = y + size / 2.0;
+        double centerX = this.x + this.size / 2.0;
+        double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
-        double limit = Math.max(0.0, size / 2.0 - margin);
+        double limit = Math.max(0.0, this.size / 2.0 - margin);
         if (circular) {
             double length = Math.sqrt(dx * dx + dz * dz);
             if (length > limit && length > 0.0) {
