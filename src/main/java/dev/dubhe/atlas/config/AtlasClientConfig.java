@@ -38,6 +38,9 @@ public class AtlasClientConfig {
         @Comment("Minimap outline shape.")
         public MinimapShape shape = MinimapShape.CIRCLE;
 
+        @Comment("Map coloring scheme used by both minimap and world map.")
+        public MapColorScheme colorScheme = MapColorScheme.VANILLA;
+
         @Comment("Minimap zoom multiplier (0.5 ~ 4.0).")
         public double scale = 1.0;
 

@@ -1,6 +1,8 @@
 package dev.dubhe.atlas.client.map;
 
 import dev.dubhe.atlas.AleeveAtlas;
+import dev.dubhe.atlas.config.AtlasClientConfigs;
+import dev.dubhe.atlas.config.MapColorScheme;
 import dev.dubhe.atlas.map.CaveMode;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.ChunkMapSampler;
@@ -50,6 +52,7 @@ public final class ClientMapManager {
     private MapDimensionCache caveCache;
     private String currentServerKey;
     private ResourceKey<Level> currentDimension;
+    private MapColorScheme colorScheme = MapColorScheme.VANILLA;
     private boolean textureRegistered;
     private boolean loggedFirstSample;
     /// 洞穴缓存的采样层高；玩家层高变化超过阈值时清空缓存重新采样。
@@ -118,8 +121,15 @@ public final class ClientMapManager {
             return;
         }
         String serverKey = serverKey(minecraft);
+        MapColorScheme scheme = AtlasClientConfigs.CONFIG.minimap.colorScheme;
+        boolean schemeChanged = scheme != this.colorScheme;
+        this.colorScheme = scheme;
+        if (schemeChanged) {
+            LOGGER.info("Map color scheme changed to {}", scheme);
+        }
         final MapDimensionCache cache = this.cacheFor(minecraft, serverKey, level.dimension());
-        if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)) {
+        if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)
+                || schemeChanged) {
             // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据。
             if (this.caveCache != null) {
                 this.caveCache.flush();
@@ -170,7 +180,7 @@ public final class ClientMapManager {
                         continue;
                     }
                     ChunkMapData sampledData = ChunkMapSampler.sample(level,
-                            new ChunkPos(chunkX, chunkZ), layerTop);
+                            new ChunkPos(chunkX, chunkZ), layerTop, this.colorScheme);
                     if (sampledData == null) {
                         continue;
                     }
@@ -237,10 +247,10 @@ public final class ClientMapManager {
     }
 
     private MapDimensionCache cacheFor(Minecraft minecraft, String serverKey, ResourceKey<Level> dimension) {
-        String key = serverKey + "/" + dimension.identifier();
+        String key = serverKey + "/" + dimension.identifier() + "/" + this.colorScheme.id();
         return this.caches.computeIfAbsent(key, ignored -> {
-            Path dir = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
-            return new MapDimensionCache(dir);
+            Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
+            return new MapDimensionCache(this.schemeDirectory(base));
         });
     }
 
@@ -248,7 +258,14 @@ public final class ClientMapManager {
     private MapDimensionCache caveCacheFor(Minecraft minecraft, String serverKey,
             ResourceKey<Level> dimension) {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
-        return new MapDimensionCache(base.resolveSibling(base.getFileName() + "_cave"));
+        Path caveBase = base.resolveSibling(base.getFileName() + "_cave");
+        return new MapDimensionCache(this.schemeDirectory(caveBase));
+    }
+
+    /// 第二套配色使用独立缓存目录，避免两种方案互相覆盖。
+    private Path schemeDirectory(Path base) {
+        return this.colorScheme == MapColorScheme.VANILLA ? base
+                : base.resolveSibling(base.getFileName() + "_" + this.colorScheme.id());
     }
 
     private static Path gameDir(Minecraft minecraft) {

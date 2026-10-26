@@ -1,6 +1,8 @@
 {
   "aleeve_atlas.configuration.minimap": "Minimap",
   "aleeve_atlas.configuration.minimap.button": "Minimap",
+  "aleeve_atlas.configuration.minimap.color_scheme": "Color Scheme",
+  "aleeve_atlas.configuration.minimap.color_scheme.tooltip": "Map coloring scheme used by both minimap and world map.",
   "aleeve_atlas.configuration.minimap.enabled": "Enabled",
   "aleeve_atlas.configuration.minimap.enabled.tooltip": "Whether the minimap HUD is enabled.",
   "aleeve_atlas.configuration.minimap.lock_north": "Lock North",
@@ -180,6 +182,8 @@
   "aleeve_atlas.territory.demo_overlay_name": "Overlay Territory",
   "aleeve_atlas.waypoint.death": "Death Point",
   "aleeve_atlas.waypoint.default_name": "Waypoint",
+  "anvillib.configuration.enum.dev.dubhe.atlas.config.map_color_scheme.biome_shade": "Biome Shade",
+  "anvillib.configuration.enum.dev.dubhe.atlas.config.map_color_scheme.vanilla": "Vanilla",
   "anvillib.configuration.enum.dev.dubhe.atlas.config.minimap_position.bottom_left": "Bottom Left",
   "anvillib.configuration.enum.dev.dubhe.atlas.config.minimap_position.bottom_right": "Bottom Right",
   "anvillib.configuration.enum.dev.dubhe.atlas.config.minimap_position.custom": "Custom",
