@@ -55,6 +55,13 @@ public record Waypoint(
                 visibleDistance, deathPoint, sourcePlayer, shareable);
     }
 
+    /// 更新表单可编辑属性，保留 UUID、维度、图标、死亡点与来源信息。
+    public Waypoint withDetails(String newName, BlockPos newPos, int newColorArgb,
+            int newVisibleDistance, boolean newEnabled, boolean newShareable) {
+        return new Waypoint(id, newName, newPos, dimension, newColorArgb, icon, newEnabled,
+                newVisibleDistance, deathPoint, sourcePlayer, newShareable);
+    }
+
     public Waypoint withSource(String source) {
         return new Waypoint(id, name, pos, dimension, colorArgb, icon, enabled, visibleDistance,
                 deathPoint, source, shareable);

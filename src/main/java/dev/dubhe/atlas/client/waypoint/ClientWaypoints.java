@@ -216,16 +216,41 @@ public final class ClientWaypoints {
         share(waypoint);
     }
 
-    /// 某维度的全部启用路径点（世界地图展示用，不按玩家距离过滤）。
-    public static List<Waypoint> waypointsFor(
-            ResourceKey<Level> dimension) {
-        WaypointStore waypointStore = store();
-        if (waypointStore == null) {
+    /// 某维度的全部路径点，包含未启用条目，供管理界面使用。
+    public static List<Waypoint> allInDimension(ResourceKey<Level> dimension) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
             return List.of();
+        }
+        WaypointStore current = store();
+        if (current == null) {
+            return List.of();
+        }
+        WaypointStore waypointStore = current;
+        if (minecraft.level != null && !dimension.equals(minecraft.level.dimension())) {
+            String dimensionId = dimension.identifier().toString();
+            waypointStore = STORES.get(dimensionId);
+            if (waypointStore == null) {
+                waypointStore = WaypointStore.open(minecraft.gameDirectory.toPath(),
+                        serverKey(minecraft), dimension);
+                STORES.put(dimensionId, waypointStore);
+            }
         }
         List<Waypoint> result = new ArrayList<>();
         for (Waypoint waypoint : waypointStore.all()) {
-            if (waypoint.enabled() && waypoint.dimension().equals(dimension)) {
+            if (waypoint.dimension().equals(dimension)) {
+                result.add(waypoint);
+            }
+        }
+        return result;
+    }
+
+    /// 某维度的全部启用路径点（世界地图展示用，不按玩家距离过滤）。
+    public static List<Waypoint> waypointsFor(
+            ResourceKey<Level> dimension) {
+        List<Waypoint> result = new ArrayList<>();
+        for (Waypoint waypoint : allInDimension(dimension)) {
+            if (waypoint.enabled()) {
                 result.add(waypoint);
             }
         }

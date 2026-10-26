@@ -3,12 +3,12 @@ package dev.dubhe.atlas.client;
 import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.client.map.AtlasWorldMap;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
+import dev.dubhe.atlas.client.waypoint.WaypointEditScreen;
 import dev.dubhe.atlas.ping.ClientPings;
 import dev.dubhe.atlas.ping.MapPingData;
 import dev.dubhe.atlas.sync.ClientMapSync;
 import dev.dubhe.atlas.waypoint.Waypoint;
 import java.util.UUID;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -109,15 +109,7 @@ public final class AtlasClientTick {
             AtlasWorldMap.open();
         }
         while (AtlasKeyMappings.NEW_WAYPOINT.consumeClick()) {
-            var waypoint = ClientWaypoints.createHere(Component.translatable(
-                    "aleeve_atlas.waypoint.default_name").getString());
-            if (waypoint != null) {
-                minecraft.player.displayClientMessage(
-                        Component.translatable("aleeve_atlas.message.waypoint_created",
-                                waypoint.pos().getX(), waypoint.pos().getY(),
-                                waypoint.pos().getZ()).withStyle(ChatFormatting.GREEN),
-                        true);
-            }
+            minecraft.setScreen(new WaypointEditScreen(null, minecraft.player.blockPosition()));
         }
     }
 

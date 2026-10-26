@@ -68,7 +68,26 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.screen.waypoint_list.delete", "Delete");
         add("aleeve_atlas.screen.waypoint_list.empty", "No waypoints in this dimension");
         add("aleeve_atlas.screen.waypoint_list.death", "[death]");
-        add("aleeve_atlas.screen.waypoint_list.scroll_hint", "Scroll to browse");
+        add("aleeve_atlas.screen.waypoint_list.scroll_hint", "Scroll or drag the scrollbar");
+        add("aleeve_atlas.screen.waypoint_list.add", "New");
+        add("aleeve_atlas.screen.waypoint_list.edit", "Edit");
+        add("aleeve_atlas.screen.world_map.client_config", "Client Config");
+        add("aleeve_atlas.screen.waypoint_edit.create_title", "Create Waypoint");
+        add("aleeve_atlas.screen.waypoint_edit.edit_title", "Edit Waypoint");
+        add("aleeve_atlas.screen.waypoint_edit.name", "Name");
+        add("aleeve_atlas.screen.waypoint_edit.coordinates", "Coordinates (X / Y / Z)");
+        add("aleeve_atlas.screen.waypoint_edit.color", "Color");
+        add("aleeve_atlas.screen.waypoint_edit.visible_distance", "Visible Distance");
+        add("aleeve_atlas.screen.waypoint_edit.enabled", "Enabled");
+        add("aleeve_atlas.screen.waypoint_edit.shareable", "Shareable");
+        add("aleeve_atlas.screen.waypoint_edit.save", "Save");
+        add("aleeve_atlas.screen.waypoint_edit.name_required", "Name cannot be empty");
+        add("aleeve_atlas.screen.waypoint_edit.invalid_number",
+                "Coordinates and visible distance must be integers");
+        add("aleeve_atlas.screen.waypoint_edit.invalid_distance",
+                "Visible distance must be between 0 and %s");
+        add("aleeve_atlas.screen.waypoint_edit.invalid_color",
+                "Color must use #RRGGBB format");
         add("aleeve_atlas.screen.world_map.share_team", "Share to Team");
         add("aleeve_atlas.screen.world_map.share_team.tip",
                 "Share the nearest waypoint with your team");

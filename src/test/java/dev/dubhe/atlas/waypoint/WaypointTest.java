@@ -89,6 +89,26 @@ class WaypointTest {
     }
 
     @Test
+    void withDetailsUpdatesEditableFieldsAndPreservesIdentity() {
+        Waypoint original = new Waypoint(UUID.randomUUID(), "Old", new BlockPos(1, 70, 2),
+                OVERWORLD, 0xFF123456, "custom", true, 200, true, "Aleeve", true);
+        Waypoint edited = original.withDetails("New", new BlockPos(9, 80, -3),
+                0xFFABCDEF, 500, false, false);
+
+        assertEquals(original.id(), edited.id());
+        assertEquals(OVERWORLD, edited.dimension());
+        assertEquals("custom", edited.icon());
+        assertTrue(edited.deathPoint());
+        assertEquals("Aleeve", edited.sourcePlayer());
+        assertEquals("New", edited.name());
+        assertEquals(new BlockPos(9, 80, -3), edited.pos());
+        assertEquals(0xFFABCDEF, edited.colorArgb());
+        assertEquals(500, edited.visibleDistance());
+        assertFalse(edited.enabled());
+        assertFalse(edited.shareable());
+    }
+
+    @Test
     void malformedEntryIsSkipped() {
         // 单条记录损坏（id 非法）不应让整个文件加载失败，其余路径点仍需可用。
         ListTag list = new ListTag();

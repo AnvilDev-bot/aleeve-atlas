@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.client.map;
 
+import dev.dubhe.atlas.AleeveAtlas;
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
@@ -7,6 +8,7 @@ import dev.dubhe.atlas.client.AtlasKeyMappings;
 import dev.dubhe.atlas.client.radar.RadarRenderer;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
 import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
+import dev.dubhe.atlas.client.waypoint.WaypointEditScreen;
 import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
 import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
@@ -37,6 +39,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,6 +127,12 @@ public final class WorldMapScreen extends Screen {
     }
 
     @Override
+    public void added() {
+        super.added();
+        active = this;
+    }
+
+    @Override
     public void removed() {
         if (active == this) {
             active = null;
@@ -142,7 +152,7 @@ public final class WorldMapScreen extends Screen {
     private void addTeamButtons() {
         boolean synchronizedMode = AtlasSession.synchronizedMode();
         Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
-        int buttonWidth = 120;
+        int buttonWidth = Math.max(20, Math.min(120, (width - 24) / 3));
         int buttonHeight = 20;
         int x = width - buttonWidth - 6;
         int y = 6;
@@ -156,11 +166,21 @@ public final class WorldMapScreen extends Screen {
         share.active = synchronizedMode;
         addRenderableWidget(share);
 
-        // 路径点管理列表入口，与分享按钮保持 6px 间隔。
+        // 路径点管理与客户端配置入口，与分享按钮保持 6px 间隔。
         addRenderableWidget(Button.builder(
                         Component.translatable("aleeve_atlas.screen.waypoint_list"),
-                        button -> Minecraft.getInstance().setScreen(new WaypointListScreen()))
-                .bounds(x - 126, y, 120, 20).build());
+                        button -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))
+                .bounds(x - buttonWidth - 6, y, buttonWidth, 20).build());
+        addRenderableWidget(Button.builder(
+                        Component.translatable("aleeve_atlas.screen.world_map.client_config"),
+                        button -> openClientConfig())
+                .bounds(x - (buttonWidth + 6) * 2, y, buttonWidth, 20).build());
+    }
+
+    /// 打开模组客户端配置，并保留当前世界地图作为返回页。
+    private void openClientConfig() {
+        var container = ModList.get().getModContainerById(AleeveAtlas.MOD_ID).orElseThrow();
+        Minecraft.getInstance().setScreen(new ConfigurationScreen(container, this));
     }
 
     /// 把视野中心最近的路径点分享给队伍。
@@ -547,13 +567,16 @@ public final class WorldMapScreen extends Screen {
         Component center = Component.translatable("aleeve_atlas.screen.world_map.center",
                 "%.0f".formatted(centerX), "%.0f".formatted(centerZ),
                 "%.1f".formatted(pixelsPerChunk));
-        graphics.drawString(minecraft.font, center, 6, 6, 0xFFFFFFFF);
+        graphics.drawString(minecraft.font, center, 6, 32, 0xFFFFFFFF);
         Component hint = Component.translatable("aleeve_atlas.screen.world_map.hint");
         graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
     }
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
         // 双击左键在地图位置创建路径点。
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && doubleClick) {
             createWaypointAt(event.x(), event.y());
@@ -571,7 +594,7 @@ public final class WorldMapScreen extends Screen {
             lastMouseY = event.y();
             return true;
         }
-        return super.mouseClicked(event, doubleClick);
+        return false;
     }
 
     /// 在世界地图指定位置创建路径点。
@@ -584,16 +607,8 @@ public final class WorldMapScreen extends Screen {
         double worldZ = screenToWorldZ(screenY);
         // 远距离位置取下限高度，近似地表的 Y 值由地图缓存提供。
         int y = surfaceYAt(worldX, worldZ);
-        Waypoint waypoint = Waypoint.create(
-                Component.translatable("aleeve_atlas.waypoint.default_name").getString(),
-                new BlockPos((int) Math.floor(worldX), y, (int) Math.floor(worldZ)),
-                minecraft.level.dimension(), 0xFF55FFFF);
-        ClientWaypoints.add(waypoint);
-        minecraft.player.displayClientMessage(
-                Component.translatable("aleeve_atlas.message.waypoint_created",
-                        waypoint.pos().getX(), waypoint.pos().getY(), waypoint.pos().getZ())
-                        .withStyle(ChatFormatting.GREEN),
-                true);
+        BlockPos pos = new BlockPos((int) Math.floor(worldX), y, (int) Math.floor(worldZ));
+        minecraft.setScreen(new WaypointEditScreen(this, pos));
     }
 
     /// 在世界地图指定位置发起临时标点。
@@ -618,11 +633,15 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (super.mouseReleased(event)) {
+            dragging = false;
+            return true;
+        }
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             dragging = false;
             return true;
         }
-        return super.mouseReleased(event);
+        return false;
     }
 
     @Override
