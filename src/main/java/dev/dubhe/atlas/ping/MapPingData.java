@@ -1,9 +1,11 @@
 package dev.dubhe.atlas.ping;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Locale;
 import java.util.UUID;
 
 /// 临时标点核心数据结构。
@@ -26,7 +28,21 @@ public record MapPingData(
         NORMAL,
         DANGER,
         RALLY,
-        SUPPLY
+        SUPPLY;
+
+        public Component displayName() {
+            return Component.translatable("aleeve_atlas.ping.type."
+                    + name().toLowerCase(Locale.ROOT));
+        }
+
+        public int colorArgb() {
+            return switch (this) {
+                case NORMAL -> 0xFF55FFFF;
+                case DANGER -> 0xFFFF5555;
+                case RALLY -> 0xFF55FF55;
+                case SUPPLY -> 0xFFFFFF55;
+            };
+        }
     }
 
     public static final long DEFAULT_LIFETIME_MILLIS = 8000L;

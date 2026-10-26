@@ -26,6 +26,12 @@ public final class MapMarkerRenderer {
         blit(graphics, AtlasRenderPipelines.MAP_MARKER_DIAMOND, centerX, centerY, size, color);
     }
 
+    /// 绘制抗锯齿临时标点波纹。
+    public static void drawRipple(GuiGraphics graphics, double centerX, double centerY,
+            int size, int color) {
+        blit(graphics, AtlasRenderPipelines.MAP_PING_RIPPLE, centerX, centerY, size, color);
+    }
+
     /// 计算基础朝上箭头应旋转的角度，使其指向目标方向。
     public static double directionAngle(double dx, double dz) {
         return Math.atan2(dz, dx) + Math.PI / 2.0;

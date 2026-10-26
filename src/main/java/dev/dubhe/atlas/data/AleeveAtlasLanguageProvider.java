@@ -106,6 +106,16 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.screen.world_map", "World Map");
         add("aleeve_atlas.screen.world_map.hint",
                 "Drag to pan, scroll to zoom, ESC or M to close");
+        add("aleeve_atlas.screen.world_map.ping_wheel", "Select Ping Type");
+        add("aleeve_atlas.screen.world_map.add_ping", "Add Ping");
+        add("aleeve_atlas.screen.world_map.delete_ping", "Delete Ping");
+        add("aleeve_atlas.screen.world_map.location", "Block: %s  Biome: %s");
+        add("aleeve_atlas.screen.world_map.territory", "Territory: %s");
+        add("aleeve_atlas.screen.world_map.unknown", "Unknown");
+        add("aleeve_atlas.ping.type.normal", "Generic");
+        add("aleeve_atlas.ping.type.danger", "Danger");
+        add("aleeve_atlas.ping.type.rally", "Rally");
+        add("aleeve_atlas.ping.type.supply", "Supply");
 
         // 配置项翻译键由 AnvilLib 依据配置类反射生成。
         ConfigData.readConfigClass(this, AtlasClientConfig.class);

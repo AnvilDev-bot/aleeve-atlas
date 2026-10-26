@@ -21,8 +21,8 @@ class VisibilityFadeTest {
     @Test
     void confirmedVisibleTargetStartsAtFullOpacity() {
         UUID target = UUID.randomUUID();
-        VisibilityFade.markSeen(target);
-        float opacity = VisibilityFade.opacity(target);
-        Assertions.assertTrue(opacity > 0.9F && opacity <= 1.0F, "opacity=" + opacity);
+        VisibilityFade.markSeen(target, 1_000L);
+        float opacity = VisibilityFade.opacity(target, 1_000L);
+        Assertions.assertEquals(1.0F, opacity);
     }
 }

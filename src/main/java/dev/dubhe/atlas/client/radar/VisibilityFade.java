@@ -31,7 +31,12 @@ public final class VisibilityFade {
 
     /// 按 UUID 记录一次可见，供缓存行为测试与实体入口共用。
     static void markSeen(UUID id) {
-        LAST_SEEN.put(id, System.currentTimeMillis());
+        markSeen(id, System.currentTimeMillis());
+    }
+
+    /// 使用指定时间记录可见，供确定性测试使用。
+    static void markSeen(UUID id, long timestamp) {
+        LAST_SEEN.put(id, timestamp);
         if (++pruneCounter >= PRUNE_INTERVAL) {
             pruneCounter = 0;
             prune();
@@ -48,13 +53,18 @@ public final class VisibilityFade {
 
     /// 按 UUID 计算透明度，避免测试依赖完整实体环境。
     static float opacity(UUID id) {
+        return opacity(id, System.currentTimeMillis());
+    }
+
+    /// 使用指定时间计算透明度，供确定性测试使用。
+    static float opacity(UUID id, long now) {
         Long lastSeen = LAST_SEEN.get(id);
         if (lastSeen == null) {
             return 0.0F;
         }
         float fadeSeconds = (float) ConfigBounds.clamp(
                 AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5, 1.5);
-        long elapsedMillis = System.currentTimeMillis() - lastSeen;
+        long elapsedMillis = now - lastSeen;
         long fadeMillis = Math.round(fadeSeconds * 1000.0F);
         if (elapsedMillis >= fadeMillis) {
             return 0.0F;

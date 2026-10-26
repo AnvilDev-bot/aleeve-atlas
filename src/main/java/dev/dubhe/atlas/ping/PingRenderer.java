@@ -46,8 +46,7 @@ public final class PingRenderer {
             }
             double[] fitted = layout.fitInside(screenX, screenZ, circular,
                     MAX_RIPPLE_PIXELS + 3.0);
-            drawPing(graphics, fitted[0], fitted[1], ping,
-                    layout.x(), layout.y(), layout.size(), opacity);
+            drawPing(graphics, fitted[0], fitted[1], ping, opacity);
         }
     }
 
@@ -93,7 +92,7 @@ public final class PingRenderer {
         }
         double[] fitted = layout.fitInside(screenX, screenZ, circular, 7.0);
         double angle = MapMarkerRenderer.directionAngle(dx, dz);
-        int color = applyOpacity(0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF), opacity);
+        int color = applyOpacity(ping.icon().colorArgb(), opacity);
         MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 12, angle, color);
     }
 
@@ -101,12 +100,12 @@ public final class PingRenderer {
     public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
             MapPingData ping, float opacity) {
         // 世界地图铺满整个屏幕，波纹无需裁剪。
-        drawPing(graphics, screenX, screenZ, ping, 0, 0, Integer.MAX_VALUE, opacity);
+        drawPing(graphics, screenX, screenZ, ping, opacity);
     }
 
-    /// 波纹扩散动画 + 中心菱标。
+    /// 抗锯齿圆形中心 + 波纹扩散动画。
     private static void drawPing(GuiGraphics graphics, double screenX, double screenZ,
-            MapPingData ping, int clipX, int clipY, int clipSize, float opacity) {
+            MapPingData ping, float opacity) {
         int x = (int) Math.round(screenX);
         int z = (int) Math.round(screenZ);
         long age = System.currentTimeMillis() - ping.createdAtMillis();
@@ -114,36 +113,14 @@ public final class PingRenderer {
             age = 0;
         }
         double phase = (double) (age % RIPPLE_PERIOD_MILLIS) / RIPPLE_PERIOD_MILLIS;
-        int radius = 2 + (int) Math.round(phase * MAX_RIPPLE_PIXELS);
-        int alpha = (int) Math.round(200 * (1.0 - phase) * opacity);
-        if (alpha <= 0) {
-            alpha = 1;
-        }
-        int rippleColor = (alpha << 24) | (ping.teamColorArgb() & 0xFFFFFF);
-
-        // 圆环按行扫描：每行求圆与水平线的交点区间，一次填充覆盖该行左右两段，
-        // 绘制调用数与直径同阶，避免按角度逐点填充造成的重复绘制。
-        for (int dz = -radius; dz <= radius; dz++) {
-            double spanSq = (double) radius * radius - (double) dz * dz;
-            if (spanSq <= 0.0) {
-                continue;
-            }
-            int half = (int) Math.round(Math.sqrt(spanSq));
-            if (half <= 0) {
-                continue;
-            }
-            int leftPixel = x - half;
-            int rightPixel = x + half;
-            int rowPixel = z + dz;
-            if (insideClip(leftPixel, rowPixel, clipX, clipY, clipSize)) {
-                graphics.fill(leftPixel, rowPixel, leftPixel + 1, rowPixel + 1, rippleColor);
-            }
-            if (insideClip(rightPixel, rowPixel, clipX, clipY, clipSize)) {
-                graphics.fill(rightPixel, rowPixel, rightPixel + 1, rowPixel + 1, rippleColor);
-            }
-        }
-        int centerColor = applyOpacity(0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF), opacity);
-        drawIcon(graphics, x, z, centerColor, ping.icon(), opacity);
+        // 半径随时间扩张，颜色逐渐淡出；圆环由片元着色器抗锯齿绘制。
+        float ripplePhase = (float) phase;
+        int size = Math.round((2.0F + ripplePhase * MAX_RIPPLE_PIXELS) * 2.0F + 4.0F);
+        int rippleColor = applyOpacity(ping.icon().colorArgb(), opacity * (1.0F - ripplePhase));
+        MapMarkerRenderer.drawRipple(graphics, x, z, size, rippleColor);
+        MapMarkerRenderer.drawDot(graphics, x, z, 10,
+                applyOpacity(ping.icon().colorArgb(), opacity));
+        drawIcon(graphics, x, z, applyOpacity(0xFFFFFFFF, opacity), ping.icon(), opacity);
     }
 
     /// 按不透明度缩放 ARGB 的 alpha 通道。
@@ -160,7 +137,7 @@ public final class PingRenderer {
 
     /// 按标点图标类型绘制中心标记。
     ///
-    /// 四类标点形状各异，便于在密集标点时快速分辨：普通为方块，
+    /// 四类标点通过颜色与内层符号区分：普通为圆点，
     /// 危险为叉形，集合为十字，物资为菱形。
     static void drawIcon(GuiGraphics graphics, int x, int z, int color,
             MapPingData.PingIcon icon, float opacity) {
@@ -176,11 +153,7 @@ public final class PingRenderer {
                 graphics.fill(x, z - 3, x + 1, z + 4, color);
             }
             case SUPPLY -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
-            default -> {
-                graphics.fill(x - 2, z - 2, x + 2, z + 2, color);
-                graphics.fill(x - 1, z - 1, x + 1, z + 1,
-                        applyOpacity(0xFFFFFFFF, opacity));
-            }
+            default -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
         }
     }
 
