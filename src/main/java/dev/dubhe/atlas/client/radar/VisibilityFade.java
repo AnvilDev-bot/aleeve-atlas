@@ -25,7 +25,12 @@ public final class VisibilityFade {
     ///
     /// 内部按固定周期清理过期条目，避免调用方遗漏导致映射无界增长。
     public static void markSeen(Entity entity) {
-        LAST_SEEN.put(entity.getUUID(), System.currentTimeMillis());
+        markSeen(entity.getUUID());
+    }
+
+    /// 按 UUID 记录一次可见，供缓存行为测试与实体入口共用。
+    static void markSeen(UUID id) {
+        LAST_SEEN.put(id, System.currentTimeMillis());
         if (++pruneCounter >= PRUNE_INTERVAL) {
             pruneCounter = 0;
             prune();
@@ -34,12 +39,17 @@ public final class VisibilityFade {
 
     /// 当前应使用的不透明度（0.0 ~ 1.0）。
     ///
-    /// 从未可见过的实体返回 1.0（不参与渐隐）；可见期内为 1.0；
-    /// 超出可见后按渐隐期线性衰减至 0。
+    /// 从未取得可见结果的目标返回 0，避免未被确认的目标显示在标点层；
+    /// 可见期内为 1.0；超出可见后按渐隐期线性衰减至 0。
     public static float opacity(Entity entity) {
-        Long lastSeen = LAST_SEEN.get(entity.getUUID());
+        return opacity(entity.getUUID());
+    }
+
+    /// 按 UUID 计算透明度，避免测试依赖完整实体环境。
+    static float opacity(UUID id) {
+        Long lastSeen = LAST_SEEN.get(id);
         if (lastSeen == null) {
-            return 1.0F;
+            return 0.0F;
         }
         float fadeSeconds = (float) ConfigBounds.clamp(
                 AtlasClientConfigs.CONFIG.radar.fadeOutSeconds, 0.5, 1.5);

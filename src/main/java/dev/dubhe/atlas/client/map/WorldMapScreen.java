@@ -4,9 +4,11 @@ import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.api.territory.AtlasTerritory;
 import dev.dubhe.atlas.api.territory.TerritoryGroup;
 import dev.dubhe.atlas.client.AtlasKeyMappings;
+import dev.dubhe.atlas.client.radar.RadarRenderer;
 import dev.dubhe.atlas.client.waypoint.ClientWaypoints;
 import dev.dubhe.atlas.client.waypoint.WaypointListScreen;
 import dev.dubhe.atlas.client.waypoint.WaypointRenderer;
+import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.map.ChunkMapData;
 import dev.dubhe.atlas.map.MapDimensionCache;
@@ -233,6 +235,8 @@ public final class WorldMapScreen extends Screen {
         drawTerritories(graphics, mouseX, mouseY);
         drawWaypoints(graphics);
         drawPings(graphics);
+        RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
+                Minecraft.getInstance(), centerX, centerZ, pixelsPerChunk, width, height);
         drawPlayerMarker(graphics);
         drawOverlayText(graphics);
         // 组件渲染后再绘制领地标签，确保标签位于最上层。
@@ -494,12 +498,16 @@ public final class WorldMapScreen extends Screen {
             if (!ping.dimensionId().equals(dimension)) {
                 continue;
             }
+            float opacity = PingRenderer.opacityByPolicy(minecraft, ping);
+            if (opacity <= 0.0F) {
+                continue;
+            }
             double screenX = width / 2.0 + (ping.position().x - centerX) * pixelsPerChunk;
             double screenY = height / 2.0 + (ping.position().z - centerZ) * pixelsPerChunk;
             if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
                 continue;
             }
-            PingRenderer.renderOnWorldMap(graphics, screenX, screenY, ping);
+            PingRenderer.renderOnWorldMap(graphics, screenX, screenY, ping, opacity);
         }
     }
 

@@ -15,6 +15,8 @@ public final class AtlasProfiling {
     private static final RenderTimer CANVAS = new RenderTimer(SAMPLE_CAPACITY);
     /// 画布平移（像素搬移加边缘补绘）的独立统计。
     private static final RenderTimer CANVAS_SCROLL = new RenderTimer(SAMPLE_CAPACITY);
+    /// GPU 遮挡查询提交与结果轮询的 CPU 耗时。
+    private static final RenderTimer OCCLUSION = new RenderTimer(SAMPLE_CAPACITY);
 
     private AtlasProfiling() {
     }
@@ -46,6 +48,23 @@ public final class AtlasProfiling {
         return CANVAS_SCROLL;
     }
 
+    public static RenderTimer occlusion() {
+        return OCCLUSION;
+    }
+
+    /// 记录一次遮挡查询提交与轮询的 CPU 耗时。
+    public static void recordOcclusion(long nanos) {
+        OCCLUSION.record(nanos);
+    }
+
+    /// 遮挡查询统计摘要。
+    public static String occlusionSummary() {
+        return "occlusion queries: avg=%.3fms max=%.3fms over-budget=%.1f%% (n=%d, budget=1ms)"
+                .formatted(OCCLUSION.averageMillis(), OCCLUSION.maxNanos() / 1_000_000.0,
+                        OCCLUSION.overBudgetRatio(MINIMAP_BUDGET_NANOS) * 100.0,
+                        OCCLUSION.count());
+    }
+
     /// 画布平移统计摘要。
     public static String canvasScrollSummary() {
         return "worldmap scroll: avg=%.3fms max=%.3fms over-budget=%.1f%% (n=%d, budget=8ms)"
@@ -75,5 +94,6 @@ public final class AtlasProfiling {
         MINIMAP.reset();
         CANVAS.reset();
         CANVAS_SCROLL.reset();
+        OCCLUSION.reset();
     }
 }

@@ -2,12 +2,15 @@ package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
+import dev.dubhe.atlas.client.radar.VisibilityGate;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
+import dev.dubhe.atlas.config.NonTeamVisibility;
 import dev.dubhe.atlas.team.TeamProviders;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.world.entity.player.Player;
 
 /// 标点地图渲染。
 public final class PingRenderer {
@@ -29,8 +32,8 @@ public final class PingRenderer {
             if (!ping.dimensionId().equals(dimension)) {
                 continue;
             }
-            // 非同队玩家发起的标点按服务端下发的可见性策略过滤。
-            if (!visibleByPolicy(minecraft, ping)) {
+            float opacity = opacityByPolicy(minecraft, ping);
+            if (opacity <= 0.0F) {
                 continue;
             }
             double screenX = layout.worldToScreenX(ping.position().x);
@@ -39,46 +42,50 @@ public final class PingRenderer {
                 continue;
             }
             drawPing(graphics, screenX, screenZ, ping,
-                    layout.x(), layout.y(), layout.size());
+                    layout.x(), layout.y(), layout.size(), opacity);
         }
     }
 
-    /// 按非同队玩家可见性策略判定标点是否可绘制。
+    /// 计算标点的可见性与渐隐透明度。
     ///
-    /// 同队玩家与本地发起的标点始终可见；非同队玩家在 `NEVER` 下隐藏，
-    /// `VISIBLE_ONLY` 下需通过可见性判定。
-    static boolean visibleByPolicy(Minecraft minecraft, MapPingData ping) {
+    /// 同队玩家与本地发起的标点始终可见；非同队玩家的发送者必须存在于客户端，
+    /// 并与实体雷达共用服务端策略、GPU 遮挡查询和渐隐结果。
+    public static float opacityByPolicy(Minecraft minecraft, MapPingData ping) {
         if (minecraft.player == null || ping.senderId() == null) {
-            return true;
+            return 1.0F;
         }
         if (ping.senderId().equals(minecraft.player.getUUID())) {
-            return true;
+            return 1.0F;
         }
         if (TeamProviders.active().sameTeam(minecraft.player.getUUID(), ping.senderId())) {
-            return true;
+            return 1.0F;
         }
-        return switch (AtlasSession.nonTeamVisibility()) {
-            case NEVER -> false;
-            case ALWAYS -> true;
-            case VISIBLE_ONLY -> {
-                var sender = minecraft.level == null ? null
-                        : minecraft.level.getPlayerByUUID(ping.senderId());
-                // 发送者实体不在客户端可见范围内时视为不可见。
-                yield sender != null && minecraft.player.hasLineOfSight(sender);
-            }
-        };
+        if (AtlasSession.nonTeamVisibility() == NonTeamVisibility.NEVER) {
+            return 0.0F;
+        }
+        if (AtlasSession.nonTeamVisibility() == NonTeamVisibility.ALWAYS) {
+            return 1.0F;
+        }
+        if (minecraft.level == null) {
+            return 0.0F;
+        }
+        Player sender = minecraft.level.getPlayerByUUID(ping.senderId());
+        if (sender == null) {
+            return 0.0F;
+        }
+        return VisibilityGate.opacity(minecraft.level, minecraft.player, sender);
     }
 
-    /// 在世界地图上绘制活动标点（屏幕坐标由调用方换算）。
+    /// 在世界地图上绘制活动标点（屏幕坐标与透明度由调用方计算）。
     public static void renderOnWorldMap(GuiGraphics graphics, double screenX, double screenZ,
-            MapPingData ping) {
+            MapPingData ping, float opacity) {
         // 世界地图铺满整个屏幕，波纹无需裁剪。
-        drawPing(graphics, screenX, screenZ, ping, 0, 0, Integer.MAX_VALUE);
+        drawPing(graphics, screenX, screenZ, ping, 0, 0, Integer.MAX_VALUE, opacity);
     }
 
     /// 波纹扩散动画 + 中心菱标。
     private static void drawPing(GuiGraphics graphics, double screenX, double screenZ,
-            MapPingData ping, int clipX, int clipY, int clipSize) {
+            MapPingData ping, int clipX, int clipY, int clipSize, float opacity) {
         int x = (int) Math.round(screenX);
         int z = (int) Math.round(screenZ);
         long age = System.currentTimeMillis() - ping.createdAtMillis();
@@ -87,7 +94,7 @@ public final class PingRenderer {
         }
         double phase = (double) (age % RIPPLE_PERIOD_MILLIS) / RIPPLE_PERIOD_MILLIS;
         int radius = 2 + (int) Math.round(phase * MAX_RIPPLE_PIXELS);
-        int alpha = (int) Math.round(200 * (1.0 - phase));
+        int alpha = (int) Math.round(200 * (1.0 - phase) * opacity);
         if (alpha <= 0) {
             alpha = 1;
         }
@@ -104,8 +111,6 @@ public final class PingRenderer {
             if (half <= 0) {
                 continue;
             }
-            // 只保留圆环边缘一个像素宽，内部留空以便看出扩散方向。
-            // 超出小地图边界的像素不绘制，避免波纹溢到 HUD 之外。
             int leftPixel = x - half;
             int rightPixel = x + half;
             int rowPixel = z + dz;
@@ -116,9 +121,14 @@ public final class PingRenderer {
                 graphics.fill(rightPixel, rowPixel, rightPixel + 1, rowPixel + 1, rippleColor);
             }
         }
-        // 中心标记按图标类型区分。
-        int centerColor = 0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF);
-        drawIcon(graphics, x, z, centerColor, ping.icon());
+        int centerColor = applyOpacity(0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF), opacity);
+        drawIcon(graphics, x, z, centerColor, ping.icon(), opacity);
+    }
+
+    /// 按不透明度缩放 ARGB 的 alpha 通道。
+    static int applyOpacity(int argb, float opacity) {
+        int alpha = Math.round(((argb >>> 24) & 0xFF) * Math.max(0.0F, opacity));
+        return (alpha << 24) | (argb & 0xFFFFFF);
     }
 
     /// 像素是否落在裁剪矩形内。
@@ -132,31 +142,28 @@ public final class PingRenderer {
     /// 四类标点形状各异，便于在密集标点时快速分辨：普通为方块，
     /// 危险为叉形，集合为十字，物资为菱形。
     static void drawIcon(GuiGraphics graphics, int x, int z, int color,
-            MapPingData.PingIcon icon) {
+            MapPingData.PingIcon icon, float opacity) {
         switch (icon) {
             case DANGER -> {
-                // 叉形：两条对角线。
                 for (int offset = -2; offset <= 2; offset++) {
                     graphics.fill(x + offset, z + offset, x + offset + 1, z + offset + 1, color);
                     graphics.fill(x + offset, z - offset, x + offset + 1, z - offset + 1, color);
                 }
             }
             case RALLY -> {
-                // 十字：横竖两条。
                 graphics.fill(x - 3, z, x + 4, z + 1, color);
                 graphics.fill(x, z - 3, x + 1, z + 4, color);
             }
             case SUPPLY -> {
-                // 菱形：逐行收窄。
                 for (int offset = -2; offset <= 2; offset++) {
                     int half = 2 - Math.abs(offset);
                     graphics.fill(x - half, z + offset, x + half + 1, z + offset + 1, color);
                 }
             }
             default -> {
-                // 普通标点：实心方块加白心。
                 graphics.fill(x - 2, z - 2, x + 2, z + 2, color);
-                graphics.fill(x - 1, z - 1, x + 1, z + 1, 0xFFFFFFFF);
+                graphics.fill(x - 1, z - 1, x + 1, z + 1,
+                        applyOpacity(0xFFFFFFFF, opacity));
             }
         }
     }

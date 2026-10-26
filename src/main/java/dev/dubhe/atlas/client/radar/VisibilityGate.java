@@ -1,18 +1,17 @@
 package dev.dubhe.atlas.client.radar;
 
+import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.visibility.RaycastVisibilityResolver;
 import dev.dubhe.atlas.client.visibility.VisibilityResolver;
+import dev.dubhe.atlas.config.NonTeamVisibility;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
 
-/// 雷达可见性闸门。
+/// 雷达与临时标点共用的可见性闸门。
 ///
-/// 服务端策略为 `VISIBLE_ONLY` 时，非同队玩家必须通过可见性判定才允许绘制标点。
-/// 1.21.11 的 Blaze3d 只暴露计时查询、不提供遮挡查询封装，且投影矩阵仅存于 UBO
-/// 无法在渲染阶段读回，代理包围盒渲染无法与 GL 查询边界可靠对齐；
-/// 无法取得遮挡查询结果时降级为多采样点射线检测。
+/// 服务端策略为 `VISIBLE_ONLY` 时，非同队玩家必须通过可见性判定才允许绘制。
+/// 默认使用射线检测；GPU 遮挡查询可用时由选择器替换为异步结果读取。
 public final class VisibilityGate {
     private static VisibilityResolver resolver = new RaycastVisibilityResolver();
 
@@ -32,7 +31,30 @@ public final class VisibilityGate {
 
     /// 判定目标实体是否可见。
     public static boolean isVisible(Level level, Player observer, Entity target) {
-        Vec3 targetEye = target.getEyePosition();
-        return resolver.isVisible(level, observer, targetEye);
+        return resolver.isVisible(level, observer, target);
+    }
+
+    /// 计算非同队玩家标记的透明度，统一处理服务端策略、前置剔除与渐隐。
+    ///
+    /// 从未取得可见结果的目标返回 0；GPU 查询未完成时沿用上一有效结果。
+    public static float opacity(Level level, Player observer, Entity target) {
+        NonTeamVisibility policy = AtlasSession.nonTeamVisibility();
+        if (policy == NonTeamVisibility.NEVER) {
+            return 0.0F;
+        }
+        if (policy == NonTeamVisibility.ALWAYS) {
+            return 1.0F;
+        }
+        if (VisibilityPreFilter.isHiddenByInvisibility(target)) {
+            return 0.0F;
+        }
+        if (!VisibilityPreFilter.isInViewFrustum(target)) {
+            return VisibilityFade.opacity(target);
+        }
+        if (resolver.isVisible(level, observer, target)) {
+            VisibilityFade.markSeen(target);
+            return 1.0F;
+        }
+        return VisibilityFade.opacity(target);
     }
 }

@@ -65,6 +65,10 @@ public final class PerformanceReporter {
         if (AtlasProfiling.canvasScroll().count() > 0) {
             LOGGER.info("{}", AtlasProfiling.canvasScrollSummary());
         }
+        // 遮挡查询的 CPU 提交耗时单独统计，用于确认异步读取没有阻塞渲染线程。
+        if (AtlasProfiling.occlusion().count() > 0) {
+            LOGGER.info("{}", AtlasProfiling.occlusionSummary());
+        }
         AtlasProfiling.reset();
     }
 }

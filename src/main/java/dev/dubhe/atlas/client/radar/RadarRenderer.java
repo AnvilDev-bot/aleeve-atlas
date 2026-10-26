@@ -4,7 +4,6 @@ import dev.dubhe.atlas.AtlasSession;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
-import dev.dubhe.atlas.config.NonTeamVisibility;
 import dev.dubhe.atlas.config.RadarDisplayMode;
 import dev.dubhe.atlas.map.MapPalette;
 import dev.dubhe.atlas.team.TeamProviders;
@@ -22,10 +21,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SpawnEggItem;
 
-/// 实体雷达的小地图标记渲染。
+/// 实体雷达的小地图与世界地图标记渲染。
 ///
 /// 圆点模式下按类别配色绘制；混合联动模式下按住玩家列表键（默认 Tab）时，
-/// 玩家标记切换为皮肤头像。
+/// 玩家标记切换为皮肤头像。两种地图共用分类、距离、可见性与渐隐规则。
 public final class RadarRenderer {
     /// 标记半径（GUI 像素）。
     private static final int DOT_RADIUS = 2;
@@ -43,6 +42,49 @@ public final class RadarRenderer {
     /// 在小地图上绘制雷达标记。
     public static void render(GuiGraphics graphics, AtlasClientConfig config,
             MinimapLayout layout, Minecraft minecraft) {
+        boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
+        renderMarkers(graphics, config, minecraft, new MarkerProjection() {
+            @Override
+            public double x(Entity entity) {
+                return layout.worldToScreenX(entity.getX());
+            }
+
+            @Override
+            public double y(Entity entity) {
+                return layout.worldToScreenZ(entity.getZ());
+            }
+
+            @Override
+            public boolean contains(double x, double y) {
+                return layout.contains(x, y, circular);
+            }
+        });
+    }
+
+    /// 在世界地图上绘制雷达标记，坐标换算与全屏地图一致。
+    public static void renderOnWorldMap(GuiGraphics graphics, AtlasClientConfig config,
+            Minecraft minecraft, double centerX, double centerZ, float pixelsPerChunk,
+            int viewWidth, int viewHeight) {
+        renderMarkers(graphics, config, minecraft, new MarkerProjection() {
+            @Override
+            public double x(Entity entity) {
+                return viewWidth / 2.0 + (entity.getX() - centerX) * pixelsPerChunk;
+            }
+
+            @Override
+            public double y(Entity entity) {
+                return viewHeight / 2.0 + (entity.getZ() - centerZ) * pixelsPerChunk;
+            }
+
+            @Override
+            public boolean contains(double x, double y) {
+                return x >= 0.0 && x <= viewWidth && y >= 0.0 && y <= viewHeight;
+            }
+        });
+    }
+
+    private static void renderMarkers(GuiGraphics graphics, AtlasClientConfig config,
+            Minecraft minecraft, MarkerProjection projection) {
         ClientLevel level = minecraft.level;
         LocalPlayer player = minecraft.player;
         if (level == null || player == null) {
@@ -52,24 +94,15 @@ public final class RadarRenderer {
         boolean showIcons = mode == RadarDisplayMode.ICON;
         boolean hybrid = mode == RadarDisplayMode.HYBRID;
         boolean playerListDown = hybrid && minecraft.options.keyPlayerList.isDown();
-        // 混合模式可配置为按住玩家列表键时展开全体实体图标。
         boolean expandAllIcons = showIcons
                 || (playerListDown && config.radar.hybridExpandAllIcons);
-        boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
-        // 本次绘制已占用的掉落物格位，用于密集合并。
         Set<Long> itemDots = new HashSet<>();
-
-        // 服务端下发的最大雷达距离优先于客户端配置。
         int maxDistance = AtlasSession.maxRadarDistance();
         double maxDistanceSq = (double) maxDistance * maxDistance;
-        // 非同队玩家可见性策略由服务端下发。
-        NonTeamVisibility nonTeamPolicy = AtlasSession.nonTeamVisibility();
 
         for (Entity entity : level.entitiesForRendering()) {
-            if (entity == player || entity.isRemoved()) {
-                continue;
-            }
-            if (entity.distanceToSqr(player) > maxDistanceSq) {
+            if (entity == player || entity.isRemoved()
+                    || entity.distanceToSqr(player) > maxDistanceSq) {
                 continue;
             }
             RadarCategory category = RadarCategory.classify(entity);
@@ -77,67 +110,51 @@ public final class RadarRenderer {
                     || !RadarStyle.visible(config.radar.categories, category)) {
                 continue;
             }
-            // 前置逻辑剔除 + 可见性判定。
             float opacity = 1.0F;
             if (category == RadarCategory.PLAYER && !RadarStyle.isTeammate(entity)) {
-                if (nonTeamPolicy == NonTeamVisibility.NEVER) {
+                opacity = VisibilityGate.opacity(level, player, entity);
+                if (opacity <= 0.0F) {
                     continue;
                 }
-                if (nonTeamPolicy == NonTeamVisibility.VISIBLE_ONLY) {
-                    // 状态剔除：隐身且无护甲的目标直接丢弃，不进入渐隐。
-                    // 渐隐期只针对遮挡与移出视野两类情形。
-                    if (VisibilityPreFilter.isHiddenByInvisibility(entity)) {
-                        continue;
-                    }
-                    if (!VisibilityPreFilter.isInViewFrustum(entity)) {
-                        // 移出视野：按渐隐期衰减，避免快速转视角时标点闪烁。
-                        opacity = VisibilityFade.opacity(entity);
-                        if (opacity <= 0.0F) {
-                            continue;
-                        }
-                    } else if (VisibilityGate.isVisible(level, player, entity)) {
-                        VisibilityFade.markSeen(entity);
-                    } else {
-                        // 被遮挡后按渐隐期衰减，避免标点高频闪烁。
-                        opacity = VisibilityFade.opacity(entity);
-                        if (opacity <= 0.0F) {
-                            continue;
-                        }
-                    }
-                }
             }
-            double screenX = layout.worldToScreenX(entity.getX());
-            double screenZ = layout.worldToScreenZ(entity.getZ());
-            if (!layout.contains(screenX, screenZ, circular)) {
+            double screenX = projection.x(entity);
+            double screenY = projection.y(entity);
+            if (!projection.contains(screenX, screenY)) {
                 continue;
             }
-            if (category == RadarCategory.PLAYER
+            // 头像和物品图标没有透明度参数，渐隐阶段改用圆点保持同样的衰减规则。
+            if (opacity >= 1.0F && category == RadarCategory.PLAYER
                     && shouldDrawPlayerHead(mode, playerListDown)) {
-                drawPlayerHead(graphics, entity, screenX, screenZ);
+                drawPlayerHead(graphics, entity, screenX, screenY);
                 continue;
             }
-            // 图标模式下生物使用刷怪蛋图标；混合联动模式下按住玩家列表键亦可展开。
-            if (expandAllIcons && category != RadarCategory.ITEM
-                    && drawEntityIcon(graphics, entity, screenX, screenZ)) {
+            if (opacity >= 1.0F && expandAllIcons && category != RadarCategory.ITEM
+                    && drawEntityIcon(graphics, entity, screenX, screenY)) {
                 continue;
             }
             int color = applyOpacity(
                     RadarStyle.color(config.radar.categories, category, entity), opacity);
-            // 敌对生物按高度差调整明暗。
             if (category == RadarCategory.HOSTILE) {
                 color = applyHeightShade(color, entity.getY() - player.getY());
             }
-            // 掉落物密集合并：同格内已有标记时不再重复绘制。
             if (category == RadarCategory.ITEM
-                    && !itemDots.add(packScreen(screenX, screenZ))) {
+                    && !itemDots.add(packScreen(screenX, screenY))) {
                 continue;
             }
-            drawDot(graphics, screenX, screenZ, color);
-            // 同队玩家附带队伍颜色描边。
+            drawDot(graphics, screenX, screenY, color);
             if (category == RadarCategory.PLAYER && RadarStyle.isTeammate(entity)) {
-                drawTeamOutline(graphics, screenX, screenZ, entity);
+                drawTeamOutline(graphics, screenX, screenY, entity);
             }
         }
+    }
+
+    /// 地图坐标转换与视口裁剪。
+    private interface MarkerProjection {
+        double x(Entity entity);
+
+        double y(Entity entity);
+
+        boolean contains(double x, double y);
     }
 
     /// 高度差明暗：高于玩家偏亮、低于偏暗，幅度限制在 70%~130%。

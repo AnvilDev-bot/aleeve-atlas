@@ -18,11 +18,9 @@ public final class RaycastVisibilityResolver implements VisibilityResolver {
     private static final int MAX_SAMPLES = 5;
 
     @Override
-    public boolean isVisible(Level level, Player observer, Vec3 targetEye) {
+    public boolean isVisible(Level level, Player observer, Entity target) {
         Vec3 from = observer.getEyePosition();
-        // 目标包围盒低于眼睛的采样点（脚部、腰部、胸口）以及左右偏移点。
-        AABB box = new AABB(targetEye.x - 0.3, targetEye.y - 1.6, targetEye.z - 0.3,
-                targetEye.x + 0.3, targetEye.y + 0.2, targetEye.z + 0.3);
+        AABB box = target.getBoundingBox();
         Vec3[] samples = samples(box);
         for (int i = 0; i < samples.length && i < MAX_SAMPLES; i++) {
             if (isLineClear(level, from, samples[i])) {
