@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 ///
 /// 绘制分两步：先铺整张地图纹理（玩家恒在纹理中心），再叠加
 /// {@link AtlasRenderPipelines#MINIMAP_OVERLAY} 着色器层，由片元着色器解析式地
-/// 画出圆形遮罩、边框与玩家朝向箭头。
+/// 画出圆形遮罩、边框与水滴形玩家指示器。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class MinimapRenderer {
     private static final Identifier OVERLAY_TEXTURE = AleeveAtlas.id("textures/gui/white.png");
@@ -66,9 +66,9 @@ public final class MinimapRenderer {
 
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         LocalPlayer player = minecraft.player;
-        // 北向锁定：地图固定北朝上、箭头随视角转；
-        // 视角随动：地图绕中心旋转到玩家朝向、箭头固定朝上。
-        float rotationDegrees = config.minimap.lockNorth ? 0.0F : -player.getYRot();
+        // 北向锁定：地图固定北朝上、指示器随视角转；
+        // 视角随动：地图绕中心旋转到玩家朝向、指示器固定朝上。
+        float rotationDegrees = mapRotationDegrees(player.getYRot(), config.minimap.lockNorth);
         float centerX = x + size / 2.0F;
         float centerY = y + size / 2.0F;
 
@@ -79,7 +79,7 @@ public final class MinimapRenderer {
         // 方形形态旋转后四角会越出小地图边界，需用裁剪区限制。
         // 裁剪必须在旋转前启用：enableScissor 按当前 pose 变换矩形，
         // 旋转后传入的轴对齐矩形会被变换成负宽高或错位区域。
-        boolean scissored = !circular && rotationDegrees != 0.0F;
+        boolean scissored = !circular;
         if (scissored) {
             graphics.enableScissor(x, y, x + size, y + size);
         }
@@ -107,10 +107,10 @@ public final class MinimapRenderer {
             graphics.disableScissor();
         }
 
-        // 叠加层（边框与箭头）不参与地图旋转：
-        // 北向锁定时地图固定、箭头随视角转；视角随动时地图已旋转、箭头固定朝上。
-        float arrowYaw = config.minimap.lockNorth ? player.getYRot() : 0.0F;
-        int tint = encodeOverlayTint(arrowYaw, circular);
+        // 叠加层（边框与指示器）不参与地图旋转：
+        // 北向锁定时地图固定、指示器随视角转；视角随动时地图已旋转、指示器固定朝上。
+        float arrowYaw = arrowYawDegrees(player.getYRot(), config.minimap.lockNorth);
+        int tint = encodeOverlayTint(arrowYaw, circular, config.minimap.lockNorth);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 
@@ -121,12 +121,24 @@ public final class MinimapRenderer {
                 System.nanoTime() - startedAt);
     }
 
-    /// 把朝向角与形态编码进顶点色：R 通道为 yaw/(2π)，G 通道为圆形开关。
-    private static int encodeOverlayTint(float yaw, boolean circular) {
+    /// 地图旋转角：视角随动时把玩家朝向旋转到屏幕上方。
+    /// Minecraft yaw=0 朝南，因此需要包含 180° 的南北基准。
+    static float mapRotationDegrees(float playerYaw, boolean lockNorth) {
+        return lockNorth ? 0.0F : 180.0F - playerYaw;
+    }
+
+    /// 玩家指示器旋转角：固定地图方向时随玩家朝向旋转，视角随动时固定朝上。
+    static float arrowYawDegrees(float playerYaw, boolean lockNorth) {
+        return lockNorth ? playerYaw : 0.0F;
+    }
+
+    /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。
+    private static int encodeOverlayTint(float yaw, boolean circular, boolean lockNorth) {
         float normalized = (yaw % 360.0F + 360.0F) % 360.0F / 360.0F;
         int red = Math.round(normalized * 255.0F);
         int green = circular ? 255 : 0;
-        return 0xFF000000 | (red << 16) | (green << 8);
+        int blue = lockNorth ? 255 : 0;
+        return 0xFF000000 | (red << 16) | (green << 8) | blue;
     }
 
     /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。

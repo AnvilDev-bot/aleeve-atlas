@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.client.radar;
 
 import dev.dubhe.atlas.AtlasSession;
+import dev.dubhe.atlas.client.map.MapMarkerRenderer;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
@@ -26,8 +27,7 @@ import net.minecraft.world.item.SpawnEggItem;
 /// 圆点模式下按类别配色绘制；混合联动模式下按住玩家列表键（默认 Tab）时，
 /// 玩家标记切换为皮肤头像。两种地图共用分类、距离、可见性与渐隐规则。
 public final class RadarRenderer {
-    /// 标记半径（GUI 像素）。
-    private static final int DOT_RADIUS = 2;
+    /// 玩家头像尺寸（GUI 像素）。
     private static final int HEAD_SIZE = 8;
     private static final int ICON_SIZE = 8;
     /// 掉落物合并粒度（像素），同格内只绘制一个圆点。
@@ -56,7 +56,12 @@ public final class RadarRenderer {
 
             @Override
             public boolean contains(double x, double y) {
-                return layout.contains(x, y, circular);
+                return layout.containsRotated(x, y, circular);
+            }
+
+            @Override
+            public double[] fit(double x, double y, double margin) {
+                return layout.fitInside(x, y, circular, margin);
             }
         });
     }
@@ -122,14 +127,21 @@ public final class RadarRenderer {
             if (!projection.contains(screenX, screenY)) {
                 continue;
             }
+            boolean drawHead = opacity >= 1.0F && category == RadarCategory.PLAYER
+                    && shouldDrawPlayerHead(mode, playerListDown);
+            boolean drawIcon = opacity >= 1.0F && expandAllIcons
+                    && category != RadarCategory.ITEM;
+            // 8×8 头像与物品图标使用更大的边距，圆点和菱形保持较小边距。
+            double margin = drawHead || drawIcon ? 6.0 : 4.0;
+            double[] fitted = projection.fit(screenX, screenY, margin);
+            screenX = fitted[0];
+            screenY = fitted[1];
             // 头像和物品图标没有透明度参数，渐隐阶段改用圆点保持同样的衰减规则。
-            if (opacity >= 1.0F && category == RadarCategory.PLAYER
-                    && shouldDrawPlayerHead(mode, playerListDown)) {
+            if (drawHead) {
                 drawPlayerHead(graphics, entity, screenX, screenY);
                 continue;
             }
-            if (opacity >= 1.0F && expandAllIcons && category != RadarCategory.ITEM
-                    && drawEntityIcon(graphics, entity, screenX, screenY)) {
+            if (drawIcon && drawEntityIcon(graphics, entity, screenX, screenY)) {
                 continue;
             }
             int color = applyOpacity(
@@ -141,10 +153,10 @@ public final class RadarRenderer {
                     && !itemDots.add(packScreen(screenX, screenY))) {
                 continue;
             }
-            drawDot(graphics, screenX, screenY, color);
             if (category == RadarCategory.PLAYER && RadarStyle.isTeammate(entity)) {
                 drawTeamOutline(graphics, screenX, screenY, entity);
             }
+            drawDot(graphics, screenX, screenY, color);
         }
     }
 
@@ -155,6 +167,11 @@ public final class RadarRenderer {
         double y(Entity entity);
 
         boolean contains(double x, double y);
+
+        /// 将标记中心限制在地图边界内，世界地图默认无需调整。
+        default double[] fit(double x, double y, double margin) {
+            return new double[] { x, y };
+        }
     }
 
     /// 高度差明暗：高于玩家偏亮、低于偏暗，幅度限制在 70%~130%。
@@ -173,13 +190,7 @@ public final class RadarRenderer {
         }
         var team = TeamProviders.active().teamIdOf(entity.getUUID());
         int color = TeamProviders.active().teamColor(team);
-        int x = (int) Math.round(screenX);
-        int z = (int) Math.round(screenZ);
-        int radius = DOT_RADIUS + 1;
-        graphics.fill(x - radius, z - radius, x + radius, z - radius + 1, color);
-        graphics.fill(x - radius, z + radius - 1, x + radius, z + radius, color);
-        graphics.fill(x - radius, z - radius, x - radius + 1, z + radius, color);
-        graphics.fill(x + radius - 1, z - radius, x + radius, z + radius, color);
+        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 8, color);
     }
 
     /// 把屏幕坐标按 4 像素粒度打包，用于合并同格掉落物。
@@ -199,13 +210,7 @@ public final class RadarRenderer {
     }
 
     private static void drawDot(GuiGraphics graphics, double screenX, double screenZ, int color) {
-        int x = (int) Math.round(screenX);
-        int z = (int) Math.round(screenZ);
-        graphics.fill(x - DOT_RADIUS, z - DOT_RADIUS, x + DOT_RADIUS, z + DOT_RADIUS, color);
-        // 深色描边提高在浅色地形上的可辨识度。
-        int outline = 0xC0000000;
-        graphics.fill(x - DOT_RADIUS, z - DOT_RADIUS, x + DOT_RADIUS, z - DOT_RADIUS + 1, outline);
-        graphics.fill(x - DOT_RADIUS, z + DOT_RADIUS - 1, x + DOT_RADIUS, z + DOT_RADIUS, outline);
+        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 6, color);
     }
 
     /// 生物图标：用刷怪蛋物品图标表示实体类型；无对应刷怪蛋时返回 false 由调用方回退圆点。

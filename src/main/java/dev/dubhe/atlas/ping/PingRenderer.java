@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.ping;
 
 import dev.dubhe.atlas.AtlasSession;
+import dev.dubhe.atlas.client.map.MapMarkerRenderer;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.client.radar.VisibilityGate;
 import dev.dubhe.atlas.config.AtlasClientConfig;
@@ -38,10 +39,13 @@ public final class PingRenderer {
             }
             double screenX = layout.worldToScreenX(ping.position().x);
             double screenZ = layout.worldToScreenZ(ping.position().z);
-            if (!layout.contains(screenX, screenZ, circular)) {
+            if (!layout.containsRotated(screenX, screenZ, circular)) {
+                drawOffscreenArrow(graphics, layout, screenX, screenZ, circular, ping, opacity);
                 continue;
             }
-            drawPing(graphics, screenX, screenZ, ping,
+            double[] fitted = layout.fitInside(screenX, screenZ, circular,
+                    MAX_RIPPLE_PIXELS + 3.0);
+            drawPing(graphics, fitted[0], fitted[1], ping,
                     layout.x(), layout.y(), layout.size(), opacity);
         }
     }
@@ -74,6 +78,22 @@ public final class PingRenderer {
             return 0.0F;
         }
         return VisibilityGate.opacity(minecraft.level, minecraft.player, sender);
+    }
+
+    /// 超出地图范围的标点在内缩边缘显示方向箭头。
+    private static void drawOffscreenArrow(GuiGraphics graphics, MinimapLayout layout,
+            double screenX, double screenZ, boolean circular, MapPingData ping, float opacity) {
+        double centerX = layout.x() + layout.size() / 2.0;
+        double centerZ = layout.y() + layout.size() / 2.0;
+        double dx = screenX - centerX;
+        double dz = screenZ - centerZ;
+        if (dx == 0.0 && dz == 0.0) {
+            return;
+        }
+        double[] fitted = layout.fitInside(screenX, screenZ, circular, 7.0);
+        double angle = MapMarkerRenderer.directionAngle(dx, dz);
+        int color = applyOpacity(0xFF000000 | (ping.teamColorArgb() & 0xFFFFFF), opacity);
+        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 12, angle, color);
     }
 
     /// 在世界地图上绘制活动标点（屏幕坐标与透明度由调用方计算）。
@@ -154,12 +174,7 @@ public final class PingRenderer {
                 graphics.fill(x - 3, z, x + 4, z + 1, color);
                 graphics.fill(x, z - 3, x + 1, z + 4, color);
             }
-            case SUPPLY -> {
-                for (int offset = -2; offset <= 2; offset++) {
-                    int half = 2 - Math.abs(offset);
-                    graphics.fill(x - half, z + offset, x + half + 1, z + offset + 1, color);
-                }
-            }
+            case SUPPLY -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
             default -> {
                 graphics.fill(x - 2, z - 2, x + 2, z + 2, color);
                 graphics.fill(x - 1, z - 1, x + 1, z + 1,

@@ -1,6 +1,7 @@
 package dev.dubhe.atlas.client.map;
 
 import dev.dubhe.atlas.config.AtlasClientConfig;
+import dev.dubhe.atlas.config.AtlasClientConfigs;
 import dev.dubhe.atlas.config.ConfigBounds;
 import dev.dubhe.atlas.config.MinimapPosition;
 import net.minecraft.client.Minecraft;
@@ -77,6 +78,73 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
             return Math.sqrt(dx * dx + dz * dz) <= size / 2.0;
         }
         return Math.abs(dx) <= size / 2.0 && Math.abs(dz) <= size / 2.0;
+    }
+
+    /// 按当前地图旋转角判断坐标是否落在可视范围内，供标记分类使用。
+    public boolean containsRotated(double screenX, double screenZ, boolean circular) {
+        return containsRotated(screenX, screenZ, circular, currentRotationDegrees());
+    }
+
+    /// 按指定地图旋转角判断坐标是否落在可视范围内。
+    public boolean containsRotated(double screenX, double screenZ, boolean circular,
+            double rotationDegrees) {
+        double centerX = x + size / 2.0;
+        double centerZ = y + size / 2.0;
+        double dx = screenX - centerX;
+        double dz = screenZ - centerZ;
+        if (circular) {
+            return Math.sqrt(dx * dx + dz * dz) <= size / 2.0;
+        }
+        double radians = Math.toRadians(rotationDegrees);
+        double rotatedX = dx * Math.cos(radians) - dz * Math.sin(radians);
+        double rotatedZ = dx * Math.sin(radians) + dz * Math.cos(radians);
+        return Math.abs(rotatedX) <= size / 2.0 && Math.abs(rotatedZ) <= size / 2.0;
+    }
+
+    /// 把标记中心限制在地图边界内，并为标记半径预留边距。
+    ///
+    /// 圆形地图按半径缩放，方形地图按旋转后的最大坐标轴等比缩放；
+    /// 标记方向保持不变，旋转后的中心仍落在可视方框内。
+    public double[] fitInside(double screenX, double screenZ, boolean circular, double margin) {
+        return fitInside(screenX, screenZ, circular, margin, currentRotationDegrees());
+    }
+
+    /// 按指定地图旋转角约束标记中心，供方向与旋转边界测试使用。
+    public double[] fitInside(double screenX, double screenZ, boolean circular, double margin,
+            double rotationDegrees) {
+        double centerX = x + size / 2.0;
+        double centerZ = y + size / 2.0;
+        double dx = screenX - centerX;
+        double dz = screenZ - centerZ;
+        double limit = Math.max(0.0, size / 2.0 - margin);
+        if (circular) {
+            double length = Math.sqrt(dx * dx + dz * dz);
+            if (length > limit && length > 0.0) {
+                double scale = limit / length;
+                dx *= scale;
+                dz *= scale;
+            }
+        } else {
+            double radians = Math.toRadians(rotationDegrees);
+            double rotatedX = dx * Math.cos(radians) - dz * Math.sin(radians);
+            double rotatedZ = dx * Math.sin(radians) + dz * Math.cos(radians);
+            double maxAxis = Math.max(Math.abs(rotatedX), Math.abs(rotatedZ));
+            if (maxAxis > limit && maxAxis > 0.0) {
+                double scale = limit / maxAxis;
+                dx *= scale;
+                dz *= scale;
+            }
+        }
+        return new double[] { centerX + dx, centerZ + dz };
+    }
+
+    private static double currentRotationDegrees() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft == null || minecraft.player == null) {
+            return 0.0;
+        }
+        return MinimapRenderer.mapRotationDegrees(minecraft.player.getYRot(),
+                AtlasClientConfigs.CONFIG.minimap.lockNorth);
     }
 
     private static int clamp(int value, int min, int max) {

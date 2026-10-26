@@ -1,5 +1,6 @@
 package dev.dubhe.atlas.client.waypoint;
 
+import dev.dubhe.atlas.client.map.MapMarkerRenderer;
 import dev.dubhe.atlas.client.map.MinimapLayout;
 import dev.dubhe.atlas.config.AtlasClientConfig;
 import dev.dubhe.atlas.config.MinimapShape;
@@ -14,7 +15,6 @@ import net.minecraft.client.player.LocalPlayer;
 /// 小地图与世界地图共用同一套绘制：以菱形标记 + 深色描边表示路径点位置。
 public final class WaypointRenderer {
     private static final int HALF_SIZE = 3;
-    private static final int OUTLINE = 0xFF101010;
 
     private WaypointRenderer() {
     }
@@ -34,8 +34,9 @@ public final class WaypointRenderer {
         for (Waypoint waypoint : waypoints) {
             double screenX = layout.worldToScreenX(waypoint.pos().getX() + 0.5);
             double screenZ = layout.worldToScreenZ(waypoint.pos().getZ() + 0.5);
-            if (layout.contains(screenX, screenZ, circular)) {
-                drawMarker(graphics, screenX, screenZ, waypoint.colorArgb(),
+            if (layout.containsRotated(screenX, screenZ, circular)) {
+                double[] fitted = layout.fitInside(screenX, screenZ, circular, 4.0);
+                drawMarker(graphics, fitted[0], fitted[1], waypoint.colorArgb(),
                         waypoint.icon());
                 continue;
             }
@@ -54,24 +55,10 @@ public final class WaypointRenderer {
         if (dx == 0.0 && dz == 0.0) {
             return;
         }
-        // 缩放到边界内侧 3 像素处，避免被边框遮住。
-        double limit = layout.size() / 2.0 - 3.0;
-        double scale;
-        if (circular) {
-            double length = Math.sqrt(dx * dx + dz * dz);
-            scale = limit / length;
-        } else {
-            double maxAxis = Math.max(Math.abs(dx), Math.abs(dz));
-            scale = limit / maxAxis;
-        }
-        if (scale > 1.0) {
-            scale = 1.0;
-        }
-        int x = (int) Math.round(centerX + dx * scale);
-        int z = (int) Math.round(centerZ + dz * scale);
-        // 边缘标记用 1 像素点，与内部大菱形区分。
-        graphics.fill(x - 1, z - 1, x + 1, z + 1, color);
-        graphics.fill(x, z, x + 1, z + 1, 0xFF101010);
+        // 边缘标记使用指向目标的光滑三角箭头，中心内缩以避免超出地图边界。
+        double[] fitted = layout.fitInside(screenX, screenZ, circular, 6.0);
+        double angle = MapMarkerRenderer.directionAngle(dx, dz);
+        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 10, angle, color);
     }
 
     /// 在世界地图上绘制路径点（屏幕坐标由调用方换算）。
@@ -110,16 +97,7 @@ public final class WaypointRenderer {
 
     private static void drawDiamond(GuiGraphics graphics, double screenX, double screenZ,
             int color) {
-        int x = (int) Math.round(screenX);
-        int z = (int) Math.round(screenZ);
-        for (int offset = -HALF_SIZE; offset <= HALF_SIZE; offset++) {
-            int halfWidth = HALF_SIZE - Math.abs(offset);
-            int fromX = x - halfWidth;
-            int toX = x + halfWidth + 1;
-            graphics.fill(fromX, z + offset, toX, z + offset + 1, color);
-        }
-        // 中心深色点，便于在浅色地形上定位。
-        graphics.fill(x, z - 1, x + 1, z + 1, OUTLINE);
+        MapMarkerRenderer.drawDiamond(graphics, screenX, screenZ, 8, color);
     }
 
     /// 圆形小地图形态判定工具。
