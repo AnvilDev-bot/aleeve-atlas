@@ -229,11 +229,12 @@ public final class MapCanvas {
         }
     }
 
+    /// 写入原生纹理坐标，X 向右、Y 向下，与原版地图纹理一致。
     private void setPixel(int x, int y, int argb) {
         if (x < 0 || x >= PIXELS || y < 0 || y >= PIXELS) {
             return;
         }
-        this.image.setPixel(x, PIXELS - 1 - y, argb);
+        this.image.setPixel(x, y, argb);
     }
 
     /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。

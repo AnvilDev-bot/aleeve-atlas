@@ -124,7 +124,10 @@ public final class MapTexture {
         this.redrawAll();
     }
 
-    /// 丢弃已移出纹理覆盖范围的区块数据。
+    /// 覆盖窗口外额外保留的区块数，给新区域采样留出时间，避免移动时地图突然空白。
+    private static final int EVICTION_MARGIN_CHUNKS = 4;
+
+    /// 丢弃已远离纹理覆盖窗口及保留边距的区块数据。
     ///
     /// `source` 若只增不减，长距离跑图后每次重绘都要遍历全部历史区块，
     /// 内存与单帧耗时随游玩时长线性增长。
@@ -134,8 +137,10 @@ public final class MapTexture {
         this.source.keySet().removeIf(key -> {
             int chunkX = ChunkPos.getX(key);
             int chunkZ = ChunkPos.getZ(key);
-            return chunkX < originChunkX || chunkX >= originChunkX + SLOTS
-                    || chunkZ < originChunkZ || chunkZ >= originChunkZ + SLOTS;
+            return chunkX < originChunkX - EVICTION_MARGIN_CHUNKS
+                    || chunkX >= originChunkX + SLOTS + EVICTION_MARGIN_CHUNKS
+                    || chunkZ < originChunkZ - EVICTION_MARGIN_CHUNKS
+                    || chunkZ >= originChunkZ + SLOTS + EVICTION_MARGIN_CHUNKS;
         });
     }
 
@@ -187,12 +192,12 @@ public final class MapTexture {
         }
     }
 
-    /// 写入像素；`NativeImage` 原点在左下，故翻转 Y 轴。
+    /// 写入原生纹理坐标，X 向右、Y 向下，与原版地图纹理一致。
     private void setPixel(int x, int y, int argb) {
         if (x < 0 || x >= PIXELS || y < 0 || y >= PIXELS) {
             return;
         }
-        this.image.setPixel(x, PIXELS - 1 - y, argb);
+        this.image.setPixel(x, y, argb);
     }
 
     private void upload() {

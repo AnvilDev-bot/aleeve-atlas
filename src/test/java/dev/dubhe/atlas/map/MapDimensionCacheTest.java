@@ -93,4 +93,25 @@ class MapDimensionCacheTest {
         Assertions.assertEquals(0xFF00FF00, cache.get(1, 1).orElseThrow().colorAt(0, 0));
         Assertions.assertTrue(cache.get(2, 2).isEmpty());
     }
+
+    @Test
+    void mixedCoordinatesSurviveRegionReload() {
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                ChunkMapData data = new ChunkMapData(x, z);
+                data.setPixel(0, 0, 0xFF000000 | ((x + 2) * 16 + z + 2), 64);
+                cache.put(data);
+            }
+        }
+        cache.flush();
+        MapDimensionCache reopened = new MapDimensionCache(this.tempDir);
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                int expected = 0xFF000000 | ((x + 2) * 16 + z + 2);
+                Assertions.assertEquals(expected, reopened.get(x, z).orElseThrow().colorAt(0, 0),
+                        "区块坐标 " + x + "," + z);
+            }
+        }
+    }
 }
