@@ -26,6 +26,12 @@ public final class MapMarkerRenderer {
         blit(graphics, AtlasRenderPipelines.MAP_MARKER_DIAMOND, centerX, centerY, size, color);
     }
 
+    /// 绘制带深色描边的光滑叉形标记。
+    public static void drawCross(GuiGraphics graphics, double centerX, double centerY,
+            int size, int color) {
+        blit(graphics, AtlasRenderPipelines.MAP_MARKER_CROSS, centerX, centerY, size, color);
+    }
+
     /// 绘制抗锯齿临时标点波纹。
     public static void drawRipple(GuiGraphics graphics, double centerX, double centerY,
             int size, int color) {

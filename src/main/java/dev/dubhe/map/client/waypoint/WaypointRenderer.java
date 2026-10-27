@@ -15,8 +15,6 @@ import java.util.List;
 ///
 /// 小地图与世界地图共用同一套绘制：以菱形标记 + 深色描边表示路径点位置。
 public final class WaypointRenderer {
-    private static final int HALF_SIZE = 3;
-
     private WaypointRenderer() {
     }
 
@@ -78,7 +76,7 @@ public final class WaypointRenderer {
 
     /// 按图标类型绘制路径点标记。
     ///
-    /// 死亡点绘制十字，其余绘制菱形，形状差异使两类路径点在缩小后仍可区分。
+    /// 死亡点绘制叉形，其余绘制菱形，形状差异使两类路径点在缩小后仍可区分。
     static void drawMarker(GuiGraphics graphics, double screenX, double screenZ, int color,
             String icon) {
         if (Waypoint.DEATH_ICON.equals(icon)) {
@@ -88,14 +86,10 @@ public final class WaypointRenderer {
         }
     }
 
-    /// 死亡点标记：以十字与普通路径点的菱形区分。
+    /// 死亡点标记：以光滑叉形与普通路径点的菱形区分。
     private static void drawCross(GuiGraphics graphics, double screenX, double screenZ,
             int color) {
-        int x = (int) Math.round(screenX);
-        int z = (int) Math.round(screenZ);
-        int arm = HALF_SIZE;
-        graphics.fill(x - arm, z, x + arm + 1, z + 1, color);
-        graphics.fill(x, z - arm, x + 1, z + arm + 1, color);
+        MapMarkerRenderer.drawCross(graphics, screenX, screenZ, 8, color);
     }
 
     private static void drawDiamond(GuiGraphics graphics, double screenX, double screenZ,

@@ -50,6 +50,10 @@ public final class AtlasRenderPipelines {
     public static final RenderPipeline MAP_MARKER_DIAMOND = markerPipeline(
             "map_marker_diamond", "core/map_marker_diamond");
 
+    /// 光滑叉形标记管线，供死亡点和危险标点复用。
+    public static final RenderPipeline MAP_MARKER_CROSS = markerPipeline(
+            "map_marker_cross", "core/map_marker_cross");
+
     /// 临时标点波纹管线，使用解析圆环实现抗锯齿。
     public static final RenderPipeline MAP_PING_RIPPLE = markerPipeline(
             "map_ping_ripple", "core/map_ping_ripple");
@@ -79,6 +83,7 @@ public final class AtlasRenderPipelines {
         event.registerPipeline(MINIMAP_OVERLAY);
         event.registerPipeline(MAP_MARKER_DOT);
         event.registerPipeline(MAP_MARKER_DIAMOND);
+        event.registerPipeline(MAP_MARKER_CROSS);
         event.registerPipeline(MAP_PING_RIPPLE);
         event.registerPipeline(MAP_MARKER_ARROW);
     }

@@ -1,6 +1,7 @@
 package dev.dubhe.map.client.waypoint;
 
 import dev.dubhe.map.AleeveAtlas;
+import dev.dubhe.map.client.map.MapMarkerRenderer;
 import dev.dubhe.map.client.map.MinimapLayout;
 import dev.dubhe.map.waypoint.Waypoint;
 import net.minecraft.ChatFormatting;
@@ -17,7 +18,7 @@ import java.util.List;
 
 /// 游戏内 3D 视界路径点标识。
 ///
-/// 在 HUD 阶段把路径点世界坐标投影到屏幕，绘制菱形图标与名称；
+/// 在 HUD 阶段把路径点世界坐标投影到屏幕，绘制路径点图标与名称；
 /// 玩家视线靠近路径点时额外显示距离。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class WaypointWorldOverlay {
@@ -60,13 +61,17 @@ public final class WaypointWorldOverlay {
         int x = (int) Math.round(projected.screenX());
         int y = (int) Math.round(projected.screenY());
         int markerColor = applyOpacity(waypoint.colorArgb(), MARKER_OPACITY);
-        for (int offset = -ICON_HALF_SIZE; offset <= ICON_HALF_SIZE; offset++) {
-            int halfWidth = ICON_HALF_SIZE - Math.abs(offset);
-            graphics.fill(x - halfWidth, y + offset, x + halfWidth + 1, y + offset + 1,
-                    markerColor);
+        if (Waypoint.DEATH_ICON.equals(waypoint.icon())) {
+            MapMarkerRenderer.drawCross(graphics, x, y, 10, markerColor);
+        } else {
+            for (int offset = -ICON_HALF_SIZE; offset <= ICON_HALF_SIZE; offset++) {
+                int halfWidth = ICON_HALF_SIZE - Math.abs(offset);
+                graphics.fill(x - halfWidth, y + offset, x + halfWidth + 1, y + offset + 1,
+                        markerColor);
+            }
+            graphics.fill(x, y - 1, x + 1, y + 1,
+                    applyOpacity(0xFF101010, MARKER_OPACITY));
         }
-        graphics.fill(x, y - 1, x + 1, y + 1,
-                applyOpacity(0xFF101010, MARKER_OPACITY));
 
         Component name = Component.empty().append(waypoint.displayName())
                 .withStyle(ChatFormatting.WHITE);

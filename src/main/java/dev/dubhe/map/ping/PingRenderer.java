@@ -143,12 +143,7 @@ public final class PingRenderer {
     static void drawIcon(GuiGraphics graphics, int x, int z, int color,
             MapPingData.PingIcon icon) {
         switch (icon) {
-            case DANGER -> {
-                for (int offset = -2; offset <= 2; offset++) {
-                    graphics.fill(x + offset, z + offset, x + offset + 1, z + offset + 1, color);
-                    graphics.fill(x + offset, z - offset, x + offset + 1, z - offset + 1, color);
-                }
-            }
+            case DANGER -> MapMarkerRenderer.drawCross(graphics, x, z, 8, color);
             case WARNING -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
             case GOTO -> MapMarkerRenderer.drawArrow(graphics, x, z, 8, 0.0, color);
             case GENERAL -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
