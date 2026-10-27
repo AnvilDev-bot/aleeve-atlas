@@ -30,6 +30,8 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
     static final int MARGIN = 6;
     /// 小地图可见基准范围；纹理额外覆盖旋转余量。
     public static final int COVERED_BLOCKS = 16 * 9;
+    /// 地图内容与外轮廓之间的安全间距（GUI 像素）。
+    public static final int CLIP_INSET = 3;
 
     private static double focusProgress;
     private static long lastFocusUpdate;
@@ -144,10 +146,11 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
+        double half = Math.max(0.0, this.size / 2.0 - CLIP_INSET);
         if (circular) {
-            return Math.sqrt(dx * dx + dz * dz) <= this.size / 2.0;
+            return Math.sqrt(dx * dx + dz * dz) <= half;
         }
-        return Math.abs(dx) <= this.size / 2.0 && Math.abs(dz) <= this.size / 2.0;
+        return Math.abs(dx) <= half && Math.abs(dz) <= half;
     }
 
     /// 按当前地图旋转角判断坐标是否落在可视范围内，供标记分类使用。
@@ -162,13 +165,14 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
+        double half = Math.max(0.0, this.size / 2.0 - CLIP_INSET);
         if (circular) {
-            return Math.sqrt(dx * dx + dz * dz) <= this.size / 2.0;
+            return Math.sqrt(dx * dx + dz * dz) <= half;
         }
         double radians = Math.toRadians(rotationDegrees);
         double rotatedX = dx * Math.cos(radians) - dz * Math.sin(radians);
         double rotatedZ = dx * Math.sin(radians) + dz * Math.cos(radians);
-        return Math.abs(rotatedX) <= this.size / 2.0 && Math.abs(rotatedZ) <= this.size / 2.0;
+        return Math.abs(rotatedX) <= half && Math.abs(rotatedZ) <= half;
     }
 
     /// 把标记中心限制在地图边界内，并为标记半径预留边距。
@@ -186,7 +190,7 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         double centerZ = this.y + this.size / 2.0;
         double dx = screenX - centerX;
         double dz = screenZ - centerZ;
-        double limit = Math.max(0.0, this.size / 2.0 - margin);
+        double limit = Math.max(0.0, this.size / 2.0 - CLIP_INSET - margin);
         if (circular) {
             double length = Math.sqrt(dx * dx + dz * dz);
             if (length > limit && length > 0.0) {

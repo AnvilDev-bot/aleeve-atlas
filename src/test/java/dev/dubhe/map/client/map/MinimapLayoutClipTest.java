@@ -12,7 +12,8 @@ class MinimapLayoutClipTest {
         double[] point = this.layout.fitInside(10 + 49, 20 + 50, true, 6.0);
         double dx = point[0] - 60.0;
         double dy = point[1] - 70.0;
-        Assertions.assertTrue(Math.sqrt(dx * dx + dy * dy) <= 44.0 + 1.0E-6);
+        Assertions.assertTrue(Math.sqrt(dx * dx + dy * dy)
+                <= this.layout.size() / 2.0 - MinimapLayout.CLIP_INSET - 6.0 + 1.0E-6);
     }
 
     @Test
@@ -39,7 +40,8 @@ class MinimapLayoutClipTest {
         double radians = Math.toRadians(45.0);
         double rotatedX = dx * Math.cos(radians) - dy * Math.sin(radians);
         double rotatedY = dx * Math.sin(radians) + dy * Math.cos(radians);
-        Assertions.assertTrue(Math.max(Math.abs(rotatedX), Math.abs(rotatedY)) <= 44.0 + 1.0E-6);
+        Assertions.assertTrue(Math.max(Math.abs(rotatedX), Math.abs(rotatedY))
+                <= this.layout.size() / 2.0 - MinimapLayout.CLIP_INSET - 6.0 + 1.0E-6);
         Assertions.assertEquals(1.0, dx / dy, 1.0E-6);
     }
 

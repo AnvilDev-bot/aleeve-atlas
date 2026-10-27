@@ -80,8 +80,10 @@ public final class MinimapRenderer {
         // 裁剪必须在旋转前启用：enableScissor 按当前 pose 变换矩形，
         // 旋转后传入的轴对齐矩形会被变换成负宽高或错位区域。
         boolean scissored = !circular;
+        int clipInset = MinimapLayout.CLIP_INSET;
         if (scissored) {
-            graphics.enableScissor(x, y, x + size, y + size);
+            graphics.enableScissor(x + clipInset, y + clipInset,
+                    x + size - clipInset, y + size - clipInset);
         }
         graphics.pose().pushMatrix();
         if (rotationDegrees != 0.0F) {
@@ -90,7 +92,7 @@ public final class MinimapRenderer {
             graphics.pose().translate(-centerX, -centerY);
         }
 
-        // 方形按对角线尺寸绘制后由屏幕方形裁剪，圆形保持原可见范围。
+        // 方形按对角线尺寸绘制后由内缩 scissor 裁剪，圆形由 shader 按同一内缩半径裁剪。
         int drawSize = circular ? size : MinimapLayout.squareDrawSize(size);
         int drawX = circular ? x : Math.round(centerX - drawSize / 2.0F);
         int drawY = circular ? y : Math.round(centerY - drawSize / 2.0F);
@@ -99,7 +101,7 @@ public final class MinimapRenderer {
         float uvStartX = (float) texture.uvStart(player.getX(), uvSize);
         float uvStartZ = (float) texture.uvStart(player.getZ(), uvSize);
         float brightness = timeBrightness(minecraft, config);
-        int mapTint = circular ? encodeCircleTint(uvSize, brightness)
+        int mapTint = circular ? encodeCircleTint(uvSize, brightness, clipInset, size)
                 : brightnessColor(brightness);
         graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStartX, uvStartZ,
                 drawSize, drawSize, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS, mapTint);
@@ -112,11 +114,12 @@ public final class MinimapRenderer {
 
         // 标记位置随地图旋转，图标与文字在屏幕坐标中保持正向。
         if (scissored) {
-            graphics.enableScissor(x, y, x + size, y + size);
+            graphics.enableScissor(x + clipInset, y + clipInset,
+                    x + size - clipInset, y + size - clipInset);
         }
+        RadarRenderer.render(graphics, config, layout, minecraft, rotationDegrees);
         WaypointRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
         PingRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
-        RadarRenderer.render(graphics, config, layout, minecraft, rotationDegrees);
         if (scissored) {
             graphics.disableScissor();
         }
@@ -148,11 +151,13 @@ public final class MinimapRenderer {
     }
 
     /// 圆形遮罩使用顶点色 R 传递纹理裁剪比例的倒数，还原屏幕局部坐标。
-    private static int encodeCircleTint(int uvSize, float brightness) {
+    private static int encodeCircleTint(int uvSize, float brightness, int clipInset,
+            int drawSize) {
         float uvScale = MapTexture.PIXELS / (float) uvSize;
         int red = Math.round(uvScale / 8.0F * 255.0F);
         int green = Math.round(brightness * 255.0F);
-        return 0xFF000000 | (red << 16) | (green << 8);
+        int blue = Math.round(2.0F * clipInset / drawSize * 255.0F);
+        return 0xFF000000 | (red << 16) | (green << 8) | blue;
     }
 
     private static int brightnessColor(float brightness) {

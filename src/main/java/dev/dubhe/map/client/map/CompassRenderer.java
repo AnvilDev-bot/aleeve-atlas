@@ -4,6 +4,7 @@ import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.config.AtlasClientConfigs;
 import dev.dubhe.map.config.CompassPosition;
 import dev.dubhe.map.config.ConfigBounds;
+import dev.dubhe.map.config.MinimapShape;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.Identifier;
@@ -32,18 +33,36 @@ public final class CompassRenderer {
         Minecraft minecraft = Minecraft.getInstance();
         double centerX = layout.x() + layout.size() / 2.0;
         double centerY = layout.y() + layout.size() / 2.0;
-        double radius = Math.max(6.0, layout.size() / 2.0 - 8.0);
+        boolean circular = AtlasClientConfigs.CONFIG.minimap.shape == MinimapShape.CIRCLE;
+        double radius = Math.max(6.0,
+                layout.size() / 2.0 - MinimapLayout.CLIP_INSET - 8.0);
         for (int index = 0; index < CARDINALS.length; index++) {
-            double[] point = MinimapLayout.rotatePoint(
-                    centerX + DIRECTIONS[index][0] * radius,
-                    centerY + DIRECTIONS[index][1] * radius,
-                    centerX, centerY, rotationDegrees);
             String label = CARDINALS[index];
+            double labelExtent = Math.max(minecraft.font.width(label) / 2.0,
+                    minecraft.font.lineHeight / 2.0) + 2.0;
+            double[] point = minimapLabelPoint(centerX, centerY, layout.size(), index,
+                    rotationDegrees, circular, labelExtent, radius);
             graphics.drawString(minecraft.font, label,
                     (int) Math.round(point[0] - minecraft.font.width(label) / 2.0),
                     (int) Math.round(point[1] - minecraft.font.lineHeight / 2.0),
                     TEXT_COLOR, true);
         }
+    }
+
+    static double[] minimapLabelPoint(double centerX, double centerY, double size, int index,
+            double rotationDegrees, boolean circular, double labelExtent, double circleRadius) {
+        double directionX = DIRECTIONS[index][0];
+        double directionY = DIRECTIONS[index][1];
+        double radians = Math.toRadians(rotationDegrees);
+        double rotatedX = directionX * Math.cos(radians) - directionY * Math.sin(radians);
+        double rotatedY = directionX * Math.sin(radians) + directionY * Math.cos(radians);
+        if (circular) {
+            return new double[] { centerX + rotatedX * circleRadius,
+                centerY + rotatedY * circleRadius };
+        }
+        double edge = Math.max(1.0, size / 2.0 - labelExtent);
+        double scale = edge / Math.max(Math.abs(rotatedX), Math.abs(rotatedY));
+        return new double[] { centerX + rotatedX * scale, centerY + rotatedY * scale };
     }
 
     /// 按配置在世界地图角落绘制方向标，图形和文字使用相同缩放倍率。

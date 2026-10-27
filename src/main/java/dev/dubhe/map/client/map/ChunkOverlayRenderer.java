@@ -56,7 +56,7 @@ public final class ChunkOverlayRenderer {
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
                         left, top, Math.max(1, right - left), Math.max(1, bottom - top), circular,
                         layout.x() + layout.size() / 2.0, layout.y() + layout.size() / 2.0,
-                        layout.size() / 2.0);
+                        layout.size() / 2.0 - MinimapLayout.CLIP_INSET);
             }
         }
     }

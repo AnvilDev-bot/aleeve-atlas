@@ -294,10 +294,10 @@ public final class WorldMapScreen extends Screen {
         this.drawTerritories(graphics, logicalMouseX, logicalMouseY);
         ChunkOverlayRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
                 this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
-        this.drawWaypoints(graphics);
-        this.drawPings(graphics);
         RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
                 Minecraft.getInstance(), this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
+        this.drawWaypoints(graphics);
+        this.drawPings(graphics);
         this.drawPlayerMarker(graphics);
         this.drawOverlayText(graphics);
         CompassRenderer.renderOnWorldMap(graphics);

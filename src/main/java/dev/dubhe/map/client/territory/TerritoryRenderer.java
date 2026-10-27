@@ -185,7 +185,7 @@ public final class TerritoryRenderer {
         }
         double centerX = layout.x() + layout.size() / 2.0;
         double centerZ = layout.y() + layout.size() / 2.0;
-        double radius = layout.size() / 2.0;
+        double radius = layout.size() / 2.0 - MinimapLayout.CLIP_INSET;
         for (CircleClip.Band band : CircleClip.bands(x, y, width, height,
                 centerX, centerZ, radius)) {
             graphics.fill(band.left(), band.top(), band.right(), band.bottom(), color);
@@ -218,11 +218,27 @@ public final class TerritoryRenderer {
                 double[] rotated = layout.rotatedScreenPoint(worldX, worldZ, rotationDegrees);
                 double screenX = rotated[0];
                 double screenZ = rotated[1];
-                if (!layout.contains(screenX, screenZ, circular)) {
+                int textWidth = minecraft.font.width(group.displayName());
+                double halfWidth = textWidth / 2.0;
+                double halfHeight = minecraft.font.lineHeight / 2.0;
+                double centerX = layout.x() + layout.size() / 2.0;
+                double centerZ = layout.y() + layout.size() / 2.0;
+                if (circular) {
+                    double halfDiagonal = Math.hypot(halfWidth, halfHeight);
+                    double dx = screenX - centerX;
+                    double dz = screenZ - centerZ;
+                    if (Math.hypot(dx, dz) + halfDiagonal
+                            > layout.size() / 2.0 - MinimapLayout.CLIP_INSET) {
+                        continue;
+                    }
+                } else if (screenX - halfWidth < layout.x() + MinimapLayout.CLIP_INSET
+                        || screenX + halfWidth > layout.x() + layout.size()
+                                - MinimapLayout.CLIP_INSET
+                        || screenZ - halfHeight < layout.y() + MinimapLayout.CLIP_INSET
+                        || screenZ + halfHeight > layout.y() + layout.size()
+                                - MinimapLayout.CLIP_INSET) {
                     continue;
                 }
-                // 以锚点为中心绘制，与世界地图的标签定位保持一致。
-                int textWidth = minecraft.font.width(group.displayName());
                 graphics.drawString(minecraft.font, group.displayName(),
                         (int) Math.round(screenX) - textWidth / 2,
                         (int) Math.round(screenZ) - 4, LABEL_COLOR, true);

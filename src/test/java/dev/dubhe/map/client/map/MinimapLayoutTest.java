@@ -61,9 +61,9 @@ class MinimapLayoutTest {
     @Test
     void containsRespectsShape() {
         MinimapLayout layout = new MinimapLayout(0, 0, 100, 0.0, 0.0);
-        // 角落像素：方形包含、圆形不包含。
-        Assertions.assertTrue(layout.contains(1.0, 1.0, false));
-        Assertions.assertFalse(layout.contains(1.0, 1.0, true));
+        // 靠近角落但仍在内缩方形内的点；圆形不包含该点。
+        Assertions.assertTrue(layout.contains(4.0, 4.0, false));
+        Assertions.assertFalse(layout.contains(4.0, 4.0, true));
         // 圆心附近：两种形态都包含。
         Assertions.assertTrue(layout.contains(50.0, 50.0, false));
         Assertions.assertTrue(layout.contains(50.0, 50.0, true));

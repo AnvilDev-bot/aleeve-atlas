@@ -6,6 +6,31 @@ import org.junit.jupiter.api.Test;
 /// 小地图旋转方向与固定北向模式测试。
 class MinimapOrientationTest {
     @Test
+    void squareCompassLabelsStayOnRotatedSquareEdge() {
+        double center = 64.0;
+        double size = 128.0;
+        double labelExtent = 6.0;
+        double edge = size / 2.0 - labelExtent;
+        for (double rotation : new double[] { 0.0, 30.0, 45.0, 90.0, 135.0 }) {
+            for (int direction = 0; direction < 4; direction++) {
+                double[] point = CompassRenderer.minimapLabelPoint(center, center, size,
+                        direction, rotation, false, labelExtent, edge);
+                Assertions.assertEquals(edge,
+                        Math.max(Math.abs(point[0] - center), Math.abs(point[1] - center)),
+                        1.0E-6);
+            }
+        }
+    }
+
+    @Test
+    void circularCompassLabelsStayOnCircle() {
+        double[] point = CompassRenderer.minimapLabelPoint(50.0, 50.0, 100.0,
+                0, 37.0, true, 5.0, 42.0);
+        Assertions.assertEquals(42.0,
+                Math.hypot(point[0] - 50.0, point[1] - 50.0), 1.0E-6);
+    }
+
+    @Test
     void rotatingMapAlignsPlayerForwardWithScreenUp() {
         // Minecraft 前向量为 (-sin(yaw), cos(yaw))，旋转后必须指向屏幕上方。
         for (float yaw : new float[] { 0.0F, 90.0F, 180.0F, -90.0F }) {

@@ -67,12 +67,15 @@ public final class RadarRenderer {
                 if (circular) {
                     double dx = screenX - centerX;
                     double dy = screenY - centerY;
-                    return Math.hypot(dx, dy) <= layout.size() / 2.0 - margin;
+                    return Math.hypot(dx, dy)
+                            <= layout.size() / 2.0 - MinimapLayout.CLIP_INSET - margin;
                 }
-                return screenX >= layout.x() + margin
-                        && screenX <= layout.x() + layout.size() - margin
-                        && screenY >= layout.y() + margin
-                        && screenY <= layout.y() + layout.size() - margin;
+                return screenX >= layout.x() + MinimapLayout.CLIP_INSET + margin
+                        && screenX <= layout.x() + layout.size()
+                                - MinimapLayout.CLIP_INSET - margin
+                        && screenY >= layout.y() + MinimapLayout.CLIP_INSET + margin
+                        && screenY <= layout.y() + layout.size()
+                                - MinimapLayout.CLIP_INSET - margin;
             }
 
             @Override
