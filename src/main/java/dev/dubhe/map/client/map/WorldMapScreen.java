@@ -39,6 +39,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -797,6 +798,9 @@ public final class WorldMapScreen extends Screen {
         }
         int localX = (int) Math.floor(worldX) & 15;
         int localZ = (int) Math.floor(worldZ) & 15;
+        if (data.stateAt(localX, localZ).mapColor() == MapColor.NONE) {
+            return 64;
+        }
         return data.heightAt(localX, localZ);
     }
 

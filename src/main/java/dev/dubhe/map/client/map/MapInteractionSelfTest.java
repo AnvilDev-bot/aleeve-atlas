@@ -80,11 +80,15 @@ public final class MapInteractionSelfTest {
         double y = map.height / 2.0;
         if (step == 1) {
             ClientPings.clear();
-            MouseButtonEvent middle = mouse(x, y, GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
+            MouseButtonEvent middle = mouse(x + 32, y + 32, GLFW.GLFW_MOUSE_BUTTON_MIDDLE);
             map.mouseClicked(middle, false);
             map.mouseReleased(middle);
-            require(ClientPings.active().stream().anyMatch(p -> p.icon() == MapPingData.PingIcon.GENERAL),
-                    "Quick middle click must create GENERAL");
+            MapPingData created = ClientPings.active().stream()
+                    .filter(p -> p.icon() == MapPingData.PingIcon.GENERAL)
+                    .findFirst().orElseThrow();
+            require(Math.abs(created.position().x - (minecraft.player.getX() + 8.0)) < 1.0E-6
+                            && Math.abs(created.position().z - (minecraft.player.getZ() + 8.0)) < 1.0E-6,
+                    "Map click must preserve the selected world coordinates");
         } else if (step >= 2 && step <= 9) {
             int index = (step - 2) / 2;
             if (step % 2 == 0) {
