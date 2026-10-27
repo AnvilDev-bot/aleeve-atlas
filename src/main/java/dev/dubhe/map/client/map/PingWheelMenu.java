@@ -8,6 +8,7 @@ import dev.dubhe.map.ping.MapPingData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 /// 在世界地图上显示 AnvilLib 轮盘，选择和取消后返回同一地图。
@@ -27,7 +28,12 @@ final class PingWheelMenu extends WheelScreen {
     private static WheelMenuModel model(WorldMapScreen parent) {
         WheelMenuBuilder builder = WheelMenuBuilder.create().slotsPerPage(4);
         for (MapPingData.PingIcon icon : MapPingData.PingIcon.values()) {
-            builder.action(icon.name(), icon.displayName(), context -> parent.createWheelPing(icon));
+            builder.action(icon.name(), icon.displayName(), (graphics, pose, width, height) -> {
+                Component label = icon.displayName();
+                var font = Minecraft.getInstance().font;
+                graphics.drawString(font, label, -font.width(label) / 2,
+                        -font.lineHeight / 2, 0xFFFFFFFF, true);
+            }, context -> parent.createWheelPing(icon));
         }
         return builder.build();
     }
