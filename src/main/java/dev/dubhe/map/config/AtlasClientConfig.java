@@ -20,10 +20,6 @@ public class AtlasClientConfig {
     public WorldMap worldMap = new WorldMap();
 
     @CollapsibleObject
-    @Comment("Slime chunk settings.")
-    public SlimeChunks slimeChunks = new SlimeChunks();
-
-    @CollapsibleObject
     @Comment("Entity radar settings.")
     public Radar radar = new Radar();
 
@@ -51,11 +47,6 @@ public class AtlasClientConfig {
 
         @Comment("Highlight slime chunks on the world map.")
         public boolean showSlimeChunks = false;
-    }
-
-    public static class SlimeChunks {
-        @Comment("Manual world seed for slime chunks. Empty uses the host or /seed result.")
-        public String seed = "";
     }
 
     public static class Minimap {

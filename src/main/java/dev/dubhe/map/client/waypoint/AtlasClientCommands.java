@@ -1,11 +1,12 @@
 package dev.dubhe.map.client.waypoint;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.arguments.LongArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.api.territory.AtlasTerritory;
 import dev.dubhe.map.api.territory.BorderStyle;
+import dev.dubhe.map.client.map.SlimeChunkTracker;
 import dev.dubhe.map.client.profiling.AtlasProfiling;
 import dev.dubhe.map.ping.ClientPings;
 import dev.dubhe.map.ping.MapPingData;
@@ -81,10 +82,19 @@ public final class AtlasClientCommands {
                                 .executes(context -> demo(context.getSource())))
                         .then(Commands.literal("clear")
                                 .executes(context -> clear(context.getSource()))))
+                .then(Commands.literal("slime_seed")
+                        .then(Commands.argument("seed", LongArgumentType.longArg())
+                                .executes(context -> setSlimeSeed(
+                                        LongArgumentType.getLong(context, "seed")))))
                 .then(Commands.literal("pingdemo")
                         .executes(context -> pingDemo(context.getSource())))
                 .then(Commands.literal("perf")
                         .executes(context -> reportPerformance(context.getSource())));
+    }
+
+    private static int setSlimeSeed(long seed) {
+        SlimeChunkTracker.setSeed(seed);
+        return 1;
     }
 
     /// 在玩家前方注入一个临时标点，用于验收波纹扩散渲染。

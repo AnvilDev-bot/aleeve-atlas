@@ -1,10 +1,13 @@
 package dev.dubhe.map.client.map;
 
 import dev.dubhe.map.AleeveAtlas;
-import dev.dubhe.map.config.AtlasClientConfigs;
+import dev.dubhe.map.storage.AtlasPaths;
 import dev.dubhe.map.storage.ServerKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.world.level.levelgen.WorldgenRandom;
@@ -15,7 +18,11 @@ import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,30 +34,76 @@ public final class SlimeChunkTracker {
     private static final long SLIME_SALT = 987234911L;
     private static final Pattern SEED_PATTERN = Pattern.compile("-?\\d+");
     private static final Map<String, Long> LEARNED_SEEDS = new ConcurrentHashMap<>();
-    private static String invalidSeed;
+    private static final Set<String> LOADED_KEYS = ConcurrentHashMap.newKeySet();
 
     private SlimeChunkTracker() {
     }
 
     /// 手动种子优先，其次读取主机存档，最后使用管理员执行 `/seed` 的记录。
     public static Long currentSeed() {
-        String configured = AtlasClientConfigs.CONFIG.slimeChunks.seed.trim();
-        if (!configured.isEmpty()) {
-            try {
-                return Long.parseLong(configured);
-            } catch (NumberFormatException e) {
-                if (!configured.equals(invalidSeed)) {
-                    invalidSeed = configured;
-                    LOGGER.warn("Invalid slime chunk seed: {}", configured);
-                }
-            }
-        }
         Minecraft minecraft = Minecraft.getInstance();
+        String serverKey = ServerKey.resolve(minecraft);
+        Long persisted = loadPersistedSeed(minecraft, serverKey);
+        if (persisted != null) {
+            return persisted;
+        }
         IntegratedServer server = minecraft.getSingleplayerServer();
         if (server != null) {
-            return server.getWorldData().worldGenOptions().seed();
+            long seed = server.getWorldData().worldGenOptions().seed();
+            saveSeed(minecraft, serverKey, seed);
+            return seed;
         }
-        return LEARNED_SEEDS.get(ServerKey.resolve(minecraft));
+        return LEARNED_SEEDS.get(serverKey);
+    }
+
+    private static Long loadPersistedSeed(Minecraft minecraft, String serverKey) {
+        if (!LOADED_KEYS.add(serverKey)) {
+            return LEARNED_SEEDS.get(serverKey);
+        }
+        Path file = AtlasPaths.serverRoot(minecraft.gameDirectory.toPath(), serverKey)
+                .resolve("slime_seed.nbt");
+        if (!Files.isRegularFile(file)) {
+            return null;
+        }
+        try {
+            CompoundTag tag = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
+            long seed = tag.getLongOr("seed", Long.MIN_VALUE);
+            if (seed != Long.MIN_VALUE) {
+                LEARNED_SEEDS.put(serverKey, seed);
+                return seed;
+            }
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("Failed to read slime chunk seed {}", file, e);
+        }
+        return null;
+    }
+
+    private static void saveSeed(Minecraft minecraft, String serverKey, long seed) {
+        Long previous = LEARNED_SEEDS.put(serverKey, seed);
+        LOADED_KEYS.add(serverKey);
+        if (previous != null && previous == seed) {
+            return;
+        }
+        Path file = AtlasPaths.serverRoot(minecraft.gameDirectory.toPath(), serverKey)
+                .resolve("slime_seed.nbt");
+        CompoundTag tag = new CompoundTag();
+        tag.putLong("seed", seed);
+        try {
+            Files.createDirectories(file.getParent());
+            NbtIo.writeCompressed(tag, file);
+        } catch (IOException e) {
+            LOGGER.warn("Failed to write slime chunk seed {}", file, e);
+        }
+    }
+
+    public static void setSeed(long seed) {
+        Minecraft minecraft = Minecraft.getInstance();
+        String serverKey = ServerKey.resolve(minecraft);
+        saveSeed(minecraft, serverKey, seed);
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.translatable(
+                    "aleeve_atlas.message.slime_seed_recorded", seed), true);
+        }
     }
 
     public static boolean isSlimeChunk(long seed, int chunkX, int chunkZ) {
@@ -74,12 +127,7 @@ public final class SlimeChunkTracker {
         }
         try {
             long seed = Long.parseLong(matcher.group());
-            Minecraft minecraft = Minecraft.getInstance();
-            LEARNED_SEEDS.put(ServerKey.resolve(minecraft), seed);
-            if (minecraft.player != null) {
-                minecraft.player.displayClientMessage(Component.translatable(
-                        "aleeve_atlas.message.slime_seed_recorded", seed), true);
-            }
+            SlimeChunkTracker.setSeed(seed);
         } catch (NumberFormatException e) {
             LOGGER.warn("Unable to read /seed response: {}", contents.getArgs()[0], e);
         }

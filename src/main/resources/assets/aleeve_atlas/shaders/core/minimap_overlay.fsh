@@ -52,17 +52,23 @@ void main() {
     bool lockNorth = vertexColor.b > 0.5;
     float radius = length(centered) * 2.0;
 
+    float expansion = vertexColor.a;
+    float expandedScale = 1.0 + expansion;
+    float originalScale = 1.0 / expandedScale;
     if (circular) {
         if (radius > 1.0) {
             discard;
         }
-        if (radius > 0.972) {
+        if (radius > 0.972 * originalScale) {
             fragColor = BORDER_COLOR * strength;
             return;
         }
     } else {
         float edge = max(abs(centered.x), abs(centered.y)) * 2.0;
-        if (edge > 0.985) {
+        if (edge > 1.0) {
+            discard;
+        }
+        if (edge > 0.985 * originalScale) {
             fragColor = BORDER_COLOR * strength;
             return;
         }
@@ -77,7 +83,7 @@ void main() {
         centered.x * cosYaw - centered.y * sinYaw,
         centered.x * sinYaw + centered.y * cosYaw
     );
-    float distanceToEdge = dropletDistance(rotated * 2.0);
+    float distanceToEdge = dropletDistance(rotated * 2.0 * expandedScale);
     float antialias = max(fwidth(distanceToEdge), 0.001);
     float alpha = 1.0 - smoothstep(-antialias, antialias, distanceToEdge);
     if (alpha > 0.0) {

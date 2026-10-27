@@ -29,7 +29,9 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 /// 画出圆形遮罩、边框与水滴形玩家指示器。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class MinimapRenderer {
-    private static final Identifier OVERLAY_TEXTURE = AleeveAtlas.id("textures/gui/white.png");
+    private static final Identifier OVERLAY_TEXTURE =
+            AleeveAtlas.id("textures/gui/white.png");
+    private static final int BORDER_EXPANSION_PIXELS = 3;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
 
     private MinimapRenderer() {
@@ -82,8 +84,7 @@ public final class MinimapRenderer {
         boolean scissored = !circular;
         int clipInset = MinimapLayout.CLIP_INSET;
         if (scissored) {
-            graphics.enableScissor(x + clipInset, y + clipInset,
-                    x + size - clipInset, y + size - clipInset);
+            graphics.enableScissor(x, y, x + size, y + size);
         }
         graphics.pose().pushMatrix();
         if (rotationDegrees != 0.0F) {
@@ -101,7 +102,7 @@ public final class MinimapRenderer {
         float uvStartX = (float) texture.uvStart(player.getX(), uvSize);
         float uvStartZ = (float) texture.uvStart(player.getZ(), uvSize);
         float brightness = timeBrightness(minecraft, config);
-        int mapTint = circular ? encodeCircleTint(uvSize, brightness, clipInset, size)
+        int mapTint = circular ? encodeCircleTint(uvSize, brightness, 0, size)
                 : brightnessColor(brightness);
         graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStartX, uvStartZ,
                 drawSize, drawSize, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS, mapTint);
@@ -125,9 +126,14 @@ public final class MinimapRenderer {
         }
 
         float arrowYaw = arrowYawDegrees(player.getYRot(), config.minimap.lockNorth);
-        int tint = encodeOverlayTint(arrowYaw, circular, config.minimap.lockNorth);
-        graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
-                size, size, 2, 2, 2, 2, tint);
+        int overlaySize = size + BORDER_EXPANSION_PIXELS * 2;
+        int overlayX = x - BORDER_EXPANSION_PIXELS;
+        int overlayY = y - BORDER_EXPANSION_PIXELS;
+        int tint = encodeOverlayTint(arrowYaw, circular, config.minimap.lockNorth, size,
+                BORDER_EXPANSION_PIXELS);
+        graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE,
+                overlayX, overlayY, 0.0F, 0.0F, overlaySize, overlaySize,
+                2, 2, 2, 2, tint);
 
         CompassRenderer.renderOnMinimap(graphics, layout, rotationDegrees);
         TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular, rotationDegrees);
@@ -175,12 +181,14 @@ public final class MinimapRenderer {
     }
 
     /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。
-    private static int encodeOverlayTint(float yaw, boolean circular, boolean lockNorth) {
+    private static int encodeOverlayTint(float yaw, boolean circular, boolean lockNorth,
+            int mapSize, int borderExpansion) {
         float normalized = (yaw % 360.0F + 360.0F) % 360.0F / 360.0F;
         int red = Math.round(normalized * 255.0F);
         int green = circular ? 255 : 0;
         int blue = lockNorth ? 255 : 0;
-        return 0xFF000000 | (red << 16) | (green << 8) | blue;
+        int alpha = Math.round(borderExpansion * 2.0F / mapSize * 255.0F);
+        return (alpha << 24) | (red << 16) | (green << 8) | blue;
     }
 
     /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。

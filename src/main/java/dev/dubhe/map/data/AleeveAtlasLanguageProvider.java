@@ -30,7 +30,6 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.hud.coords", "%s, %s, %s");
         add("aleeve_atlas.hud.time", "%s:%s");
         add("aleeve_atlas.hud.biome_unknown", "?");
-        add("aleeve_atlas.screen.world_map.center", "X %s  Z %s  (%sx)");
 
         add("aleeve_atlas.message.ping_received", "%s sent a ping");
         add("aleeve_atlas.message.waypoint_received", "Waypoint from %2$s accepted: %1$s");
@@ -117,7 +116,8 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
                 "Drag to pan, scroll to zoom, ESC or M to close");
         add("aleeve_atlas.screen.world_map.add_waypoint", "Create Waypoint");
         add("aleeve_atlas.screen.world_map.delete_waypoint", "Delete Waypoint");
-        add("aleeve_atlas.screen.world_map.location", "Block: %s  Biome: %s");
+        add("aleeve_atlas.screen.world_map.location",
+                "Block: %s  XYZ: %s, %s, %s  Biome: %s");
         add("aleeve_atlas.screen.world_map.territory", "Territory: %s");
         add("aleeve_atlas.screen.world_map.unknown", "Unknown");
         add("aleeve_atlas.ping.type.general", "General");

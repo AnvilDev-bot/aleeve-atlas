@@ -22,8 +22,6 @@ import java.util.List;
 /// 玩家视线靠近路径点时额外显示距离。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class WaypointWorldOverlay {
-    /// 超过该距离不再显示（避免屏幕上堆积过多标识）。
-    private static final double MAX_RENDER_DISTANCE = 512.0;
     private static final int ICON_HALF_SIZE = 4;
     private static final float MARKER_OPACITY = 0.75F;
     private static final int TEXT_COLOR = 0xBFFFFFFF;
@@ -50,7 +48,6 @@ public final class WaypointWorldOverlay {
             Vec3 target = new Vec3(waypoint.pos().getX() + 0.5, waypoint.pos().getY() + 1.2,
                     waypoint.pos().getZ() + 0.5);
             WorldProjection.project(target)
-                    .filter(projected -> projected.distance() <= MAX_RENDER_DISTANCE)
                     .ifPresent(projected -> drawMarker(graphics, minecraft, waypoint, projected,
                             WorldProjection.isLookingAt(projected, guiWidth, guiHeight)));
         }

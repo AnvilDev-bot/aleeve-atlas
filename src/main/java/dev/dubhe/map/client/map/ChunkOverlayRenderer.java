@@ -47,15 +47,25 @@ public final class ChunkOverlayRenderer {
             return;
         }
         Long seed = config.minimap.showSlimeChunks ? SlimeChunkTracker.currentSeed() : null;
+        int mapPixels = circular ? layout.size() : MinimapLayout.squareDrawSize(layout.size());
+        int mapBlocks = circular ? (int) layout.coveredBlocks()
+                : MinimapLayout.squareDrawSize((int) layout.coveredBlocks());
+        double centerX = layout.x() + layout.size() / 2.0;
+        double centerZ = layout.y() + layout.size() / 2.0;
+        double blocksToPixels = mapPixels / (double) mapBlocks;
         int range = (int) Math.ceil(layout.coveredBlocks() / 32.0) + 1;
         int centerChunkX = chunkAt(layout.centerWorldX());
         int centerChunkZ = chunkAt(layout.centerWorldZ());
         for (int chunkX = centerChunkX - range; chunkX <= centerChunkX + range; chunkX++) {
             for (int chunkZ = centerChunkZ - range; chunkZ <= centerChunkZ + range; chunkZ++) {
-                int left = (int) Math.round(layout.worldToScreenX(chunkX * 16.0));
-                int top = (int) Math.round(layout.worldToScreenZ(chunkZ * 16.0));
-                int right = (int) Math.round(layout.worldToScreenX((chunkX + 1) * 16.0));
-                int bottom = (int) Math.round(layout.worldToScreenZ((chunkZ + 1) * 16.0));
+                int left = (int) Math.round(centerX
+                        + (chunkX * 16.0 - layout.centerWorldX()) * blocksToPixels);
+                int top = (int) Math.round(centerZ
+                        + (chunkZ * 16.0 - layout.centerWorldZ()) * blocksToPixels);
+                int right = (int) Math.round(centerX
+                        + ((chunkX + 1) * 16.0 - layout.centerWorldX()) * blocksToPixels);
+                int bottom = (int) Math.round(centerZ
+                        + ((chunkZ + 1) * 16.0 - layout.centerWorldZ()) * blocksToPixels);
                 drawCell(graphics, config.minimap.showChunkGrid,
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
                         left, top, Math.max(1, right - left), Math.max(1, bottom - top), circular,

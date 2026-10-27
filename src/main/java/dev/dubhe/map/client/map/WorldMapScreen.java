@@ -59,7 +59,7 @@ import java.util.Set;
 public final class WorldMapScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/worldmap");
     /// 每区块像素数的缩放范围。
-    private static final float MIN_PIXELS_PER_CHUNK = 1.0F;
+    private static final float MIN_PIXELS_PER_CHUNK = 0.05F;
     private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
     private static final int BACKGROUND_COLOR = 0xF0101010;
     private static final int PLAYER_COLOR = 0xFFFFFFFF;
@@ -348,7 +348,6 @@ public final class WorldMapScreen extends Screen {
         }
         this.drawTerritoryTooltip(graphics, logicalMouseX, logicalMouseY, mouseX, mouseY);
         this.drawWaypointLabels(graphics);
-        this.drawOverlayText(graphics);
         CompassRenderer.renderOnWorldMap(graphics);
         this.drawTerritoryLabels(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -774,7 +773,7 @@ public final class WorldMapScreen extends Screen {
                         + "." + key.identifier().getPath())
                 .orElse("aleeve_atlas.screen.world_map.unknown");
         Component location = Component.translatable("aleeve_atlas.screen.world_map.location",
-                block, Component.translatable(biomeKey));
+                block, pos.getX(), pos.getY(), pos.getZ(), Component.translatable(biomeKey));
         List<TerritoryGroup> territories = AtlasTerritory.clientRegistry()
                 .hitAt(minecraft.level.dimension(), new ChunkPos(pos));
         if (!territories.isEmpty()) {
@@ -783,16 +782,6 @@ public final class WorldMapScreen extends Screen {
                             territories.get(0).displayName()));
         }
         graphics.drawString(minecraft.font, location, 6, height - 28, 0xFFDDDDDD);
-    }
-
-    private void drawOverlayText(GuiGraphics graphics) {
-        Minecraft minecraft = Minecraft.getInstance();
-        Component center = Component.translatable("aleeve_atlas.screen.world_map.center",
-                "%.0f".formatted(this.centerX), "%.0f".formatted(this.centerZ),
-                "%.1f".formatted(this.pixelsPerChunk));
-        graphics.drawString(minecraft.font, center, 6, 32, 0xFFFFFFFF);
-        Component hint = Component.translatable("aleeve_atlas.screen.world_map.hint");
-        graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
     }
 
     private static double lerp(double start, double end, float progress) {
