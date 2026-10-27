@@ -29,10 +29,14 @@ public final class ChunkOverlayRenderer {
                         + (chunkX * 16.0 - centerX) * pixelsPerChunk);
                 int top = (int) Math.round(height / 2.0
                         + (chunkZ * 16.0 - centerZ) * pixelsPerChunk);
-                int size = Math.max(1, Math.round(16.0F * pixelsPerChunk));
+                int right = (int) Math.round(width / 2.0
+                        + ((chunkX + 1) * 16.0 - centerX) * pixelsPerChunk);
+                int bottom = (int) Math.round(height / 2.0
+                        + ((chunkZ + 1) * 16.0 - centerZ) * pixelsPerChunk);
                 drawCell(graphics, config.worldMap.showChunkGrid,
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
-                        left, top, size, size, false, 0.0, 0.0, 0.0);
+                        left, top, Math.max(1, right - left), Math.max(1, bottom - top),
+                        false, 0.0, 0.0, 0.0);
             }
         }
     }

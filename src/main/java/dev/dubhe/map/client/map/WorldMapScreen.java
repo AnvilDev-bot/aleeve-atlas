@@ -84,6 +84,13 @@ public final class WorldMapScreen extends Screen {
     private double centerZ;
     private float pixelsPerChunk = 4.0F;
     private float targetPixelsPerChunk = 4.0F;
+    private float previousPixelsPerChunk = 4.0F;
+    private double previousCenterX;
+    private double previousCenterZ;
+    private float renderedPixelsPerChunk = 4.0F;
+    private double renderedCenterX;
+    private double renderedCenterZ;
+    private boolean renderingFrame;
     private boolean zoomAnchored;
     private double zoomAnchorWorldX;
     private double zoomAnchorWorldZ;
@@ -110,6 +117,10 @@ public final class WorldMapScreen extends Screen {
         this.cache = cache;
         this.centerX = centerX;
         this.centerZ = centerZ;
+        this.previousCenterX = centerX;
+        this.previousCenterZ = centerZ;
+        this.renderedCenterX = centerX;
+        this.renderedCenterZ = centerZ;
     }
 
     @Override
@@ -248,15 +259,42 @@ public final class WorldMapScreen extends Screen {
         this.animationScale = animationScale;
         int logicalMouseX = (int) Math.round(this.logicalMouseX(mouseX));
         int logicalMouseY = (int) Math.round(this.logicalMouseY(mouseY));
+
+        float actualPixelsPerChunk = this.pixelsPerChunk;
+        double actualCenterX = this.centerX;
+        double actualCenterZ = this.centerZ;
+        float framePixelsPerChunk = this.pixelsPerChunk;
+        double frameCenterX = this.centerX;
+        double frameCenterZ = this.centerZ;
+        if (partialTick > 0.0F && this.previousPixelsPerChunk != this.pixelsPerChunk) {
+            framePixelsPerChunk = Mth.lerp(partialTick,
+                    this.previousPixelsPerChunk, this.pixelsPerChunk);
+            if (this.zoomAnchored) {
+                frameCenterX = this.zoomAnchorWorldX
+                        - (this.zoomAnchorScreenX - viewWidth / 2.0) / framePixelsPerChunk;
+                frameCenterZ = this.zoomAnchorWorldZ
+                        - (this.zoomAnchorScreenY - viewHeight / 2.0) / framePixelsPerChunk;
+            } else {
+                frameCenterX = lerp(this.previousCenterX, actualCenterX, partialTick);
+                frameCenterZ = lerp(this.previousCenterZ, actualCenterZ, partialTick);
+            }
+        }
+        this.renderingFrame = true;
+        this.pixelsPerChunk = framePixelsPerChunk;
+        this.centerX = frameCenterX;
+        this.centerZ = frameCenterZ;
+        this.renderedPixelsPerChunk = framePixelsPerChunk;
+        this.renderedCenterX = frameCenterX;
+        this.renderedCenterZ = frameCenterZ;
+
+        // 背景、按钮、文字和方向标保持屏幕尺寸，仅地图内容使用开场缩放。
+        graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
         if (animationProgress < 1.0F) {
             graphics.pose().pushMatrix();
             graphics.pose().translate(viewWidth / 2.0F, viewHeight / 2.0F);
             graphics.pose().scale(animationScale, animationScale);
             graphics.pose().translate(-viewWidth / 2.0F, -viewHeight / 2.0F);
         }
-
-        // 黑色背景代表未探索区域。不调用 renderBackground：模糊背景每帧只允许一次。
-        graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
 
         if (this.canvas.ready()) {
             int canvasOriginPixelX = this.canvas.originChunkX() * ChunkMapData.SIZE;
@@ -277,17 +315,23 @@ public final class WorldMapScreen extends Screen {
             double visibleBottom = Math.min(topLeftWorldZ + (double) viewHeight / this.pixelsPerChunk,
                     canvasBottom);
             if (visibleRight > visibleLeft && visibleBottom > visibleTop) {
-                int screenX = (int) Math.round((visibleLeft - topLeftWorldX) * this.pixelsPerChunk);
-                int screenY = (int) Math.round((visibleTop - topLeftWorldZ) * this.pixelsPerChunk);
-                int screenWidth = (int) Math.round((visibleRight - visibleLeft) * this.pixelsPerChunk);
-                int screenHeight = (int) Math.round((visibleBottom - visibleTop) * this.pixelsPerChunk);
-                int u = (int) Math.round(visibleLeft - canvasLeft);
-                int v = (int) Math.round(visibleTop - canvasTop);
-                int pixelWidth = (int) Math.round(visibleRight - visibleLeft);
-                int pixelHeight = (int) Math.round(visibleBottom - visibleTop);
-                graphics.blit(RenderPipelines.GUI_TEXTURED, this.canvas.textureId(), screenX, screenY,
-                        u, v, screenWidth, screenHeight, pixelWidth, pixelHeight, MapCanvas.PIXELS,
-                        MapCanvas.PIXELS);
+                int u = (int) Math.floor(visibleLeft - canvasLeft);
+                int v = (int) Math.floor(visibleTop - canvasTop);
+                int rightPixel = (int) Math.ceil(visibleRight - canvasLeft);
+                int bottomPixel = (int) Math.ceil(visibleBottom - canvasTop);
+                int pixelWidth = rightPixel - u;
+                int pixelHeight = bottomPixel - v;
+                double screenX = viewWidth / 2.0
+                        + (canvasLeft + u - this.centerX) * this.pixelsPerChunk;
+                double screenY = viewHeight / 2.0
+                        + (canvasTop + v - this.centerZ) * this.pixelsPerChunk;
+                graphics.pose().pushMatrix();
+                graphics.pose().translate((float) screenX, (float) screenY);
+                graphics.pose().scale(this.pixelsPerChunk, this.pixelsPerChunk);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, this.canvas.textureId(), 0, 0,
+                        u, v, pixelWidth, pixelHeight, pixelWidth, pixelHeight,
+                        MapCanvas.PIXELS, MapCanvas.PIXELS);
+                graphics.pose().popMatrix();
             }
         }
 
@@ -299,16 +343,21 @@ public final class WorldMapScreen extends Screen {
         this.drawWaypoints(graphics);
         this.drawPings(graphics);
         this.drawPlayerMarker(graphics);
-        this.drawOverlayText(graphics);
-        CompassRenderer.renderOnWorldMap(graphics);
-        // 组件渲染后再绘制领地标签，确保标签位于最上层。
-        this.drawTerritoryLabels(graphics);
-        super.render(graphics, logicalMouseX, logicalMouseY, partialTick);
-        this.drawLocationInfo(graphics, logicalMouseX, logicalMouseY);
-        this.drawContextMenu(graphics);
         if (animationProgress < 1.0F) {
             graphics.pose().popMatrix();
         }
+        this.drawTerritoryTooltip(graphics, logicalMouseX, logicalMouseY, mouseX, mouseY);
+        this.drawWaypointLabels(graphics);
+        this.drawOverlayText(graphics);
+        CompassRenderer.renderOnWorldMap(graphics);
+        this.drawTerritoryLabels(graphics);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        this.drawLocationInfo(graphics, logicalMouseX, logicalMouseY);
+        this.drawContextMenu(graphics);
+        this.pixelsPerChunk = actualPixelsPerChunk;
+        this.centerX = actualCenterX;
+        this.centerZ = actualCenterZ;
+        this.renderingFrame = false;
     }
 
     @Override
@@ -316,6 +365,9 @@ public final class WorldMapScreen extends Screen {
         super.tick();
         this.openAnimationTicks = Math.min(OPEN_ANIMATION_TICKS, this.openAnimationTicks + 1);
         float previous = this.pixelsPerChunk;
+        this.previousPixelsPerChunk = previous;
+        this.previousCenterX = this.centerX;
+        this.previousCenterZ = this.centerZ;
         this.pixelsPerChunk += (this.targetPixelsPerChunk - this.pixelsPerChunk) * 0.25F;
         if (Math.abs(this.targetPixelsPerChunk - this.pixelsPerChunk) < 0.005F) {
             this.pixelsPerChunk = this.targetPixelsPerChunk;
@@ -384,15 +436,30 @@ public final class WorldMapScreen extends Screen {
             }
         }
 
-        // 悬停信息卡片按 zOrder 从高到低合并展示。
-        if (!hoveredGroups.isEmpty()) {
-            List<Component> lines = new ArrayList<>();
-            for (TerritoryGroup group : hoveredGroups) {
-                lines.add(group.displayName().copy().withStyle(ChatFormatting.AQUA));
-                lines.addAll(group.tooltip());
-            }
-            this.drawTooltipLines(graphics, minecraft, lines, mouseX, mouseY);
+    }
+
+    private void drawTerritoryTooltip(GuiGraphics graphics, int mapMouseX, int mapMouseY,
+            int screenMouseX, int screenMouseY) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
         }
+        ResourceKey<Level> dimension = minecraft.level.dimension();
+        ChunkPos hovered = this.chunkAtScreen(mapMouseX, mapMouseY);
+        if (hovered == null) {
+            return;
+        }
+        List<TerritoryGroup> hoveredGroups = AtlasTerritory.clientRegistry()
+                .hitAt(dimension, hovered);
+        if (hoveredGroups.isEmpty()) {
+            return;
+        }
+        List<Component> lines = new ArrayList<>();
+        for (TerritoryGroup group : hoveredGroups) {
+            lines.add(group.displayName().copy().withStyle(ChatFormatting.AQUA));
+            lines.addAll(group.tooltip());
+        }
+        this.drawTooltipLines(graphics, minecraft, lines, screenMouseX, screenMouseY);
     }
 
     /// 绘制简易信息卡片（避免依赖 1.21.11 的 tooltip 组件装配）。
@@ -457,8 +524,10 @@ public final class WorldMapScreen extends Screen {
                     continue;
                 }
                 // 名称标签带深色背景框，避免在浅色地形上难以辨认。
-                int tx = rect[0] + rect[2] / 2 - textWidth / 2;
-                int ty = rect[1] + rect[3] / 2 - 4;
+                double labelCenterX = this.mapAnimationX(rect[0] + rect[2] / 2.0);
+                double labelCenterY = this.mapAnimationY(rect[1] + rect[3] / 2.0);
+                int tx = (int) Math.round(labelCenterX) - textWidth / 2;
+                int ty = (int) Math.round(labelCenterY) - 4;
                 graphics.fill(tx - 2, ty - 2, tx + textWidth + 2, ty + 10, 0xB0000000);
                 graphics.drawString(minecraft.font, group.displayName(), tx, ty, 0xFFFFFFFF,
                         false);
@@ -580,6 +649,24 @@ public final class WorldMapScreen extends Screen {
             }
             WaypointRenderer.renderOnWorldMap(graphics, screenX, screenY, waypoint.colorArgb(),
                     waypoint.icon());
+        }
+    }
+
+    private void drawWaypointLabels(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        for (var waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
+            double logicalX = width / 2.0
+                    + (waypoint.pos().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+            double logicalY = height / 2.0
+                    + (waypoint.pos().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+            double screenX = this.mapAnimationX(logicalX);
+            double screenY = this.mapAnimationY(logicalY);
+            if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
+                continue;
+            }
             Component name = waypoint.displayName();
             int textWidth = minecraft.font.width(name);
             int labelX = (int) Math.round(screenX) - textWidth / 2;
@@ -618,12 +705,12 @@ public final class WorldMapScreen extends Screen {
 
     /// 屏幕坐标 → 世界坐标（X 轴）。
     private double screenToWorldX(double screenX) {
-        return this.centerX + (screenX - width / 2.0) / this.pixelsPerChunk;
+        return this.viewCenterX() + (screenX - width / 2.0) / this.viewPixelsPerChunk();
     }
 
     /// 屏幕坐标 → 世界坐标（Z 轴）。
     private double screenToWorldZ(double screenY) {
-        return this.centerZ + (screenY - height / 2.0) / this.pixelsPerChunk;
+        return this.viewCenterZ() + (screenY - height / 2.0) / this.viewPixelsPerChunk();
     }
 
     /// 背景由 {@link #render} 自行填充，避免父类每帧二次模糊（1.21.11 限制）。
@@ -708,6 +795,39 @@ public final class WorldMapScreen extends Screen {
         graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
     }
 
+    private static double lerp(double start, double end, float progress) {
+        return start + (end - start) * progress;
+    }
+
+    private double mapAnimationX(double screenX) {
+        return width / 2.0 + (screenX - width / 2.0) * this.animationScale;
+    }
+
+    private double mapAnimationY(double screenY) {
+        return height / 2.0 + (screenY - height / 2.0) * this.animationScale;
+    }
+
+    private void alignCameraToRenderedFrame() {
+        this.centerX = this.renderedCenterX;
+        this.centerZ = this.renderedCenterZ;
+        this.pixelsPerChunk = this.renderedPixelsPerChunk;
+        this.previousCenterX = this.centerX;
+        this.previousCenterZ = this.centerZ;
+        this.previousPixelsPerChunk = this.pixelsPerChunk;
+    }
+
+    private double viewCenterX() {
+        return this.renderingFrame ? this.centerX : this.renderedCenterX;
+    }
+
+    private double viewCenterZ() {
+        return this.renderingFrame ? this.centerZ : this.renderedCenterZ;
+    }
+
+    private float viewPixelsPerChunk() {
+        return this.renderingFrame ? this.pixelsPerChunk : this.renderedPixelsPerChunk;
+    }
+
     private double logicalMouseX(double mouseX) {
         return width / 2.0 + (mouseX - width / 2.0) / this.animationScale;
     }
@@ -723,7 +843,6 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-        event = this.logicalMouseEvent(event);
         this.middleHeld = false;
         if (this.contextMenu != null) {
             if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
@@ -737,6 +856,8 @@ public final class WorldMapScreen extends Screen {
         if (super.mouseClicked(event, doubleClick)) {
             return true;
         }
+        this.alignCameraToRenderedFrame();
+        event = this.logicalMouseEvent(event);
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
             this.middleHeld = true;
             this.wheelOpened = false;
@@ -798,8 +919,10 @@ public final class WorldMapScreen extends Screen {
                     () -> this.deleteWaypoint(waypoint)));
         }
         int menuHeight = actions.size() * CONTEXT_MENU_ROW_HEIGHT + 4;
-        int menuX = (int) Math.max(4, Math.min(width - CONTEXT_MENU_WIDTH - 4, screenX));
-        int menuY = (int) Math.max(4, Math.min(height - menuHeight - 4, screenY));
+        int menuX = (int) Math.max(4, Math.min(width - CONTEXT_MENU_WIDTH - 4,
+                this.mapAnimationX(screenX)));
+        int menuY = (int) Math.max(4, Math.min(height - menuHeight - 4,
+                this.mapAnimationY(screenY)));
         this.contextMenu = new ContextMenu(this.screenToWorldX(screenX),
                 this.screenToWorldZ(screenY), menuX, menuY, actions);
     }
@@ -846,9 +969,11 @@ public final class WorldMapScreen extends Screen {
         double nearestDistance = 12.0 * 12.0;
         for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
             double x = width / 2.0
-                    + (waypoint.pos().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+                    + (waypoint.pos().getX() + 0.5 - this.viewCenterX())
+                            * this.viewPixelsPerChunk();
             double y = height / 2.0
-                    + (waypoint.pos().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+                    + (waypoint.pos().getZ() + 0.5 - this.viewCenterZ())
+                            * this.viewPixelsPerChunk();
             double distance = (x - screenX) * (x - screenX) + (y - screenY) * (y - screenY);
             if (distance <= nearestDistance) {
                 nearest = waypoint;
@@ -929,8 +1054,8 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
-        event = this.logicalMouseEvent(event);
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && this.middleHeld) {
+            this.alignCameraToRenderedFrame();
             this.middleHeld = false;
             if (!this.wheelOpened && this.middleHoldTicks < MIDDLE_HOLD_TICKS) {
                 this.createPing(this.middleWorldX, this.middleWorldZ, MapPingData.PingIcon.GENERAL);
@@ -950,7 +1075,6 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-        event = this.logicalMouseEvent(event);
         if (this.contextMenu != null) {
             this.contextMenu = null;
         }
@@ -958,6 +1082,8 @@ public final class WorldMapScreen extends Screen {
             return true;
         }
         if (this.dragging) {
+            this.alignCameraToRenderedFrame();
+            event = this.logicalMouseEvent(event);
             this.zoomAnchored = false;
             // 事件携带的是从按下点起的总位移，因此用相邻事件差得到帧增量。
             this.centerX -= (event.x() - this.lastMouseX) / this.pixelsPerChunk;
@@ -972,24 +1098,28 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        mouseX = this.logicalMouseX(mouseX);
-        mouseY = this.logicalMouseY(mouseY);
+        this.alignCameraToRenderedFrame();
+        double mapMouseX = this.logicalMouseX(mouseX);
+        double mapMouseY = this.logicalMouseY(mouseY);
         this.contextMenu = null;
         this.middleHeld = false;
         this.wheelOpened = false;
         if (scrollY != 0.0) {
-            double anchorX = this.screenToWorldX(mouseX);
-            double anchorZ = this.screenToWorldZ(mouseY);
+            double anchorX = this.screenToWorldX(mapMouseX);
+            double anchorZ = this.screenToWorldZ(mapMouseY);
             this.targetPixelsPerChunk = ConfigBounds.clamp(
                     (float) (this.targetPixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
                     MIN_PIXELS_PER_CHUNK, MAX_PIXELS_PER_CHUNK);
             this.zoomAnchorWorldX = anchorX;
             this.zoomAnchorWorldZ = anchorZ;
-            this.zoomAnchorScreenX = mouseX;
-            this.zoomAnchorScreenY = mouseY;
+            this.zoomAnchorScreenX = mapMouseX;
+            this.zoomAnchorScreenY = mapMouseY;
             this.zoomAnchored = true;
-            this.centerX = anchorX - (mouseX - width / 2.0) / this.pixelsPerChunk;
-            this.centerZ = anchorZ - (mouseY - height / 2.0) / this.pixelsPerChunk;
+            this.centerX = anchorX - (mapMouseX - width / 2.0) / this.pixelsPerChunk;
+            this.centerZ = anchorZ - (mapMouseY - height / 2.0) / this.pixelsPerChunk;
+            this.previousPixelsPerChunk = this.pixelsPerChunk;
+            this.previousCenterX = this.centerX;
+            this.previousCenterZ = this.centerZ;
             this.refreshCanvas();
             return true;
         }
