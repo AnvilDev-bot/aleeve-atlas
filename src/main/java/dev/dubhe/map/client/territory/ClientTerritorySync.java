@@ -6,8 +6,6 @@ import dev.dubhe.map.sync.BatchTracker;
 import dev.dubhe.map.territory.SyncedTerritory;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,8 +17,6 @@ import java.util.Set;
 /// 服务端下发的领地可能拆成多个负载；本类按「领地 ID」累积区块，
 /// 收齐全部批次后一次性写入客户端注册表，避免重复触发连通分量重算。
 public final class ClientTerritorySync {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/territory");
-
     /// 领地 ID → 已累积的分片数据。
     private static final Map<String, Accumulator> PENDING = new HashMap<>();
     /// 累加器超时（毫秒）：分片丢失时按此时间回收。
@@ -50,8 +46,6 @@ public final class ClientTerritorySync {
         PENDING.remove(territoryId);
         SyncedTerritory merged = accumulator.merge();
         AtlasTerritory.client().upsertTerritory(merged);
-        LOGGER.debug("Received territory {} with {} chunk(s)", territoryId,
-                merged.chunks().size());
     }
 
     /// 清空累加状态（断线时调用）。

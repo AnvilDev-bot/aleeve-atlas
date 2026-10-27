@@ -5,15 +5,11 @@ import dev.dubhe.map.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 /// 服务端标点处理：校验后广播给同队在线成员。
 public final class ServerPingHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/ping");
-
     private ServerPingHandler() {
     }
 
@@ -40,7 +36,5 @@ public final class ServerPingHandler {
         for (ServerPlayer recipient : recipients) {
             PacketDistributor.sendToPlayer(recipient, new PingBroadcastPayload(verified));
         }
-        LOGGER.debug("Broadcast ping from {} to {} player(s)",
-                sender.getGameProfile().name(), recipients.size());
     }
 }

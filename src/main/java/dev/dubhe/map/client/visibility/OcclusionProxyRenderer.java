@@ -139,7 +139,6 @@ public final class OcclusionProxyRenderer {
             return false;
         }
         if (GL15C.glGetQueryi(GL15C.GL_SAMPLES_PASSED, GL15C.GL_CURRENT_QUERY) != 0) {
-            LOGGER.debug("Skipping occlusion query: another query is active");
             return false;
         }
         double minX = box.minX - cameraPos.x;

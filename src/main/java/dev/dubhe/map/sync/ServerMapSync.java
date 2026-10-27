@@ -7,8 +7,6 @@ import dev.dubhe.map.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -21,8 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 /// 由这些成员各自计算「自己已探索而对方缺失」的区块并回传差异。
 /// 服务端不持久化任何玩家地图数据，仅在内存中暂存批次聚合结果。
 public final class ServerMapSync {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapsync");
-
     /// 摘要聚合状态：按「发起者 + 维度」暂存。
     ///
     /// 摘要在网络线程处理，多个玩家可能并发上报，容器与聚合判定都需同步。
@@ -70,8 +66,6 @@ public final class ServerMapSync {
                 PacketDistributor.sendToPlayer(teammate, packet);
             }
         }
-        LOGGER.debug("Forwarded digest of {} chunk(s) from {} to teammates",
-                completed.size(), sender.getGameProfile().name());
     }
 
     /// 收到队友回传的差异分片：转发给当初上报摘要的发起者。

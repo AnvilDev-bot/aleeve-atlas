@@ -12,8 +12,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,7 +27,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /// 1. 上报本地摘要（新上线/入队追赶同步）；
 /// 2. 收到队友摘要后计算「自己有而对方缺失」的区块并回传差异分片。
 public final class ClientMapSync {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapsync");
     /// 单 tick 写入的区块数上限，避免接收端帧率骤降。
     public static final int CHUNKS_PER_TICK = 8;
 
@@ -66,7 +63,6 @@ public final class ClientMapSync {
         for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries, selfId)) {
             ClientPacketDistributor.sendToServer(packet);
         }
-        LOGGER.debug("Reported digest of {} chunk(s)", entries.size());
     }
 
     /// 收到队友摘要：计算对方缺失的区块并回传差异分片。
@@ -98,7 +94,6 @@ public final class ClientMapSync {
             ClientPacketDistributor.sendToServer(packet);
             BUDGET.record(estimated);
         }
-        LOGGER.debug("Sent {} missing chunk(s) to teammate", deltas.size());
     }
 
     /// 计算「本地有而对方缺失或过期」的区块差异。
@@ -163,8 +158,6 @@ public final class ClientMapSync {
                 long mask = (1L << expected) - 1L;
                 if ((record.mask & mask) == mask) {
                     RECEIVED_BATCHES.remove(batchKey);
-                    LOGGER.debug("Received all {} delta batches for {}", expected,
-                            payload.targetPlayer());
                 }
             }
         }
@@ -210,8 +203,6 @@ public final class ClientMapSync {
             // 分片所属维度与当前缓存不一致时丢弃：写入会让另一维度的地形覆盖本维度。
             String cacheDimension = currentDimensionId();
             if (cacheDimension != null && !cacheDimension.equals(pending.dimensionId())) {
-                LOGGER.debug("Dropping delta chunk for {} while viewing {}",
-                        pending.dimensionId(), cacheDimension);
                 continue;
             }
             cache.put(pending.data());

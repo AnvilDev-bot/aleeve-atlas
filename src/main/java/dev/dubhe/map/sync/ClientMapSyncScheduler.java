@@ -10,8 +10,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /// 地图摘要上报调度。
 ///
@@ -20,8 +18,6 @@ import org.slf4j.LoggerFactory;
 /// 2. 之后按服务端配置的 `sync.mapDelta.intervalTicks` 周期上报，支撑实时共探同步。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class ClientMapSyncScheduler {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapsync");
-
     /// 首次上报延迟（tick）：等待地图缓存加载出本地已有区块。
     private static final int INITIAL_DELAY_TICKS = 100;
 
@@ -45,7 +41,6 @@ public final class ClientMapSyncScheduler {
             ClientMapSync.reportLocalDigest();
             reportedOnce = true;
             ticksSinceReport = 0;
-            LOGGER.debug("Initial map digest reported");
             return;
         }
         // 周期性上报，让队友持续获知本地新探索区块。
@@ -77,8 +72,6 @@ public final class ClientMapSyncScheduler {
         }
         ClientMapSync.reportLocalDigest();
         ticksSinceReport = 0;
-        LOGGER.debug("Re-reported map digest after {} joined team {}",
-                event.playerId(), event.teamId());
     }
 
     private static void reset() {

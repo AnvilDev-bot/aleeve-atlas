@@ -67,7 +67,6 @@ public final class WorldPingController {
             return;
         }
         processPress(minecraft, event.getAction());
-        event.setCanceled(true);
     }
 
     @SubscribeEvent

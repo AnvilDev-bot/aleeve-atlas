@@ -5,8 +5,6 @@ import dev.dubhe.map.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -14,8 +12,6 @@ import java.util.List;
 ///
 /// 服务端不持久化任何玩家个人路径点，仅校验并转发给同队在线成员。
 public final class WaypointSyncHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/waypoints");
-
     private WaypointSyncHandler() {
     }
 
@@ -40,7 +36,5 @@ public final class WaypointSyncHandler {
         for (ServerPlayer recipient : recipients) {
             PacketDistributor.sendToPlayer(recipient, verified);
         }
-        LOGGER.debug("Forwarded waypoint {} from {} to {} teammate(s)",
-                waypoint.name(), sender.getGameProfile().name(), recipients.size());
     }
 }

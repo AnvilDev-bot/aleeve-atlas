@@ -103,7 +103,7 @@ public final class WorldPingSelfTest {
         InputEvent.MouseButton.Pre event = new InputEvent.MouseButton.Pre(
                 new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_MIDDLE, 0), action);
         WorldPingController.onMouseInput(event);
-        require(event.isCanceled(), "World middle click must cancel vanilla pick block");
+        require(!event.isCanceled(), "World ping must preserve vanilla middle-click behavior");
     }
 
     private static boolean hasPing(MapPingData.PingIcon icon) {
