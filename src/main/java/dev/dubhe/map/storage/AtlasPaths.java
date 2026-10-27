@@ -2,9 +2,13 @@ package dev.dubhe.map.storage;
 
 import net.minecraft.resources.Identifier;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.util.stream.Stream;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
@@ -33,6 +37,39 @@ public final class AtlasPaths {
     /// 某维度在小地图缓存中的目录；维度以 `Identifier` 标识。
     public static Path dimensionDir(Path gameDir, String serverKey, Identifier dimension) {
         return serverRoot(gameDir, serverKey).resolve(sanitize(dimension.toString()));
+    }
+
+    /// 将旧地址键下的地图缓存复制到服务端下发的缓存键目录。
+    public static boolean migrateMapCache(Path gameDir, String oldKey, String newKey)
+            throws IOException {
+        if (oldKey.equals(newKey)) {
+            return false;
+        }
+        Path source = serverRoot(gameDir, oldKey);
+        Path target = serverRoot(gameDir, newKey);
+        if (!Files.isDirectory(source)) {
+            return false;
+        }
+        boolean copied = false;
+        try (Stream<Path> paths = Files.walk(source)) {
+            for (Path path : paths.toList()) {
+                Path relative = source.relativize(path);
+                if (relative.getNameCount() > 0
+                        && (relative.getName(0).toString().equals("waypoints")
+                                || relative.toString().equals("slime_seed.nbt"))) {
+                    continue;
+                }
+                Path destination = target.resolve(relative);
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(destination);
+                } else if (!Files.exists(destination)) {
+                    Files.createDirectories(destination.getParent());
+                    Files.copy(path, destination, StandardCopyOption.COPY_ATTRIBUTES);
+                    copied = true;
+                }
+            }
+        }
+        return copied;
     }
 
     /// 把服务器地址/存档名规范化为稳定的目录名：SHA-256 前 16 字节十六进制。
