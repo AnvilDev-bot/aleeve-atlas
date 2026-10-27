@@ -117,7 +117,7 @@ public final class ClientMapSync {
             if (theirVersion == null || theirVersion < data.version()) {
                 deltas.add(new ChunkDeltaPayload.ChunkData(data.chunkX(), data.chunkZ(),
                         data.version(),
-                        ChunkPixelCodec.compress(data.colors(), data.heights())));
+                        ChunkPixelCodec.compressChunk(data)));
             }
         }
         return deltas;
@@ -169,9 +169,9 @@ public final class ClientMapSync {
             }
         }
         for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
-            int[][] decoded = ChunkPixelCodec.decompressWithHeights(chunk.pixels());
-            WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded[0],
-                    decoded[1]));
+            ChunkMapData decoded = ChunkPixelCodec.decompressChunk(chunk.chunkX(), chunk.chunkZ(),
+                    chunk.pixels(), chunk.version());
+            WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded));
         }
     }
 
@@ -214,17 +214,7 @@ public final class ClientMapSync {
                         pending.dimensionId(), cacheDimension);
                 continue;
             }
-            ChunkMapData data = new ChunkMapData(pending.chunk().chunkX(),
-                    pending.chunk().chunkZ());
-            // 颜色与高度已在网络线程解压，此处直接写入，避免重复解压。
-            int[] colors = pending.colors();
-            int[] heights = pending.heights();
-            for (int index = 0; index < colors.length && index < ChunkMapData.PIXELS; index++) {
-                data.setPixel(index % ChunkMapData.SIZE, index / ChunkMapData.SIZE,
-                        colors[index], heights[index]);
-            }
-            data.setVersion(pending.chunk().version());
-            cache.put(data);
+            cache.put(pending.data());
             written++;
         }
         if (written > 0) {
@@ -261,8 +251,8 @@ public final class ClientMapSync {
         return minecraft.level.dimension().identifier().toString();
     }
 
-    /// 待写入的区块：颜色与高度已在网络线程解压完成。
+    /// 待写入的区块：色板数据已在网络线程解压完成。
     private record PendingWrite(String dimensionId, ChunkDeltaPayload.ChunkData chunk,
-            int[] colors, int[] heights) {
+            ChunkMapData data) {
     }
 }

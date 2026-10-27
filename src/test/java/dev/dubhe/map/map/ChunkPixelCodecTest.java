@@ -3,6 +3,7 @@ package dev.dubhe.map.map;
 import dev.dubhe.map.network.ChunkDeltaPayload;
 import dev.dubhe.map.network.ChunkDigestPayload;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +25,18 @@ class ChunkPixelCodecTest {
         }
         int[] restored = ChunkPixelCodec.decompress(ChunkPixelCodec.compress(colors));
         Assertions.assertArrayEquals(colors, restored);
+    }
+
+    @Test
+    void chunkPaletteRoundTripPreservesBlockStateAndHeight() {
+        ChunkMapData data = new ChunkMapData(4, -9);
+        data.setPixel(2, 3, ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState()), 72);
+        data.setVersion(1234L);
+        ChunkMapData restored = ChunkPixelCodec.decompressChunk(4, -9,
+                ChunkPixelCodec.compressChunk(data), 1234L);
+        Assertions.assertEquals(Blocks.STONE, restored.stateAt(2, 3).state().getBlock());
+        Assertions.assertEquals(72, restored.heightAt(2, 3));
+        Assertions.assertEquals(1234L, restored.version());
     }
 
     @Test

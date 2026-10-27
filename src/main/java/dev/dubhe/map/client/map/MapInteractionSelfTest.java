@@ -3,6 +3,8 @@ package dev.dubhe.map.client.map;
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.client.waypoint.ClientWaypoints;
 import dev.dubhe.map.client.waypoint.WaypointEditScreen;
+import dev.dubhe.map.config.AtlasClientConfigs;
+import dev.dubhe.map.config.MapColorScheme;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.MapDimensionCache;
 import dev.dubhe.map.ping.ClientPings;
@@ -13,6 +15,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.world.level.block.Blocks;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -57,7 +60,7 @@ public final class MapInteractionSelfTest {
             }
             runStep(minecraft);
             LOGGER.info("Map interaction test passed step {}", step++);
-            if (step > 14) {
+            if (step > 15) {
                 finished = true;
                 LOGGER.info("Map interaction test PASSED");
             }
@@ -123,8 +126,16 @@ public final class MapInteractionSelfTest {
             map.mouseDragged(mouse(x - 240, y + 180, GLFW.GLFW_MOUSE_BUTTON_LEFT), -520, 400);
             map.mouseDragged(mouse(x, y, GLFW.GLFW_MOUSE_BUTTON_LEFT), 240, -180);
             map.mouseReleased(mouse(x, y, GLFW.GLFW_MOUSE_BUTTON_LEFT));
-        } else {
+        } else if (step == 14) {
             verifyCanvas(minecraft);
+        } else {
+            AtlasClientConfigs.CONFIG.minimap.colorScheme = MapColorScheme.BIOME_SHADE;
+            AtlasClientMap.manager().tick(minecraft.level);
+            Screenshot.grab(minecraft.gameDirectory, "atlas-biome-shade.png",
+                    minecraft.getMainRenderTarget(), 1,
+                    message -> LOGGER.info("Biome map screenshot: {}", message.getString()));
+            AtlasClientConfigs.CONFIG.minimap.colorScheme = MapColorScheme.VANILLA;
+            AtlasClientMap.manager().tick(minecraft.level);
         }
     }
 
@@ -154,7 +165,7 @@ public final class MapInteractionSelfTest {
                     for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
                         int worldX = chunkX * ChunkMapData.SIZE + localX;
                         int worldZ = chunkZ * ChunkMapData.SIZE + localZ;
-                        data.setPixel(localX, localZ, worldColor(worldX, worldZ), 64);
+                        data.setPixel(localX, localZ, pixelState(worldX, worldZ), 64);
                     }
                 }
                 cache.put(data);
@@ -163,43 +174,65 @@ public final class MapInteractionSelfTest {
         MapCanvas canvas = new MapCanvas(AleeveAtlas.id("map_interaction_test_canvas"));
         canvas.register();
         try {
-            canvas.setCenter(32, 32, cache);
+            canvas.setCenter(32, 32, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 0 && canvas.originChunkZ() == 0,
                     "Initial canvas origin");
-            requireCanvasPixel(canvas, 0, 0, 0, 0);
-            canvas.setCenter(33, 32, cache);
+            requireCanvasPixel(canvas, cache, 0, 0, 0, 0);
+            ChunkMapData updated = cache.get(0, 0).orElseThrow();
+            updated.setPixel(0, 0, ChunkMapData.PixelState.of(Blocks.GRASS_BLOCK.defaultBlockState()), 64);
+            updated.setVersion(1L);
+            cache.put(updated);
+            canvas.setCenter(32, 32, cache, MapColorScheme.VANILLA);
+            requireCanvasPixel(canvas, cache, 0, 0, 0, 0);
+            canvas.setCenter(33, 32, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 0, "Sub-threshold movement must reuse origin");
-            canvas.setCenter(34, 33, cache);
+            canvas.setCenter(34, 33, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 2 && canvas.originChunkZ() == 1,
                     "Positive recenter origin");
-            requireCanvasPixel(canvas, 0, 0, 2 * ChunkMapData.SIZE, ChunkMapData.SIZE);
+            requireCanvasPixel(canvas, cache, 0, 0, 2 * ChunkMapData.SIZE, ChunkMapData.SIZE);
             int edge = (MapCanvas.CHUNKS_PER_SIDE - 1) * ChunkMapData.SIZE;
-            requireCanvasPixel(canvas, edge, edge, 66 * ChunkMapData.SIZE,
+            requireCanvasPixel(canvas, cache, edge, edge, 66 * ChunkMapData.SIZE,
                     65 * ChunkMapData.SIZE);
-            canvas.setCenter(32, 33, cache);
-            requireCanvasPixel(canvas, 0, 0, 0, ChunkMapData.SIZE);
-            canvas.setCenter(97, 33, cache);
+            canvas.setCenter(32, 33, cache, MapColorScheme.VANILLA);
+            requireCanvasPixel(canvas, cache, 0, 0, 0, ChunkMapData.SIZE);
+            canvas.setCenter(97, 33, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 65 && canvas.originChunkZ() == 1,
                     "Full redraw origin");
-            requireCanvasPixel(canvas, 0, 0, 65 * ChunkMapData.SIZE, ChunkMapData.SIZE);
-            requireCanvasPixel(canvas, edge, edge, 129 * ChunkMapData.SIZE,
+            requireCanvasPixel(canvas, cache, 0, 0, 65 * ChunkMapData.SIZE, ChunkMapData.SIZE);
+            requireCanvasPixel(canvas, cache, edge, edge, 129 * ChunkMapData.SIZE,
                     65 * ChunkMapData.SIZE);
+            canvas.setCenter(32, 32, cache, MapColorScheme.VANILLA);
+            int vanilla = canvas.pixelAt(3, 0);
+            canvas.setCenter(32, 32, cache, MapColorScheme.BIOME_SHADE);
+            int biome = canvas.pixelAt(3, 0);
+            require(vanilla != biome, "Color scheme change must recolor existing palette data: "
+                    + Integer.toHexString(vanilla) + "/" + Integer.toHexString(biome));
+            canvas.setCenter(32, 32, cache, MapColorScheme.VANILLA);
+            require(canvas.pixelAt(3, 0) == vanilla, "Switching back must restore vanilla colors");
         } finally {
             canvas.close();
         }
     }
 
-    private static void requireCanvasPixel(MapCanvas canvas, int x, int z,
-            int worldX, int worldZ) {
+    private static void requireCanvasPixel(MapCanvas canvas, MapDimensionCache cache,
+            int x, int z, int worldX, int worldZ) {
         int actual = canvas.pixelAt(x, z);
-        int expected = worldColor(worldX, worldZ);
+        ChunkMapData data = cache.get(Math.floorDiv(worldX, ChunkMapData.SIZE),
+                Math.floorDiv(worldZ, ChunkMapData.SIZE)).orElseThrow();
+        int expected = data.colorAt(Math.floorMod(worldX, ChunkMapData.SIZE),
+                Math.floorMod(worldZ, ChunkMapData.SIZE));
         require(actual == expected, "Canvas pixel mismatch at " + worldX + "," + worldZ
                 + ": actual=" + Integer.toHexString(actual)
                 + " expected=" + Integer.toHexString(expected));
     }
 
-    private static int worldColor(int worldX, int worldZ) {
-        return 0xFF000000 | ((worldX & 255) << 8) | (worldZ & 255);
+    private static ChunkMapData.PixelState pixelState(int worldX, int worldZ) {
+        return switch ((worldX + worldZ) & 3) {
+            case 0 -> ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState());
+            case 1 -> ChunkMapData.PixelState.of(Blocks.DIRT.defaultBlockState());
+            case 2 -> ChunkMapData.PixelState.of(Blocks.SAND.defaultBlockState());
+            default -> ChunkMapData.PixelState.of(Blocks.WATER.defaultBlockState());
+        };
     }
 
     private static void openWheel(double x, double y) {

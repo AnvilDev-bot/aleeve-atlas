@@ -75,7 +75,7 @@ public final class WorldMapScreen extends Screen {
     private static WorldMapScreen active;
 
     private final MapCanvas canvas;
-    private final MapDimensionCache cache;
+    private MapDimensionCache cache;
     /// 视野中心（世界方块坐标）。
     private double centerX;
     private double centerZ;
@@ -895,6 +895,11 @@ public final class WorldMapScreen extends Screen {
     private void refreshCanvas() {
         int centerChunkX = (int) Math.floor(this.centerX / ChunkMapData.SIZE);
         int centerChunkZ = (int) Math.floor(this.centerZ / ChunkMapData.SIZE);
-        this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache);
+        ClientMapManager manager = AtlasClientMap.manager();
+        if (manager != null) {
+            this.cache = manager.currentCache();
+        }
+        this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache,
+                AtlasClientConfigs.CONFIG.minimap.colorScheme);
     }
 }

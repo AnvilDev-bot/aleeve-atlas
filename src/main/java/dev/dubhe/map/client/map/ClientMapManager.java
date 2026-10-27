@@ -126,10 +126,10 @@ public final class ClientMapManager {
         this.colorScheme = scheme;
         if (schemeChanged) {
             LOGGER.info("Map color scheme changed to {}", scheme);
+            this.texture.setColorScheme(scheme);
         }
         final MapDimensionCache cache = this.cacheFor(minecraft, serverKey, level.dimension());
-        if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)
-                || schemeChanged) {
+        if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)) {
             // 切换服务器或维度前先写入磁盘，避免未到周期写盘时丢失洞穴层数据。
             if (this.caveCache != null) {
                 this.caveCache.flush();
@@ -180,7 +180,7 @@ public final class ClientMapManager {
                         continue;
                     }
                     ChunkMapData sampledData = ChunkMapSampler.sample(level,
-                            new ChunkPos(chunkX, chunkZ), layerTop, this.colorScheme);
+                            new ChunkPos(chunkX, chunkZ), layerTop);
                     if (sampledData == null) {
                         continue;
                     }
@@ -198,6 +198,9 @@ public final class ClientMapManager {
         }
         // 合并本 tick 的像素改动，只上传一次纹理。
         this.texture.flushDirty();
+        if (sampled > 0 || schemeChanged) {
+            WorldMapScreen.onMapDataChanged();
+        }
         if (sampled > 0 && !this.loggedFirstSample) {
             this.loggedFirstSample = true;
             LOGGER.info("First map sample written: {} chunk(s) around {},{}, cache dir {}",
@@ -247,10 +250,10 @@ public final class ClientMapManager {
     }
 
     private MapDimensionCache cacheFor(Minecraft minecraft, String serverKey, ResourceKey<Level> dimension) {
-        String key = serverKey + "/" + dimension.identifier() + "/" + this.colorScheme.id();
+        String key = serverKey + "/" + dimension.identifier();
         return this.caches.computeIfAbsent(key, ignored -> {
             Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
-            return new MapDimensionCache(this.schemeDirectory(base));
+            return new MapDimensionCache(base);
         });
     }
 
@@ -259,13 +262,7 @@ public final class ClientMapManager {
             ResourceKey<Level> dimension) {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
         Path caveBase = base.resolveSibling(base.getFileName() + "_cave");
-        return new MapDimensionCache(this.schemeDirectory(caveBase));
-    }
-
-    /// 第二套配色使用独立缓存目录，避免两种方案互相覆盖。
-    private Path schemeDirectory(Path base) {
-        return this.colorScheme == MapColorScheme.VANILLA ? base
-                : base.resolveSibling(base.getFileName() + "_" + this.colorScheme.id());
+        return new MapDimensionCache(caveBase);
     }
 
     private static Path gameDir(Minecraft minecraft) {

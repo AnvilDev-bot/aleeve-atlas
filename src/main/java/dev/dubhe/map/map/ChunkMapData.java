@@ -1,36 +1,47 @@
 package dev.dubhe.map.map;
 
+import dev.dubhe.map.config.MapColorScheme;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.MapColor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-/// 单个区块的地图数据。
+/// 单个区块的地图采样数据。
 ///
-/// 保存 `16 x 16` 像素的 ARGB 颜色与每列地表高度，可序列化为 `CompoundTag`。
+/// 像素保存色板索引和地表高度；色板记录方块状态及重算配色所需的元数据。
 public final class ChunkMapData {
     public static final int SIZE = 16;
     public static final int PIXELS = SIZE * SIZE;
+    private static final int FORMAT = 1;
 
     private final int chunkX;
     private final int chunkZ;
-    private final int[] colors;
+    private final List<PixelState> palette;
+    private final int[] stateIndices;
     private final int[] heights;
-    /// 数据版本号，供增量同步摘要比对使用。
     private long version;
 
     public ChunkMapData(int chunkX, int chunkZ) {
-        this.chunkX = chunkX;
-        this.chunkZ = chunkZ;
-        this.colors = new int[PIXELS];
-        this.heights = new int[PIXELS];
-        this.version = 0L;
+        this(chunkX, chunkZ, new ArrayList<>(), new int[PIXELS], new int[PIXELS], 0L);
+        this.palette.add(PixelState.EMPTY);
     }
 
-    private ChunkMapData(int chunkX, int chunkZ, int[] colors, int[] heights, long version) {
+    private ChunkMapData(int chunkX, int chunkZ, List<PixelState> palette,
+            int[] stateIndices, int[] heights, long version) {
         this.chunkX = chunkX;
         this.chunkZ = chunkZ;
-        this.colors = colors;
+        this.palette = palette;
+        this.stateIndices = stateIndices;
         this.heights = heights;
         this.version = version;
     }
@@ -51,12 +62,14 @@ public final class ChunkMapData {
         this.version = version;
     }
 
+    /// 默认按原版配色解析当前像素；其它配色由渲染器显式指定。
     public int colorAt(int localX, int localZ) {
-        return this.colors[localZ * SIZE + localX];
+        return ChunkColorizer.colorAt(this, localX, localZ, MapColorScheme.VANILLA,
+                null, null, 0);
     }
 
-    public int[] colors() {
-        return this.colors;
+    public PixelState stateAt(int localX, int localZ) {
+        return this.palette.get(this.stateIndices[localZ * SIZE + localX]);
     }
 
     public int[] heights() {
@@ -67,15 +80,29 @@ public final class ChunkMapData {
         return this.heights[localZ * SIZE + localX];
     }
 
-    public void setPixel(int localX, int localZ, int argb, int height) {
+    public int paletteSize() {
+        return this.palette.size();
+    }
+
+    public List<PixelState> palette() {
+        return Collections.unmodifiableList(this.palette);
+    }
+
+    /// 写入一列采样结果；相同状态复用同一个色板索引。
+    public void setPixel(int localX, int localZ, PixelState state, int height) {
+        int paletteIndex = this.palette.indexOf(state);
+        if (paletteIndex < 0) {
+            paletteIndex = this.palette.size();
+            this.palette.add(state);
+        }
         int index = localZ * SIZE + localX;
-        this.colors[index] = argb;
+        this.stateIndices[index] = paletteIndex;
         this.heights[index] = height;
     }
 
     public boolean isEmpty() {
-        for (int color : this.colors) {
-            if (color != MapPalette.TRANSPARENT) {
+        for (int stateIndex : this.stateIndices) {
+            if (stateIndex != 0) {
                 return false;
             }
         }
@@ -84,32 +111,90 @@ public final class ChunkMapData {
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
+        tag.putInt("f", FORMAT);
         tag.putInt("x", this.chunkX);
         tag.putInt("z", this.chunkZ);
         tag.putLong("v", this.version);
-        tag.putIntArray("c", this.colors);
+        ListTag paletteTag = new ListTag();
+        for (PixelState state : this.palette) {
+            paletteTag.add(state.save());
+        }
+        tag.put("p", paletteTag);
+        tag.putIntArray("i", this.stateIndices);
         tag.putIntArray("h", this.heights);
         return tag;
     }
 
     public static ChunkMapData load(CompoundTag tag) {
-        int[] colors = tag.getIntArray("c").orElse(new int[PIXELS]);
-        int[] heights = tag.getIntArray("h").orElse(new int[PIXELS]);
-        if (colors.length != PIXELS) {
-            colors = Arrays.copyOf(colors, PIXELS);
+        if (tag.getInt("f").orElse(0) != FORMAT) {
+            throw new IllegalArgumentException("Unsupported chunk map cache format");
         }
-        if (heights.length != PIXELS) {
-            heights = Arrays.copyOf(heights, PIXELS);
+        List<PixelState> palette = new ArrayList<>();
+        ListTag paletteTag = tag.getListOrEmpty("p");
+        for (Tag entry : paletteTag) {
+            if (entry instanceof CompoundTag stateTag) {
+                palette.add(PixelState.load(stateTag));
+            }
         }
-        return new ChunkMapData(
-                tag.getInt("x").orElse(0),
-                tag.getInt("z").orElse(0),
-                colors,
-                heights,
-                tag.getLongOr("v", 0L));
+        if (palette.isEmpty()) {
+            throw new IllegalArgumentException("Chunk map palette is empty");
+        }
+        int[] indices = checkedPixels(tag.getIntArray("i").orElse(new int[PIXELS]));
+        int[] heights = checkedPixels(tag.getIntArray("h").orElse(new int[PIXELS]));
+        for (int index : indices) {
+            if (index < 0 || index >= palette.size()) {
+                throw new IllegalArgumentException("Chunk map palette index out of range");
+            }
+        }
+        return new ChunkMapData(tag.getInt("x").orElse(0), tag.getInt("z").orElse(0),
+                palette, indices, heights, tag.getLongOr("v", 0L));
+    }
+
+    private static int[] checkedPixels(int[] values) {
+        if (values.length != PIXELS) {
+            throw new IllegalArgumentException("Chunk map pixel array must contain 256 entries");
+        }
+        return Arrays.copyOf(values, PIXELS);
     }
 
     public ChunkPos pos() {
         return new ChunkPos(this.chunkX, this.chunkZ);
+    }
+
+    /// 每列的方块状态及配色重算信息。
+    public record PixelState(BlockState state, MapColor mapColor, MapColor vanillaMapColor,
+            BlockState groundState, MapColor groundMapColor, String biomeId, int fluidDepth) {
+        public static final PixelState EMPTY = new PixelState(Blocks.AIR.defaultBlockState(),
+                MapColor.NONE, MapColor.NONE, Blocks.AIR.defaultBlockState(), MapColor.NONE, "", 0);
+
+        /// 供测试和简单数据构造使用，采用方块的默认地图色。
+        public static PixelState of(BlockState state) {
+            MapColor mapColor = state.getBlock().defaultMapColor();
+            return new PixelState(state, mapColor, mapColor, Blocks.AIR.defaultBlockState(),
+                    MapColor.NONE, "minecraft:plains", 0);
+        }
+
+        private CompoundTag save() {
+            CompoundTag tag = new CompoundTag();
+            tag.put("s", NbtUtils.writeBlockState(this.state));
+            tag.putInt("m", this.mapColor.id);
+            tag.putInt("v", this.vanillaMapColor.id);
+            tag.put("g", NbtUtils.writeBlockState(this.groundState));
+            tag.putInt("n", this.groundMapColor.id);
+            tag.putString("b", this.biomeId);
+            tag.putInt("d", this.fluidDepth);
+            return tag;
+        }
+
+        private static PixelState load(CompoundTag tag) {
+            BlockState state = NbtUtils.readBlockState(BuiltInRegistries.BLOCK,
+                    tag.getCompoundOrEmpty("s"));
+            BlockState ground = NbtUtils.readBlockState(BuiltInRegistries.BLOCK,
+                    tag.getCompoundOrEmpty("g"));
+            return new PixelState(state, MapColor.byId(tag.getInt("m").orElse(0)),
+                    MapColor.byId(tag.getInt("v").orElse(0)), ground,
+                    MapColor.byId(tag.getInt("n").orElse(0)), tag.getStringOr("b", ""),
+                    tag.getInt("d").orElse(0));
+        }
     }
 }

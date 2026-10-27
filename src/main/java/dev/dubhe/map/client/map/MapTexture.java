@@ -1,10 +1,13 @@
 package dev.dubhe.map.client.map;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.map.ChunkColorizer;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.MapPalette;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ChunkPos;
 import org.slf4j.Logger;
@@ -40,6 +43,7 @@ public final class MapTexture {
     private int originPixelZ;
     private boolean initialized;
     private boolean centered;
+    private MapColorScheme colorScheme = MapColorScheme.VANILLA;
 
     public MapTexture(Identifier textureId) {
         this.textureId = textureId;
@@ -67,6 +71,15 @@ public final class MapTexture {
 
     public boolean ready() {
         return this.initialized;
+    }
+
+    /// 配色变更后立即按现有色板重绘，无需重新采样。
+    public void setColorScheme(MapColorScheme scheme) {
+        if (this.colorScheme == scheme) {
+            return;
+        }
+        this.colorScheme = scheme;
+        this.redrawAll();
     }
 
     /// 放入一个区块数据；仅当数据版本变化时重绘该区块，上传延后到 `flushDirty`。
@@ -169,6 +182,8 @@ public final class MapTexture {
         int chunkPixelZ = data.chunkZ() * ChunkMapData.SIZE;
         int baseX = chunkPixelX - this.originPixelX;
         int baseZ = chunkPixelZ - this.originPixelZ;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int[] lighting = ChunkColorizer.lighting(data, this.colorScheme);
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             int y = baseZ + localZ;
             if (y < 0 || y >= PIXELS) {
@@ -179,7 +194,9 @@ public final class MapTexture {
                 if (x < 0 || x >= PIXELS) {
                     continue;
                 }
-                this.setPixel(x, y, data.colorAt(localX, localZ));
+                int shadow = lighting == null ? 0 : lighting[localZ * ChunkMapData.SIZE + localX];
+                this.setPixel(x, y, ChunkColorizer.colorAt(data, localX, localZ,
+                        this.colorScheme, Minecraft.getInstance().level, cursor, shadow));
             }
         }
     }

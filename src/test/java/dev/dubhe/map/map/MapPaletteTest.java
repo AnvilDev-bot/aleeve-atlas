@@ -1,5 +1,6 @@
 package dev.dubhe.map.map;
 
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.MapColor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -52,25 +53,35 @@ class MapPaletteTest {
     @Test
     void chunkDataSurvivesRoundTrip() {
         ChunkMapData data = new ChunkMapData(3, -7);
-        data.setPixel(0, 0, 0xFF112233, 70);
-        data.setPixel(15, 15, 0xFF445566, 40);
+        data.setPixel(0, 0, ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState()), 70);
+        data.setPixel(15, 15, ChunkMapData.PixelState.of(Blocks.DIRT.defaultBlockState()), 40);
         data.setVersion(12345L);
 
         ChunkMapData restored = ChunkMapData.load(data.save());
         Assertions.assertEquals(3, restored.chunkX());
         Assertions.assertEquals(-7, restored.chunkZ());
         Assertions.assertEquals(12345L, restored.version());
-        Assertions.assertEquals(0xFF112233, restored.colorAt(0, 0));
+        Assertions.assertEquals(Blocks.STONE, restored.stateAt(0, 0).state().getBlock());
         Assertions.assertEquals(70, restored.heightAt(0, 0));
-        Assertions.assertEquals(0xFF445566, restored.colorAt(15, 15));
+        Assertions.assertEquals(Blocks.DIRT, restored.stateAt(15, 15).state().getBlock());
         Assertions.assertEquals(40, restored.heightAt(15, 15));
+    }
+
+    @Test
+    void identicalStatesSharePaletteEntry() {
+        ChunkMapData data = new ChunkMapData(0, 0);
+        ChunkMapData.PixelState stone = ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState());
+        data.setPixel(0, 0, stone, 64);
+        data.setPixel(1, 0, stone, 65);
+        Assertions.assertEquals(2, data.paletteSize());
+        Assertions.assertSame(data.stateAt(0, 0), data.stateAt(1, 0));
     }
 
     @Test
     void emptyChunkIsEmpty() {
         Assertions.assertTrue(new ChunkMapData(0, 0).isEmpty());
         ChunkMapData data = new ChunkMapData(0, 0);
-        data.setPixel(4, 4, 0xFF000000, 64);
+        data.setPixel(4, 4, ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState()), 64);
         Assertions.assertFalse(data.isEmpty());
     }
 

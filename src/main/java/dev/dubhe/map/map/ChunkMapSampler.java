@@ -1,6 +1,5 @@
 package dev.dubhe.map.map;
 
-import dev.dubhe.map.config.MapColorScheme;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -11,12 +10,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
 
-/// 区块采样器：把客户端已加载区块转换为 16×16 的地图像素。
+/// 区块采样器：把客户端已加载区块转换为方块状态色板。
 ///
-/// 每列自顶向下寻找具有地图色的方块，陆地按相邻高差调色，水体按深度调色。
+/// 每列自顶向下寻找具有地图色的方块，并保存重算配色所需的高度、流体和群系信息。
 public final class ChunkMapSampler {
     private ChunkMapSampler() {
     }
@@ -31,12 +29,6 @@ public final class ChunkMapSampler {
     /// `layerTopY` 为 {@code null} 时从世界顶部向下扫描（地表模式）；
     /// 指定高度时仅扫描该高度以下（洞穴模式），使地图反映玩家所在层级的结构。
     public static ChunkMapData sample(Level level, ChunkPos pos, Integer layerTopY) {
-        return sample(level, pos, layerTopY, MapColorScheme.VANILLA);
-    }
-
-    /// 按指定着色方案采样一个区块。
-    public static ChunkMapData sample(Level level, ChunkPos pos, Integer layerTopY,
-            MapColorScheme scheme) {
         LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
         if (chunk == null) {
             return null;
@@ -50,15 +42,12 @@ public final class ChunkMapSampler {
         int baseZ = pos.getMinBlockZ();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
-        // 原版地图沿 Z 方向比较相邻列高度，因此按 X、Z 的顺序处理像素。
         for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-            int previousHeight = Integer.MIN_VALUE;
             for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
                 int worldX = baseX + localX;
                 int worldZ = baseZ + localZ;
-                int argb = MapPalette.TRANSPARENT;
                 int surfaceY = minY;
-
+                ChunkMapData.PixelState pixel = ChunkMapData.PixelState.EMPTY;
                 for (int y = topY; y >= minY; y--) {
                     cursor.set(worldX, y, worldZ);
                     BlockState state = chunk.getBlockState(cursor);
@@ -69,52 +58,26 @@ public final class ChunkMapSampler {
                     }
                     surfaceY = y;
                     MapColor mapColor = state.getMapColor(level, cursor);
-                    int depth = 0;
-                    if (!fluid.isEmpty() && scheme == MapColorScheme.VANILLA) {
-                        // 水下的非实体方块使用流体本身的地图色，避免显示为透明或方块底色。
-                        state = correctStateForFluidBlock(level, state, cursor);
-                        mapColor = state.getMapColor(level, cursor);
-                        depth = countFluidDepth(chunk, cursor, y, minY);
+                    Holder<Biome> biome = level.getBiome(cursor);
+                    String biomeId = biome.unwrapKey()
+                            .map(key -> key.identifier().toString())
+                            .orElseThrow(() -> new IllegalStateException("Unregistered map biome"));
+                    BlockState vanillaState = fluid.isEmpty()
+                            ? state : correctStateForFluidBlock(level, state, cursor);
+                    MapColor vanillaMapColor = vanillaState.getMapColor(level, cursor);
+                    int depth = fluid.isEmpty() ? 0 : countFluidDepth(chunk, cursor, y, minY);
+                    BlockState groundState = Blocks.AIR.defaultBlockState();
+                    MapColor groundMapColor = MapColor.NONE;
+                    if (!fluid.isEmpty()) {
+                        groundState = chunk.getBlockState(cursor);
+                        groundMapColor = groundState.getMapColor(level, cursor);
                     }
-                    if (scheme == MapColorScheme.BIOME_SHADE) {
-                        Holder<Biome> biome = level.getBiome(cursor);
-                        argb = BiomeShadePalette.colorWithBiome(mapColor.col, state, biome, cursor);
-                        if (mapColor == MapColor.WATER) {
-                            int waterColor = BiomeShadePalette.colorWithBiome(MapColor.WATER.col,
-                                    Blocks.WATER.defaultBlockState(), biome, cursor);
-                            depth = countFluidDepth(chunk, cursor, y, minY);
-                            if (depth <= 15) {
-                                BlockState ground = chunk.getBlockState(cursor);
-                                int groundColor = BiomeShadePalette.colorWithBiome(
-                                        ground.getMapColor(level, cursor).col, ground, biome, cursor);
-                                argb = BiomeShadePalette.blendWaterColor(waterColor, groundColor,
-                                        depth + 5);
-                            } else {
-                                argb = waterColor;
-                            }
-                        } else if (fluid.getType() == Fluids.WATER) {
-                            int waterColor = BiomeShadePalette.colorWithBiome(MapColor.WATER.col,
-                                    Blocks.WATER.defaultBlockState(), biome, cursor);
-                            argb = BiomeShadePalette.blendWaterColor(waterColor, argb, 5);
-                        }
-                    } else {
-                        int referenceHeight = previousHeight == Integer.MIN_VALUE
-                                ? surfaceY : previousHeight;
-                        MapColor.Brightness brightness = mapColor == MapColor.WATER
-                                ? MapPalette.brightnessForWater(depth, worldX, worldZ)
-                                : MapPalette.brightnessForTerrain(surfaceY, referenceHeight,
-                                        worldX, worldZ);
-                        argb = MapPalette.colorOf(mapColor, brightness);
-                    }
+                    pixel = new ChunkMapData.PixelState(state, mapColor, vanillaMapColor,
+                            groundState, groundMapColor, biomeId, depth);
                     break;
                 }
-
-                data.setPixel(localX, localZ, argb, surfaceY);
-                previousHeight = surfaceY;
+                data.setPixel(localX, localZ, pixel, surfaceY);
             }
-        }
-        if (scheme == MapColorScheme.BIOME_SHADE) {
-            BiomeShadePalette.applyTerrainShading(data);
         }
         return data;
     }

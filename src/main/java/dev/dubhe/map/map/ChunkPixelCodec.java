@@ -1,9 +1,13 @@
 package dev.dubhe.map.map;
 
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -11,12 +15,34 @@ import java.util.zip.Inflater;
 
 /// 区块像素数据的紧凑编解码。
 ///
-/// 采用 Deflate 压缩 `16 × 16` 的 ARGB 像素数组，通常可将每区块压缩到约 1 KiB。
+/// 地图差异负载使用 NBT 压缩方块状态色板，另保留通用整型数组压缩工具。
 public final class ChunkPixelCodec {
     private static final Logger LOGGER =
             LoggerFactory.getLogger("aleeve_atlas/map/codec");
 
     private ChunkPixelCodec() {
+    }
+
+    /// 压缩完整方块状态色板，供地图差异同步使用。
+    public static byte[] compressChunk(ChunkMapData data) {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            NbtIo.writeCompressed(data.save(), output);
+            return output.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to encode chunk map data", e);
+        }
+    }
+
+    /// 解压完整方块状态色板；损坏负载返回空区块并记录日志。
+    public static ChunkMapData decompressChunk(int chunkX, int chunkZ, byte[] packed, long version) {
+        try (ByteArrayInputStream input = new ByteArrayInputStream(packed)) {
+            return ChunkMapData.load(NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap()));
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("Failed to decode chunk map palette at {},{}", chunkX, chunkZ, e);
+            ChunkMapData empty = new ChunkMapData(chunkX, chunkZ);
+            empty.setVersion(version);
+            return empty;
+        }
     }
 
     /// 颜色与高度一起打包压缩（同步传输需要保留地表高度）。

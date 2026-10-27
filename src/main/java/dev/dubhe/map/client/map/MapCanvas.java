@@ -2,14 +2,20 @@ package dev.dubhe.map.client.map;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.map.client.profiling.AtlasProfiling;
+import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.map.ChunkColorizer;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.MapDimensionCache;
 import dev.dubhe.map.map.MapPalette;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /// 全屏世界地图的画布纹理。
 ///
@@ -42,6 +48,8 @@ public final class MapCanvas {
     private boolean initialized;
     /// 是否已按某个原点完成过一次定位；未定位时不能做像素搬移。
     private boolean positioned;
+    private final Map<Long, Long> drawnVersions = new HashMap<>();
+    private MapColorScheme colorScheme = MapColorScheme.VANILLA;
 
     public MapCanvas(Identifier textureId) {
         this.textureId = textureId;
@@ -86,17 +94,22 @@ public final class MapCanvas {
     ///
     /// 原点小幅平移时复用已有像素并只补绘新进入边界的条带，
     /// 避免拖拽过程中每次都遍历全部区块。
-    public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache) {
+    public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache,
+            MapColorScheme scheme) {
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
+        if (scheme != this.colorScheme) {
+            this.colorScheme = scheme;
+            this.positioned = false;
+        }
         if (this.positioned && targetX == this.originChunkX && targetZ == this.originChunkZ) {
+            this.refreshChangedChunks(cache);
             return;
         }
-        // 渲染端按画布原点与视野中心的差值补偿，因此画布可略滞后于视野。
-        // 位移不足阈值时跳过重绘，降低拖拽过程中的重建频率。
         if (this.positioned
                 && Math.abs(targetX - this.originChunkX) < RECENTER_THRESHOLD_CHUNKS
                 && Math.abs(targetZ - this.originChunkZ) < RECENTER_THRESHOLD_CHUNKS) {
+            this.refreshChangedChunks(cache);
             return;
         }
         long startedAt = System.nanoTime();
@@ -109,6 +122,7 @@ public final class MapCanvas {
             long scrollStartedAt = System.nanoTime();
             this.shiftOrigin(targetX, targetZ, cache);
             AtlasProfiling.recordCanvasScroll(System.nanoTime() - scrollStartedAt);
+            this.refreshChangedChunks(cache);
         } else {
             this.originChunkX = targetX;
             this.originChunkZ = targetZ;
@@ -116,6 +130,34 @@ public final class MapCanvas {
             this.positioned = true;
         }
         AtlasProfiling.recordCanvas(System.nanoTime() - startedAt);
+    }
+
+    /// 仅重绘缓存版本发生变化的槽位，探索时无需重建整张画布。
+    private void refreshChangedChunks(MapDimensionCache cache) {
+        if (cache == null) {
+            return;
+        }
+        boolean changed = false;
+        for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
+            for (int dz = 0; dz < CHUNKS_PER_SIDE; dz++) {
+                int chunkX = this.originChunkX + dx;
+                int chunkZ = this.originChunkZ + dz;
+                long key = ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
+                Long drawn = this.drawnVersions.get(key);
+                ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
+                if (data == null && drawn == null) {
+                    continue;
+                }
+                if (data != null && drawn != null && drawn == data.version()) {
+                    continue;
+                }
+                this.redrawChunk(dx, dz, cache);
+                changed = true;
+            }
+        }
+        if (changed && this.initialized) {
+            this.texture.upload();
+        }
     }
 
     /// 平移到新原点：先把重叠区域按区块粒度搬移，再补绘边缘条带。
@@ -189,16 +231,20 @@ public final class MapCanvas {
         int chunkZ = this.originChunkZ + dz;
         int baseX = dx * ChunkMapData.SIZE;
         int baseZ = dz * ChunkMapData.SIZE;
+        long key = ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
         ChunkMapData data = cache.get(chunkX, chunkZ).orElse(null);
         if (data != null) {
             this.drawChunk(data, baseX, baseZ);
+            this.drawnVersions.put(key, data.version());
         } else {
             // 未探索且未被队友同步的区块绘制网格底纹。
             this.drawUnexplored(baseX, baseZ);
+            this.drawnVersions.remove(key);
         }
     }
 
     private void redraw(MapDimensionCache cache) {
+        this.drawnVersions.clear();
         this.fill(MapPalette.TRANSPARENT);
         if (cache != null) {
             for (int dx = 0; dx < CHUNKS_PER_SIDE; dx++) {
@@ -224,9 +270,14 @@ public final class MapCanvas {
     }
 
     private void drawChunk(ChunkMapData data, int baseX, int baseZ) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int[] lighting = ChunkColorizer.lighting(data, this.colorScheme);
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-                this.setPixel(baseX + localX, baseZ + localZ, data.colorAt(localX, localZ));
+                int shadow = lighting == null ? 0 : lighting[localZ * ChunkMapData.SIZE + localX];
+                this.setPixel(baseX + localX, baseZ + localZ,
+                        ChunkColorizer.colorAt(data, localX, localZ, this.colorScheme,
+                                Minecraft.getInstance().level, cursor, shadow));
             }
         }
     }

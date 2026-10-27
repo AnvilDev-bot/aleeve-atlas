@@ -1,5 +1,6 @@
 package dev.dubhe.map.map;
 
+import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,7 +42,7 @@ class MapDimensionCacheLruTest {
             cache.put(chunkInRegion(region));
         }
         // 热点区域应仍在内存中：读取不触发区域重载，数据保持一致。
-        Assertions.assertEquals(0, cache.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF,
+        Assertions.assertEquals(0, cache.get(0, 0).orElseThrow().chunkX(),
                 "近期访问过的区域不应被淘汰");
     }
 
@@ -75,13 +76,13 @@ class MapDimensionCacheLruTest {
         // 淘汰时应先写入磁盘，重新打开后仍能读到最早的数据。
         MapDimensionCache reopened = new MapDimensionCache(this.tempDir);
         Assertions.assertTrue(reopened.get(0, 0).isPresent(), "淘汰前必须写入磁盘");
-        Assertions.assertEquals(0, reopened.get(0, 0).orElseThrow().colorAt(0, 0) & 0xFF);
+        Assertions.assertEquals(0, reopened.get(0, 0).orElseThrow().chunkX());
     }
 
-    /// 构造位于指定区域首区块的数据，颜色低字节编码区域序号便于追溯。
+    /// 构造位于指定区域首区块的数据。
     private static ChunkMapData chunkInRegion(int region) {
         ChunkMapData data = new ChunkMapData(region * 32, 0);
-        data.setPixel(0, 0, 0xFF000000 | (region & 0xFF), 64);
+        data.setPixel(0, 0, ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState()), 64);
         return data;
     }
 }

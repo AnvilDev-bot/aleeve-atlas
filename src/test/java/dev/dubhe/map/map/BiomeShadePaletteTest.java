@@ -36,8 +36,7 @@ class BiomeShadePaletteTest {
 
     @Test
     void shadingPreservesTransparentPixels() {
-        ChunkMapData data = new ChunkMapData(0, 0);
-        BiomeShadePalette.applyTerrainShading(data);
-        Assertions.assertTrue(data.isEmpty());
+        Assertions.assertEquals(MapPalette.TRANSPARENT,
+                BiomeShadePalette.applyShadow(MapPalette.TRANSPARENT, 40));
     }
 }

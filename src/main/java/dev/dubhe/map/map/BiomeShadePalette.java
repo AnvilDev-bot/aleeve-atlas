@@ -57,15 +57,9 @@ final class BiomeShadePalette {
                 | clamp(green, 0, 255) << 8 | clamp(blue, 0, 255);
     }
 
-    /// 对整个区块应用北、西两向的高度阴影。
-    static void applyTerrainShading(ChunkMapData data) {
-        int[] colors = data.colors();
-        int[] lighting = computeLighting(data.heights());
-        for (int i = 0; i < colors.length; i++) {
-            if (colors[i] != MapPalette.TRANSPARENT) {
-                colors[i] = mixColorWithShadow(colors[i], lighting[i]);
-            }
-        }
+    /// 对按色板解析出的颜色应用高度阴影，透明像素保持透明。
+    static int applyShadow(int color, int brightness) {
+        return color == MapPalette.TRANSPARENT ? color : mixColorWithShadow(color, brightness);
     }
 
     /// 计算每个像素的阴影强度，供测试与渲染共用。
