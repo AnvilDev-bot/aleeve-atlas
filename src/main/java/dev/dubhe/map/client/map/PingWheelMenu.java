@@ -65,6 +65,7 @@ final class PingWheelMenu extends WheelScreen {
             this.parent.resize(this.width, this.height);
         }
         super.init();
+        this.disableFrostedBackground();
     }
 
     private void disableFrostedBackground() {

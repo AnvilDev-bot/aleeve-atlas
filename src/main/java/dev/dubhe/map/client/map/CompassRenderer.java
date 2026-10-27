@@ -39,11 +39,11 @@ public final class CompassRenderer {
         }
     }
 
-    /// 在世界地图右下角绘制白色光滑方向标，图形与文字均有黑色半透明投影。
+    /// 在世界地图左上角绘制白色光滑方向标，图形与文字均有黑色半透明投影。
     public static void renderOnWorldMap(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
-        int centerX = minecraft.getWindow().getGuiScaledWidth() - 48;
-        int centerY = minecraft.getWindow().getGuiScaledHeight() - 48;
+        int centerX = 48;
+        int centerY = 96;
         graphics.blit(AtlasRenderPipelines.WORLD_COMPASS, WHITE_TEXTURE,
                 centerX - WORLD_COMPASS_SIZE / 2, centerY - WORLD_COMPASS_SIZE / 2,
                 0.0F, 0.0F, WORLD_COMPASS_SIZE, WORLD_COMPASS_SIZE, 2, 2, 2, 2, 0xFFFFFFFF);
