@@ -4,6 +4,7 @@ import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.api.ping.MinimapPingAPI;
 import dev.dubhe.map.client.AtlasKeyMappings;
 import dev.dubhe.map.config.AtlasClientConfigs;
+import dev.dubhe.map.config.CompassPosition;
 import dev.dubhe.map.config.MapColorScheme;
 import dev.dubhe.map.config.MinimapShape;
 import net.minecraft.client.KeyMapping;
@@ -26,6 +27,9 @@ public final class MinimapDisplaySelfTest {
     private static boolean completed;
     private static float previousYaw;
     private static float previousPitch;
+    private static double previousMinimapScale;
+    private static double previousCompassSize;
+    private static CompassPosition previousCompassPosition;
 
     private MinimapDisplaySelfTest() {
     }
@@ -52,7 +56,13 @@ public final class MinimapDisplaySelfTest {
             case 110 -> verifyZoom(minecraft);
             case 120 -> AtlasKeyMappings.FOCUS_MINIMAP.setDown(true);
             case 140 -> verifyFocused(minecraft);
-            case 160 -> AtlasWorldMap.open();
+            case 160 -> {
+                AtlasClientConfigs.CONFIG.worldMap.compassPosition = CompassPosition.TOP_LEFT;
+                AtlasClientConfigs.CONFIG.worldMap.compassSize = 192.0;
+                AtlasWorldMap.open();
+            }
+            case 170 -> screenshot(minecraft, "atlas-world-compass-large-top-left.png");
+            case 175 -> AtlasClientConfigs.CONFIG.worldMap.compassPosition = CompassPosition.BOTTOM_RIGHT;
             case 180 -> {
                 screenshot(minecraft, "atlas-world-compass.png");
                 minecraft.setScreen(null);
@@ -67,6 +77,10 @@ public final class MinimapDisplaySelfTest {
     private static void prepare(Minecraft minecraft, LocalPlayer player) {
         previousYaw = player.getYRot();
         previousPitch = player.getXRot();
+        previousMinimapScale = AtlasClientConfigs.CONFIG.minimap.scale;
+        previousCompassSize = AtlasClientConfigs.CONFIG.worldMap.compassSize;
+        previousCompassPosition = AtlasClientConfigs.CONFIG.worldMap.compassPosition;
+        AtlasClientConfigs.CONFIG.minimap.scale = 1.25;
         setRotation(player, 65.0F, 0.0F);
         AtlasClientConfigs.CONFIG.minimap.lockNorth = false;
         AtlasClientConfigs.CONFIG.minimap.shape = MinimapShape.CIRCLE;
@@ -108,6 +122,9 @@ public final class MinimapDisplaySelfTest {
         screenshot(minecraft, "atlas-world-waypoint-look.png");
         setRotation(player, previousYaw, previousPitch);
         AtlasClientConfigs.CONFIG.minimap.zoom = MinimapLayout.DEFAULT_ZOOM;
+        AtlasClientConfigs.CONFIG.minimap.scale = previousMinimapScale;
+        AtlasClientConfigs.CONFIG.worldMap.compassSize = previousCompassSize;
+        AtlasClientConfigs.CONFIG.worldMap.compassPosition = previousCompassPosition;
         completed = true;
         LOGGER.info("Minimap display and world marker verification passed");
     }

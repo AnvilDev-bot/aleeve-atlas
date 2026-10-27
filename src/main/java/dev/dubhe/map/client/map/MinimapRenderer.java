@@ -201,13 +201,13 @@ public final class MinimapRenderer {
         int line = above
                 ? y - 4 - lineCount * 10
                 : y + size + 4;
-        int textX = x;
+        int textX = x + size / 2;
         if (config.minimap.showCoords) {
             Component text = Component.translatable("aleeve_atlas.hud.coords",
                     (int) Math.floor(player.getX()),
                     (int) Math.floor(player.getY()),
                     (int) Math.floor(player.getZ()));
-            graphics.drawString(minecraft.font, text, textX, line, TEXT_COLOR);
+            graphics.drawCenteredString(minecraft.font, text, textX, line, TEXT_COLOR);
             line += 10;
         }
         if (config.minimap.showBiome && minecraft.level != null) {
@@ -217,12 +217,12 @@ public final class MinimapRenderer {
                             "biome." + key.identifier().toLanguageKey()))
                     .orElseGet(() -> Component.translatable(
                             "aleeve_atlas.hud.biome_unknown"));
-            graphics.drawString(minecraft.font, name, textX, line, TEXT_COLOR);
+            graphics.drawCenteredString(minecraft.font, name, textX, line, TEXT_COLOR);
             line += 10;
         }
         if (config.minimap.showLight && minecraft.level != null) {
             int light = minecraft.level.getMaxLocalRawBrightness(player.blockPosition());
-            graphics.drawString(minecraft.font,
+            graphics.drawCenteredString(minecraft.font,
                     Component.translatable("aleeve_atlas.hud.light", light), textX, line,
                     TEXT_COLOR);
             line += 10;
@@ -231,7 +231,7 @@ public final class MinimapRenderer {
             long dayTime = minecraft.level.getDayTime() % 24000L;
             int hours = (int) ((dayTime / 1000L + 6L) % 24L);
             int minutes = (int) ((dayTime % 1000L) * 60L / 1000L);
-            graphics.drawString(minecraft.font,
+            graphics.drawCenteredString(minecraft.font,
                     Component.translatable("aleeve_atlas.hud.time",
                             "%02d".formatted(hours), "%02d".formatted(minutes)),
                     textX, line, TEXT_COLOR);

@@ -16,6 +16,10 @@ public class AtlasClientConfig {
     public Minimap minimap = new Minimap();
 
     @CollapsibleObject
+    @Comment("World map settings.")
+    public WorldMap worldMap = new WorldMap();
+
+    @CollapsibleObject
     @Comment("Entity radar settings.")
     public Radar radar = new Radar();
 
@@ -30,6 +34,14 @@ public class AtlasClientConfig {
     @CollapsibleObject
     @Comment("Map ping settings.")
     public Ping ping = new Ping();
+
+    public static class WorldMap {
+        @Comment("Corner used by the world map compass.")
+        public CompassPosition compassPosition = CompassPosition.TOP_LEFT;
+
+        @Comment("World map compass size in GUI-scaled pixels (32 ~ 192).")
+        public double compassSize = 72.0;
+    }
 
     public static class Minimap {
         @Comment("Whether the minimap HUD is enabled.")

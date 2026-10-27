@@ -349,7 +349,9 @@ public interface TerritoryGroup {
 | `minimap.scale` | float（实现用 double） | `1.0` | 缩放倍率（`0.5 ~ 4.0`） |
 | `minimap.position` | enum | `TOP_RIGHT` | 四角预设 + 自定义偏移 |
 | `minimap.lockNorth` | bool | `false` | 北向锁定 |
-| `minimap.showCoords` / `showBiome` / `showLight` / `showTime` | bool | `true/true/false/false` | 信息覆层开关（§2.2） |
+| `minimap.showCoords` / `showBiome` / `showLight` / `showTime` | bool | `true/true/false/false` | 信息覆层开关，文字相对于小地图水平居中（§2.2） |
+| `world_map.compass_position` | enum | `TOP_LEFT` | 世界地图方向标位置：`TOP_LEFT` / `TOP_RIGHT` / `BOTTOM_LEFT` / `BOTTOM_RIGHT` |
+| `world_map.compass_size` | float（实现用 double） | `72.0` | 方向标整体大小（`32 ~ 192` GUI 缩放像素） |
 | `radar.displayMode` | enum | `HYBRID` | `ICON` / `DOT` / `HYBRID`（§6.1） |
 | `radar.color.<category>` | string(HEX) | 见 §6.2 | 五类实体圆点配色，均可独立开关 |
 | `radar.fadeOutSeconds` | float（实现用 double） | `1.0` | 遮挡渐隐保留期（`0.5 ~ 1.5`，§4.2） |
