@@ -61,11 +61,7 @@ public final class WaypointWorldOverlay {
         int x = (int) Math.round(projected.screenX());
         int y = (int) Math.round(projected.screenY());
         int markerColor = applyOpacity(waypoint.colorArgb(), MARKER_OPACITY);
-        if (Waypoint.DEATH_ICON.equals(waypoint.icon())) {
-            MapMarkerRenderer.drawCross(graphics, x, y, 10, markerColor);
-        } else {
-            MapMarkerRenderer.drawDiamond(graphics, x, y, 10, markerColor);
-        }
+        MapMarkerRenderer.drawDiamond(graphics, x, y, 10, markerColor);
 
         Component name = Component.empty().append(waypoint.displayName())
                 .withStyle(ChatFormatting.WHITE);
