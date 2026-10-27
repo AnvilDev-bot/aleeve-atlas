@@ -1,122 +1,71 @@
-# 袖里舆图 Aleeve Atlas
+<div align="center">
 
-Minecraft 1.21.11（NeoForge 21.11.x）的小地图与世界地图模组，提供队伍地图同步、跨队伍标点、路径点、实体雷达与领地覆层公开 API。
+# Aleeve Atlas
 
-- 需求规格说明书：[Minecraft 1.21.11 (NeoForge) 的小地图与世界地图模组袖里舆图（aleeve_atlas）需求规格说明书.md](<Minecraft 1.21.11 (NeoForge) 的小地图与世界地图模组袖里舆图（aleeve_atlas）需求规格说明书.md>)
+**A minimap and world map mod for Minecraft 1.21.11 with waypoints, entity radar, team synchronization, and temporary pings.**
 
-## 已实现功能
+English | [简体中文](README.zh_CN.md)
 
-| 模块 | 状态 | 说明 |
-| --- | --- | --- |
-| 双端自适应 | ✅ | 握手包检测服务端支持并下发锁定项，独立/协同模式自动切换 |
-| 小地图 HUD | ✅ | 圆形/方形形态、图标旋转补偿、NSWE 方向标、快捷键缩放、按住 Z 居中、北向锁定、信息覆层 |
-| 全屏世界地图 | ✅ | 拖拽平移、滚轮缩放、四角星方向标、实体雷达、客户端配置入口、双击建点、右键路径点菜单 |
-| 地图采集与缓存 | ✅ | 方块状态色板、探索增量刷新、配色热重载、按服务器/存档与维度隔离、区域文件 NBT 持久化 |
-| 地图增量同步 | ✅ | 摘要分批上报、版本比对、差异分片流式传输、限速写入（§3.3） |
-| 队伍适配层 | ✅ | 统一接口、原版计分板实现、外部实现注册与配置选择 |
-| 实体雷达 | ✅ | 五类实体分类、HEX 配色、玩家双层皮肤头像、Tab 联动 |
-| 路径点 | ✅ | 新建与编辑表单、持久化、地图与世界内标记、注视距离、75% 不透明度、死亡点、同队收发三策略 |
-| 临时标点 | ✅ | 地图中键快速标点、AnvilLib-Wheel 四类轮盘、世界内圆形标点、常显距离、外部模组 API 与显示开关 |
-| 领地覆层 API | ✅ | 公开 API、连通分量、加权极点锚点、交界描边、zOrder 叠加、进出提示 |
-| 可见性判定 | ✅ | ALWAYS/NEVER/VISIBLE_ONLY 策略，GPU 遮挡查询与异步结果读取，失败时回退射线检测 |
-| 国际化 | ✅ | `en_us` 由 datagen 生成，`zh_cn` 人工维护，构建期校验键集一致 |
+</div>
 
-## 包坐标
+## Overview
 
-- Java 包：`dev.dubhe.map`
-- Maven group：`dev.dubhe.map`
-- 模组 ID：`aleeve_atlas`
+Aleeve Atlas (`aleeve_atlas`) is a minimap and world map mod for Minecraft 1.21.11 on NeoForge. It records explored terrain, provides in-world and on-map markers, and supports cooperative map and waypoint sharing. Installing it on both the client and server enables synchronized features; a client-only installation retains local mapping features.
 
-## 外部模组接入
+## Requirements
 
-### 临时标点（Ping Wheel 等）
+- Minecraft 1.21.11.
+- NeoForge 21.11.x.
+- AnvilLib 2.x (2.0.0 or later) built for Minecraft 1.21.11.
+  - `anvillib_config` is required on both the client and server.
+  - `anvillib_wheel`, `anvillib_rendering`, and `anvillib_util` are also required on the client.
+  - `anvillib_integration` is optional and enables integrations such as FTB Teams.
 
-```java
-import dev.dubhe.map.api.ping.MapPingCreatedEvent;
-import dev.dubhe.map.api.ping.MinimapPingAPI;
-import dev.dubhe.map.ping.MapPingData;
+## Installation
 
-// 外部模组在 3D 视界标点后推送给本模组，小地图/世界地图即刻渲染波纹标点
-MinimapPingAPI.registerPing(position, dimensionId, MapPingData.PingIcon.GENERAL,
-        senderId, senderName, teamColor);
+1. Install Minecraft 1.21.11 and NeoForge 21.11.x.
+2. Install the required AnvilLib modules in your `mods` folder.
+3. Place the Aleeve Atlas jar in the same `mods` folder and start the game.
+4. For map synchronization, team features, and shared waypoints on a server, install Aleeve Atlas and `anvillib_config` on the server as well.
 
-// 监听本模组发起的标点，在 3D 世界生成光柱
-NeoForge.EVENT_BUS.addListener((MapPingCreatedEvent event) -> { ... });
-```
+## Main Features
 
-### 领地覆层（FTB Chunks / OPAC 等）
+- Circular or square minimap with rotation, north locking, zoom, and coordinate, biome, light, and time displays.
+- Full-screen world map with dragging, scrolling, waypoint management, and quick access to client settings.
+- Incremental map exploration and persistent caches separated by server or save and dimension.
+- Team map synchronization and waypoint sharing when the mod is installed on both sides.
+- Entity radar with player avatars, configurable entity categories, and visibility rules.
+- Custom waypoints, death points, in-world markers, and import/export commands.
+- Temporary pings in the world and on maps, with a four-option wheel for danger, warning, general, and go-to pings.
+- Territory overlay and external ping APIs for other mods.
 
-```java
-import dev.dubhe.map.api.territory.AtlasTerritory;
-import dev.dubhe.map.territory.SimpleTerritory;
+## Default Controls
 
-AtlasTerritory.client().upsertTerritory(
-        SimpleTerritory.of("my_territory", Level.OVERWORLD, chunks, name, 0x33AAFF));
-```
-
-## 客户端命令
-
-| 命令 | 用途 |
+| Input | Action |
 | --- | --- |
-| `/aleeve_atlas waypoint export <file>` | 导出全部路径点到 `aleeve_atlas_exports/<file>` |
-| `/aleeve_atlas waypoint import <file>` | 从该目录导入并合并路径点 |
-| `/aleeve_atlas waypoint accept\|ignore <id>` | 手动接受策略下的路径点确认 |
-| `/aleeve_atlas territory demo\|clear` | 注册/清除演示领地（含孔洞与飞地，便于验收） |
-| `/aleeve_atlas pingdemo` | 在玩家前方注入临时标点，便于验收波纹渲染 |
-| `/aleeve_atlas perf` | 输出小地图帧耗统计与标点通道诊断 |
+| `M` | Open or close the full-screen world map. |
+| `N` | Create a new waypoint at your current position. |
+| `=` / `-` | Zoom the minimap in or out. |
+| Hold `Z` | Center and enlarge the minimap; releasing the key restores its previous position and size. |
+| Short middle-click in the world or on the world map | Create a general temporary ping at the targeted location. |
+| Long middle-click in the world or on the world map | Open the ping wheel; release the button to confirm the selected ping type. |
 
-命令名另提供无下划线别名 `/aleeveatlas`，便于输入。
+You can rebind the mod's keyboard controls in Minecraft's Controls settings.
 
-## 实现说明
+## Configuration and Data
 
-### 客户端方块变更检测
+- Client configuration: `<game_dir>/config/aleeve_atlas-client.toml`. You can also open the client settings from the world map.
+- Server configuration: `<world_dir>/serverconfig/aleeve_atlas-server.toml`.
+- Map caches and waypoint data: `<game_dir>/data/aleeve_atlas/`. Map cache files are stored under `mapdata`, separated by server or save and dimension.
 
-规格要求方块变更时重新渲染对应区块纹理。NeoForge 1.21.11 没有客户端方块变更事件，`ClientLevel.setBlocksDirty` 是客户端收到方块更新后的唯一入口，因此以 Mixin 注入该方法的 HEAD 处标记所属区块待重新采样。
+See the [configuration and interaction guide](docs/CONFIG.md) for more details (Chinese).
 
-`aleeve_atlas.mixins.json` 只把该 Mixin 声明在 `client` 段，专用服务端不会加载。地表与洞穴使用两套独立缓存，失效时两份都清除，否则切换模式会命中过期像素。磁盘写入按 200 tick 的周期批量完成，不在每次失效时立即写盘。
+## Documentation
 
-### 地图标记与朝向
+- [Technical documentation and developer APIs](docs/TECH.md) (Chinese)
+- [Configuration and interaction guide](docs/CONFIG.md) (Chinese)
 
-实体标记使用抗锯齿圆点，路径点与警告标点使用光滑菱形。危险、警告、一般、前往四类临时标点分别使用叉形、菱形、圆点和箭头内层符号，波纹使用抗锯齿圆环。路径点和临时标点超出小地图时，在内缩边缘显示指向目标的光滑三角箭头；所有标记中心均按地图形状与标记尺寸约束在边界内。
+## License
 
-玩家指示器使用水滴形，旋转中心为半圆圆心。固定北向时地图不动、指示器随玩家朝向旋转；视角随动时地图把当前朝向旋转到屏幕上方，指示器固定朝上。
-
-### 路径点界面
-
-世界地图顶部可直接打开客户端配置和路径点管理列表。管理列表只显示当前维度的路径点，支持新建、编辑、显示切换、分享、私密切换与删除，未启用路径点仍保留在列表中。右侧滚动条支持拖动，过长的名称和坐标在鼠标悬停时横向滚动。
-
-双击世界地图、右键空白位置后选择“创建路径点”，或按 `N` 键会先打开路径点表单。右键已有路径点后可从菜单删除。表单可设置名称、三维坐标、`#RRGGBB` 颜色、可见距离、启用状态与分享设置，保存后返回来源界面；编辑保留原路径点的 UUID、维度、图标和来源信息。
-
-世界地图单击鼠标中键会创建“一般”临时标点，长按中键会通过 AnvilLib-Wheel 打开危险、警告、一般、前往四类轮盘，松开中键执行当前选择。
-
-### GPU 遮挡查询
-
-`VISIBLE_ONLY` 使用 `GL_SAMPLES_PASSED` 对非同队玩家的代理包围盒执行硬件遮挡查询。查询在不透明地形与实体深度绘制完成后提交，代理管线关闭颜色写入、深度写入和面剔除，保留深度测试。每帧最多提交 64 个目标，结果就绪后异步读取，未就绪时沿用上一有效判定。查询能力、GL 上下文或绘制流程出现异常时，记录原因并切换到多采样点射线检测。
-
-小地图、世界地图和临时标点共用同一可见性结果与渐隐规则。从未取得可见结果的目标不绘制，目标被遮挡或移出视锥后按配置渐隐。
-
-验收辅助：`ALEEVE_ATLAS_OCCLUSION_SELFTEST=1` 在单人世界生成远端玩家，依次验证开阔、墙体遮挡与拆墙恢复；`ALEEVE_ATLAS_FORCE_RAYCAST=1` 强制使用射线实现。
-
-## 依赖
-
-本模组双端必需 **AnvilLib**（≥ 2.0.0）的 `config` 模块，客户端还需 `wheel`、`rendering` 与 `util` 模块，请安装对应 Minecraft 1.21.11 版本。`integration` 用于 FTB Teams 等外部模组集成，`wheel` 提供世界地图标点轮盘，`util` 用于客户端 tick 计数。
-
-## 环境要求
-
-- JDK 21（Gradle 工具链自动解析，亦可通过 foojay 自动下载）
-- 无需全局 Gradle，使用随附 wrapper
-
-## 构建与运行
-
-| 命令 | 用途 |
-| --- | --- |
-| `gradlew.bat build` | 构建模组 jar（输出在 `build/libs`），含单元测试与语言键集校验 |
-| `gradlew.bat runClient` | 启动开发客户端 |
-| `gradlew.bat runServer` | 启动开发服务器 |
-| `gradlew.bat runData` | 运行数据生成（生成 `en_us.json`，输出至 `src/generated/resources`） |
-| `gradlew.bat test` | 运行单元测试 |
-
-## 许可证
-
-- 代码：LGPL-3.0-only（见 [LICENSE](LICENSE)）
-- 资源（纹理、模型等）：保留所有权利（见 [ASSETS_LICENSE](ASSETS_LICENSE)）
+- Code: LGPL-3.0-only; see [LICENSE](LICENSE).
+- Assets such as textures and models: all rights reserved; see [ASSETS_LICENSE](ASSETS_LICENSE).

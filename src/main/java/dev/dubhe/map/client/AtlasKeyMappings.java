@@ -51,6 +51,14 @@ public final class AtlasKeyMappings {
             GLFW.GLFW_KEY_MINUS,
             CATEGORY);
 
+    public static final KeyMapping WORLD_PING = new KeyMapping(
+            "key.aleeve_atlas.world_ping",
+            KeyConflictContext.IN_GAME,
+            KeyModifier.NONE,
+            InputConstants.Type.MOUSE,
+            GLFW.GLFW_MOUSE_BUTTON_MIDDLE,
+            CATEGORY);
+
     public static final KeyMapping FOCUS_MINIMAP = new KeyMapping(
             "key.aleeve_atlas.focus_minimap",
             KeyConflictContext.IN_GAME,
@@ -69,6 +77,7 @@ public final class AtlasKeyMappings {
         event.register(NEW_WAYPOINT);
         event.register(MINIMAP_ZOOM_IN);
         event.register(MINIMAP_ZOOM_OUT);
+        event.register(WORLD_PING);
         event.register(FOCUS_MINIMAP);
     }
 }

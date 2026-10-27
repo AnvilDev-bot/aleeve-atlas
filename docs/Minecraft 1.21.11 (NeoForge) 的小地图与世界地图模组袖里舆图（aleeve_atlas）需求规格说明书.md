@@ -84,7 +84,7 @@
 
 ### 3.2 地图临时标点与外部标点模组兼容接口 (Map Ping & Ping Wheel API)
 
-临时标点完全交由外部标点模组（如 `Ping Wheel`）发起，本模组**不内置标点快捷键**、不重复实现 3D 视界标点交互；本模组只负责提供双向兼容的 **Ping API** 与地图侧渲染，保证玩家既有操作习惯不变。
+本模组支持在世界内和世界地图中短按中键创建“一般”临时标点，长按中键打开四类轮盘。与此同时提供双向兼容的 **Ping API** 与地图侧渲染，允许外部标点模组（如 `Ping Wheel`）接入并复用既有操作习惯。
 
 ### 3.2.1 临时标点核心数据结构 (`MapPingData`)
 
@@ -329,11 +329,12 @@ public interface TerritoryGroup {
 | `Tab`（按住） | 小地图玩家圆点切换为皮肤头像（§6.1 混合联动模式） | 客户端 | 复用原版玩家列表键位，不额外占用键位 |
 | 鼠标拖拽 / 滚轮 | 世界地图平移 / 缩放 | 客户端 | — |
 | 双击 / 右键（世界地图上） | 快速创建路径点 / 发起标点 | 客户端 | — |
+| 鼠标中键（短按 / 长按） | 世界内或地图内创建一般标点 / 打开标点轮盘 | 客户端 | 世界内取消原版选取方块，界面打开时取消未完成的长按 |
 
-- **本模组不注册标点专用键位**：3D 视界标点由 `Ping Wheel` 等外部模组提供，本模组只经 §3.2.2 的 Ping API 接收并在地图上渲染；世界地图上的双击/右键是唯一的内置标点发起点。
+- 世界内标点使用可重绑定的 `WORLD_PING` 键位，默认为鼠标中键；外部模组也可经 §3.2.2 的 Ping API 创建标点。
 
-- 所有自定义键位必须通过 NeoForge `RegisterKeyMappingsEvent`（仅物理客户端）注册 `KeyMapping`，并为本模组注册独立的 `KeyMapping.Category`（`key.category.aleeve_atlas.<path>`），使其在原版控制设置的独立分组中出现；默认输入使用 `InputConstants.Type.KEYSYM`（GLFW key token），禁止硬编码扫描码（`SCANCODE`）。
-- **冲突上下文**：世界地图/标点等游戏内键位应使用 `KeyConflictContext.IN_GAME`，界面内的键位使用 `KeyConflictContext.GUI`，避免与原版或其他模组的同键位误触；输入判定统一走 `KeyMapping#consumeClick`（在 `ClientTickEvent.Post` 中 while 消费）或 `isActiveAndMatches`。
+- 所有自定义键位必须通过 NeoForge `RegisterKeyMappingsEvent`（仅物理客户端）注册 `KeyMapping`，并为本模组注册独立的 `KeyMapping.Category`（`key.category.aleeve_atlas.<path>`），使其在原版控制设置的独立分组中出现；键盘默认输入使用 `InputConstants.Type.KEYSYM`，鼠标默认输入使用 `InputConstants.Type.MOUSE`，禁止硬编码扫描码（`SCANCODE`）。
+- **冲突上下文**：世界地图/标点等游戏内键位应使用 `KeyConflictContext.IN_GAME`，界面内的键位使用 `KeyConflictContext.GUI`，避免与原版或其他模组的同键位误触；常规输入使用 `KeyMapping#consumeClick` 或 `matches`/`matchesMouse`，世界内标点通过 `MouseButton.Pre` 和 `InputEvent.Key` 直接处理按下与松开，并取消中键的原版选取方块行为。
 
 ---
 

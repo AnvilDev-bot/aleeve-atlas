@@ -33,7 +33,7 @@ public final class WaypointWorldOverlay {
     }
 
     @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
+    public static void onRenderGui(RenderGuiEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || minecraft.options.hideGui
                 || MinimapLayout.focused(minecraft)) {
@@ -64,13 +64,7 @@ public final class WaypointWorldOverlay {
         if (Waypoint.DEATH_ICON.equals(waypoint.icon())) {
             MapMarkerRenderer.drawCross(graphics, x, y, 10, markerColor);
         } else {
-            for (int offset = -ICON_HALF_SIZE; offset <= ICON_HALF_SIZE; offset++) {
-                int halfWidth = ICON_HALF_SIZE - Math.abs(offset);
-                graphics.fill(x - halfWidth, y + offset, x + halfWidth + 1, y + offset + 1,
-                        markerColor);
-            }
-            graphics.fill(x, y - 1, x + 1, y + 1,
-                    applyOpacity(0xFF101010, MARKER_OPACITY));
+            MapMarkerRenderer.drawDiamond(graphics, x, y, 10, markerColor);
         }
 
         Component name = Component.empty().append(waypoint.displayName())

@@ -33,8 +33,8 @@ import java.util.UUID;
 /// 玩家标记切换为皮肤头像。两种地图共用分类、距离、可见性与渐隐规则。
 public final class RadarRenderer {
     /// 玩家头像尺寸（GUI 像素）。
-    private static final int HEAD_SIZE = 8;
-    private static final int ICON_SIZE = 8;
+    private static final int HEAD_SIZE = 6;
+    private static final int ICON_SIZE = 6;
     /// 掉落物合并粒度（像素），同格内只绘制一个圆点。
     private static final double ITEM_MERGE_PIXELS = 4.0;
     /// 皮肤未就绪时的占位纹理。
@@ -207,7 +207,7 @@ public final class RadarRenderer {
         }
         var team = TeamProviders.active().teamIdOf(entity.getUUID());
         int color = TeamProviders.active().teamColor(team);
-        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 8, color);
+        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 7, color);
     }
 
     /// 把屏幕坐标按 4 像素粒度打包，用于合并同格掉落物。
@@ -227,7 +227,7 @@ public final class RadarRenderer {
     }
 
     private static void drawDot(GuiGraphics graphics, double screenX, double screenZ, int color) {
-        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 6, color);
+        MapMarkerRenderer.drawDot(graphics, screenX, screenZ, 5, color);
     }
 
     /// 生物图标：用刷怪蛋物品图标表示实体类型；无对应刷怪蛋时返回 false 由调用方回退圆点。

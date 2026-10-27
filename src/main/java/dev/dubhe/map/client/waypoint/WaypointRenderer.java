@@ -59,7 +59,7 @@ public final class WaypointRenderer {
         // 边缘标记使用指向目标的光滑三角箭头，中心内缩以避免超出地图边界。
         double[] fitted = layout.fitInside(screenX, screenZ, circular, 6.0, 0.0);
         double angle = MapMarkerRenderer.directionAngle(dx, dz);
-        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 10, angle, color);
+        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 8, angle, color);
     }
 
     /// 在世界地图上绘制路径点（屏幕坐标由调用方换算）。
@@ -89,12 +89,12 @@ public final class WaypointRenderer {
     /// 死亡点标记：以光滑叉形与普通路径点的菱形区分。
     private static void drawCross(GuiGraphics graphics, double screenX, double screenZ,
             int color) {
-        MapMarkerRenderer.drawCross(graphics, screenX, screenZ, 8, color);
+        MapMarkerRenderer.drawCross(graphics, screenX, screenZ, 6, color);
     }
 
     private static void drawDiamond(GuiGraphics graphics, double screenX, double screenZ,
             int color) {
-        MapMarkerRenderer.drawDiamond(graphics, screenX, screenZ, 8, color);
+        MapMarkerRenderer.drawDiamond(graphics, screenX, screenZ, 6, color);
     }
 
     /// 圆形小地图形态判定工具。

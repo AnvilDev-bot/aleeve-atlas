@@ -592,7 +592,7 @@ public final class WorldMapScreen extends Screen {
         }
         int x = (int) Math.round(screenX);
         int y = (int) Math.round(screenY);
-        MapMarkerRenderer.drawDot(graphics, x, y, 8, PLAYER_COLOR);
+        MapMarkerRenderer.drawDot(graphics, x, y, 6, PLAYER_COLOR);
     }
 
     private void drawContextMenu(GuiGraphics graphics) {

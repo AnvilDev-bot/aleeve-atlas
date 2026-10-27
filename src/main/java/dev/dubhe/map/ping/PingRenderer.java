@@ -16,7 +16,7 @@ import java.util.List;
 
 /// 标点地图渲染。
 public final class PingRenderer {
-    private static final int MAX_RIPPLE_PIXELS = 10;
+    private static final int MAX_RIPPLE_PIXELS = 8;
     private static final long RIPPLE_PERIOD_MILLIS = 900L;
 
     private PingRenderer() {
@@ -95,7 +95,7 @@ public final class PingRenderer {
         double[] fitted = layout.fitInside(screenX, screenZ, circular, 7.0, 0.0);
         double angle = MapMarkerRenderer.directionAngle(dx, dz);
         int color = applyOpacity(ping.icon().colorArgb(), opacity);
-        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 12, angle, color);
+        MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 10, angle, color);
     }
 
     /// 在世界地图上绘制活动标点（屏幕坐标与透明度由调用方计算）。
@@ -120,7 +120,7 @@ public final class PingRenderer {
         int size = Math.round((2.0F + ripplePhase * MAX_RIPPLE_PIXELS) * 2.0F + 4.0F);
         int rippleColor = applyOpacity(ping.icon().colorArgb(), opacity * (1.0F - ripplePhase));
         MapMarkerRenderer.drawRipple(graphics, x, z, size, rippleColor);
-        MapMarkerRenderer.drawDot(graphics, x, z, 10,
+        MapMarkerRenderer.drawDot(graphics, x, z, 8,
                 applyOpacity(ping.icon().colorArgb(), opacity));
         drawIcon(graphics, x, z, applyOpacity(0xFFFFFFFF, opacity), ping.icon());
     }
@@ -143,11 +143,11 @@ public final class PingRenderer {
     static void drawIcon(GuiGraphics graphics, int x, int z, int color,
             MapPingData.PingIcon icon) {
         switch (icon) {
-            case DANGER -> MapMarkerRenderer.drawCross(graphics, x, z, 8, color);
-            case WARNING -> MapMarkerRenderer.drawDiamond(graphics, x, z, 8, color);
-            case GOTO -> MapMarkerRenderer.drawArrow(graphics, x, z, 8, 0.0, color);
-            case GENERAL -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
-            default -> MapMarkerRenderer.drawDot(graphics, x, z, 4, color);
+            case DANGER -> MapMarkerRenderer.drawCross(graphics, x, z, 6, color);
+            case WARNING -> MapMarkerRenderer.drawDiamond(graphics, x, z, 6, color);
+            case GOTO -> MapMarkerRenderer.drawArrow(graphics, x, z, 6, 0.0, color);
+            case GENERAL -> MapMarkerRenderer.drawDot(graphics, x, z, 2, color);
+            default -> MapMarkerRenderer.drawDot(graphics, x, z, 2, color);
         }
     }
 

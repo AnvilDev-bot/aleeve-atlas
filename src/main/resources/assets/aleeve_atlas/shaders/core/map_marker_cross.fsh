@@ -26,6 +26,6 @@ void main() {
     }
     vec4 fill = vertexColor * ColorModulator;
     vec4 outline = vec4(0.06, 0.06, 0.06, fill.a);
-    float border = 1.0 - smoothstep(0.04 - antialias, 0.04 + antialias, distanceToEdge);
+    float border = 1.0 - smoothstep(0.025 - antialias, 0.025 + antialias, distanceToEdge);
     fragColor = mix(fill, outline, border) * vec4(1.0, 1.0, 1.0, alpha * strength);
 }

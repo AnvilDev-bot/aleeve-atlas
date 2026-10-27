@@ -17,8 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /// 客户端标点收集与生命周期管理。
 ///
-/// 本模组**不内置标点快捷键**：标点由外部模组（如 `Ping Wheel`）或地图界面交互发起，
-/// 经 {@link dev.dubhe.map.api.ping.MinimapPingAPI} 推送进来；此处统一维护生命周期与渲染数据。
+/// 标点可由世界内中键、地图界面或外部模组 API 发起，此处统一维护生命周期与渲染数据。
 /// 绑定实体的标点每 tick 跟随更新位置，过期自动移除。
 public final class ClientPings {
     private static final List<MapPingData> ACTIVE = new CopyOnWriteArrayList<>();

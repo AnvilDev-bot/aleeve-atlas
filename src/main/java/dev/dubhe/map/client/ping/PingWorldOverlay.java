@@ -21,12 +21,14 @@ import net.neoforged.neoforge.client.event.RenderGuiEvent;
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class PingWorldOverlay {
     private static final int DISTANCE_BACKGROUND = 0xFF101010;
+    private static final int TEXT_COLOR = 0xBFFFFFFF;
+    private static final float MARKER_OPACITY = 0.75F;
 
     private PingWorldOverlay() {
     }
 
     @SubscribeEvent
-    public static void onRenderGui(RenderGuiEvent.Post event) {
+    public static void onRenderGui(RenderGuiEvent.Pre event) {
         if (!MinimapPingAPI.isWorldPingsEnabled()) {
             return;
         }
@@ -47,7 +49,7 @@ public final class PingWorldOverlay {
             }
             WorldProjection.project(ping.position())
                     .ifPresent(projected -> drawMarker(graphics, minecraft, ping, projected,
-                            opacity));
+                            opacity * MARKER_OPACITY));
         }
     }
 
@@ -67,7 +69,7 @@ public final class PingWorldOverlay {
         int textY = y + 9;
         graphics.fill(textX - 2, textY - 1, textX + textWidth + 2,
                 textY + minecraft.font.lineHeight + 1, DISTANCE_BACKGROUND);
-        graphics.drawString(minecraft.font, distance, textX, textY, 0xFFFFFFFF, true);
+        graphics.drawString(minecraft.font, distance, textX, textY, TEXT_COLOR, true);
     }
 
     private static int applyOpacity(int argb, float opacity) {

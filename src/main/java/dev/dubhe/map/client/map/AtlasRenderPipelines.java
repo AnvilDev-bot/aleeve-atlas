@@ -42,6 +42,10 @@ public final class AtlasRenderPipelines {
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .build();
 
+    /// 世界地图光滑四角方向标，逆时针半臂使用空心轮廓。
+    public static final RenderPipeline WORLD_COMPASS = markerPipeline(
+            "world_compass", "core/world_compass");
+
     /// 实体圆点标记管线。
     public static final RenderPipeline MAP_MARKER_DOT = markerPipeline(
             "map_marker_dot", "core/map_marker_dot");
@@ -81,6 +85,7 @@ public final class AtlasRenderPipelines {
     public static void register(RegisterRenderPipelinesEvent event) {
         event.registerPipeline(MINIMAP_CIRCLE);
         event.registerPipeline(MINIMAP_OVERLAY);
+        event.registerPipeline(WORLD_COMPASS);
         event.registerPipeline(MAP_MARKER_DOT);
         event.registerPipeline(MAP_MARKER_DIAMOND);
         event.registerPipeline(MAP_MARKER_CROSS);

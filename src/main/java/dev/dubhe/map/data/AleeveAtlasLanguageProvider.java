@@ -21,6 +21,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("key.aleeve_atlas.minimap_zoom_in", "Zoom Minimap In");
         add("key.aleeve_atlas.minimap_zoom_out", "Zoom Minimap Out");
         add("key.aleeve_atlas.focus_minimap", "Hold to Center Minimap");
+        add("key.aleeve_atlas.world_ping", "Ping in World");
 
         add("aleeve_atlas.message.server_unsupported",
                 "Server support component is not installed.");
