@@ -1,11 +1,18 @@
 dependencies {
     implementation libs.anvillib.codec
+    jarJar libs.anvillib.codec
     implementation libs.anvillib.network
+    jarJar libs.anvillib.network
     implementation libs.anvillib.config
+    jarJar libs.anvillib.config
     implementation libs.anvillib.integration
+    jarJar libs.anvillib.integration
     implementation libs.anvillib.util
+    jarJar libs.anvillib.util
     implementation libs.anvillib.wheel
+    jarJar libs.anvillib.wheel
     implementation libs.anvillib.rendering
+    jarJar libs.anvillib.rendering
 
     testImplementation platform("org.junit:junit-bom:5.11.4")
     testImplementation "org.junit.jupiter:junit-jupiter"
