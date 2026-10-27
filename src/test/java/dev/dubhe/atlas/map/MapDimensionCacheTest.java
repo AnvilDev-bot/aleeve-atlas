@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /// 地图缓存持久化与区域文件淘汰测试。
@@ -40,6 +42,28 @@ class MapDimensionCacheTest {
         Assertions.assertEquals(65, restored.heightAt(0, 0));
         Assertions.assertEquals(17, restored.chunkX());
         Assertions.assertEquals(33, restored.chunkZ());
+    }
+
+    @Test
+    void truncatedRegionIsQuarantinedAndRebuilt() throws IOException {
+        Path region = this.tempDir.resolve("r.0.0.nbt");
+        Files.write(region, new byte[] {0x1F, (byte) 0x8B, 0x08, 0, 0, 0, 0, 0, 0, 0});
+
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
+        Assertions.assertTrue(cache.get(0, 0).isEmpty());
+        Assertions.assertTrue(Files.exists(this.tempDir.resolve("r.0.0.nbt.corrupt")));
+        Assertions.assertFalse(Files.exists(region));
+
+        ChunkMapData data = new ChunkMapData(0, 0);
+        data.setPixel(3, 5, 0xFF123456, 70);
+        cache.put(data);
+        cache.flush();
+        Assertions.assertFalse(Files.exists(this.tempDir.resolve("r.0.0.nbt.tmp")));
+
+        MapDimensionCache reopened = new MapDimensionCache(this.tempDir);
+        ChunkMapData restored = reopened.get(0, 0).orElseThrow();
+        Assertions.assertEquals(0xFF123456, restored.colorAt(3, 5));
+        Assertions.assertEquals(70, restored.heightAt(3, 5));
     }
 
     @Test

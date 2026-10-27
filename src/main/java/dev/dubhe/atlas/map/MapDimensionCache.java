@@ -8,8 +8,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -160,8 +162,20 @@ public final class MapDimensionCache {
                     this.entries.put(ChunkPos.asLong(data.chunkX() & (REGION_SIZE - 1),
                             data.chunkZ() & (REGION_SIZE - 1)), data);
                 }
+            } catch (IOException | RuntimeException e) {
+                this.entries.clear();
+                LOGGER.warn("Discarding unreadable map region {}", this.path, e);
+                this.quarantine();
+            }
+        }
+
+        /// 保留损坏文件供诊断，正式路径由后续采样重新生成。
+        private void quarantine() {
+            Path corrupted = this.path.resolveSibling(this.path.getFileName() + ".corrupt");
+            try {
+                Files.move(this.path, corrupted, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                LOGGER.warn("Failed to read map region {}", this.path, e);
+                LOGGER.warn("Failed to quarantine unreadable map region {}", this.path, e);
             }
         }
 
@@ -188,9 +202,16 @@ public final class MapDimensionCache {
                 chunksTag.put(Long.toString(entry.getKey()), entry.getValue().save());
             }
             tag.put("chunks", chunksTag);
+            Path temporary = this.path.resolveSibling(this.path.getFileName() + ".tmp");
             try {
                 Files.createDirectories(this.path.getParent());
-                NbtIo.writeCompressed(tag, this.path);
+                NbtIo.writeCompressed(tag, temporary);
+                try {
+                    Files.move(temporary, this.path, StandardCopyOption.ATOMIC_MOVE,
+                            StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(temporary, this.path, StandardCopyOption.REPLACE_EXISTING);
+                }
                 this.dirty = false;
             } catch (IOException e) {
                 LOGGER.warn("Failed to write map region {}", this.path, e);
