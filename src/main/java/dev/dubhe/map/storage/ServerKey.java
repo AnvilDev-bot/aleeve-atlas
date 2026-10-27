@@ -26,16 +26,24 @@ public final class ServerKey {
         remoteCacheId = null;
     }
 
-    /// 解析当前连接的服务器或存档标识。
+    /// 解析当前存档或服务器的稳定本地标识，供路径点和世界种子使用。
     public static String resolve(Minecraft minecraft) {
+        return resolveAddress(minecraft);
+    }
+
+    /// 解析地图缓存标识；服务端握手 ID 只影响地图缓存目录。
+    public static String resolveMapCache(Minecraft minecraft) {
+        if (minecraft != null && minecraft.getCurrentServer() != null && remoteCacheId != null) {
+            return "server_" + AtlasPaths.hashServerKey(remoteCacheId).substring(0, 16);
+        }
+        return resolveAddress(minecraft);
+    }
+
+    private static String resolveAddress(Minecraft minecraft) {
         if (minecraft == null) {
             return "unknown";
         }
-        String cacheId = remoteCacheId;
         ServerData server = minecraft.getCurrentServer();
-        if (server != null && cacheId != null) {
-            return "server_" + AtlasPaths.hashServerKey(cacheId).substring(0, 16);
-        }
         if (server != null && server.ip != null && !server.ip.isBlank()) {
             return AtlasPaths.hashServerKey(server.ip);
         }
