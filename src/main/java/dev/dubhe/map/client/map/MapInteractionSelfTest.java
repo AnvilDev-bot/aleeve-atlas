@@ -189,11 +189,17 @@ public final class MapInteractionSelfTest {
             canvas.setCenter(34, 33, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 2 && canvas.originChunkZ() == 1,
                     "Positive recenter origin");
+            require(canvas.drawnVersionCount()
+                    <= MapCanvas.CHUNKS_PER_SIDE * MapCanvas.CHUNKS_PER_SIDE,
+                    "Recenter must prune versions outside the canvas");
             requireCanvasPixel(canvas, cache, 0, 0, 2 * ChunkMapData.SIZE, ChunkMapData.SIZE);
             int edge = (MapCanvas.CHUNKS_PER_SIDE - 1) * ChunkMapData.SIZE;
             requireCanvasPixel(canvas, cache, edge, edge, 66 * ChunkMapData.SIZE,
                     65 * ChunkMapData.SIZE);
             canvas.setCenter(32, 33, cache, MapColorScheme.VANILLA);
+            require(canvas.drawnVersionCount()
+                    <= MapCanvas.CHUNKS_PER_SIDE * MapCanvas.CHUNKS_PER_SIDE,
+                    "Reverse recenter must keep the version table bounded");
             requireCanvasPixel(canvas, cache, 0, 0, 0, ChunkMapData.SIZE);
             canvas.setCenter(97, 33, cache, MapColorScheme.VANILLA);
             require(canvas.originChunkX() == 65 && canvas.originChunkZ() == 1,

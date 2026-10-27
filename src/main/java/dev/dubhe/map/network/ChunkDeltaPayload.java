@@ -25,16 +25,14 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
     private static final int MAX_DOWNLOAD_BYTES = 1024 * 1024 - 1;
     private static final int PACKET_HEADER_BYTES = 32;
     private static final int CHUNK_HEADER_BYTES = 24;
-    /// 单区块压缩数据的解码上限（字节）。
-    ///
-    /// 未压缩为 2 KiB（颜色与高度各 1024 字节），最坏情况下 Deflate 略有膨胀，
-    /// 取 8 KiB 留足余量，同时避免接受异常大的数组。
-    private static final int MAX_CHUNK_BYTES = 8 * 1024;
+    /// 单区块色板压缩数据的解码上限，与上行拆包可容纳的最大单块一致。
+    public static final int MAX_CHUNK_BYTES = MAX_UPLOAD_BYTES
+            - PACKET_HEADER_BYTES - CHUNK_HEADER_BYTES;
 
     public static final Type<ChunkDeltaPayload> TYPE =
             new Type<>(AleeveAtlas.id("chunk_delta"));
 
-    /// 单个区块的传输数据：坐标、版本号与像素颜色压缩串。
+    /// 单个区块的传输数据：坐标、版本号与方块状态色板压缩串。
     public record ChunkData(int chunkX, int chunkZ, long version, byte[] pixels) {
     }
 
@@ -97,6 +95,9 @@ public record ChunkDeltaPayload(String dimensionId, List<ChunkData> chunks,
         List<ChunkData> current = new ArrayList<>();
         int currentBytes = PACKET_HEADER_BYTES;
         for (ChunkData chunk : chunks) {
+            if (chunk.pixels().length > MAX_CHUNK_BYTES) {
+                throw new IllegalArgumentException("Chunk palette exceeds the shared byte limit");
+            }
             int chunkBytes = chunk.pixels().length + CHUNK_HEADER_BYTES;
             if (PACKET_HEADER_BYTES + chunkBytes > maxBytes) {
                 throw new IllegalArgumentException("Chunk payload exceeds packet byte budget");

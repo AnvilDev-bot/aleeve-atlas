@@ -90,6 +90,10 @@ public final class MapCanvas {
         return this.image.getPixel(x, z);
     }
 
+    int drawnVersionCount() {
+        return this.drawnVersions.size();
+    }
+
     /// 以给定区块为中心的视野重建画布；视野未变化时直接返回。
     ///
     /// 原点小幅平移时复用已有像素并只补绘新进入边界的条带，
@@ -169,10 +173,18 @@ public final class MapCanvas {
         movePixels(this.image, originShiftPixelsX, originShiftPixelsZ);
         this.originChunkX = targetX;
         this.originChunkZ = targetZ;
+        this.drawnVersions.keySet().removeIf(this::outsideCanvas);
         this.drawEdgeStrips(cache, shiftChunksX, shiftChunksZ);
         if (this.initialized) {
             this.texture.upload();
         }
+    }
+
+    private boolean outsideCanvas(long key) {
+        int chunkX = (int) (key >> 32);
+        int chunkZ = (int) key;
+        return chunkX < this.originChunkX || chunkX >= this.originChunkX + CHUNKS_PER_SIDE
+                || chunkZ < this.originChunkZ || chunkZ >= this.originChunkZ + CHUNKS_PER_SIDE;
     }
 
     /// 原点移动后，同一世界坐标的像素必须保留在新的局部坐标处。

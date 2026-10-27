@@ -10,11 +10,9 @@ import java.util.List;
 
 /// 单区块像素数据的解码上限测试。
 ///
-/// 单区块未压缩为 2 KiB，压缩后通常约 1 KiB；解码端限制为 8 KiB，
-/// 超出该值的载荷视为异常并拒绝，避免接受超大数组。
+/// 单区块色板数据使用与上行拆包一致的收发上限。
 class ChunkPixelBytesLimitTest {
-    /// 与实现内的上限保持一致。
-    private static final int MAX_CHUNK_BYTES = 8 * 1024;
+    private static final int MAX_CHUNK_BYTES = ChunkDeltaPayload.MAX_CHUNK_BYTES;
 
     @Test
     void normalChunkPayloadIsAccepted() {
@@ -32,10 +30,10 @@ class ChunkPixelBytesLimitTest {
 
     @Test
     void payloadAtLimitIsAccepted() {
-        // 恰好等于上限时应正常解码，确认阈值本身没有被写小。
+        // 恰好等于上限时应正常拆包并解码，确认收发阈值一致。
         byte[] pixels = new byte[MAX_CHUNK_BYTES];
-        ChunkDeltaPayload original = new ChunkDeltaPayload("minecraft:overworld",
-                List.of(new ChunkDeltaPayload.ChunkData(0, 0, 1L, pixels)), 0, 1, null);
+        ChunkDeltaPayload original = ChunkDeltaPayload.splitForUpload("minecraft:overworld",
+                List.of(new ChunkDeltaPayload.ChunkData(0, 0, 1L, pixels)), null).get(0);
 
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         ChunkDeltaPayload.STREAM_CODEC.encode(buf, original);

@@ -19,6 +19,7 @@ import java.util.zip.Inflater;
 public final class ChunkPixelCodec {
     private static final Logger LOGGER =
             LoggerFactory.getLogger("aleeve_atlas/map/codec");
+    private static final long NETWORK_NBT_QUOTA = 4L * 1024 * 1024;
 
     private ChunkPixelCodec() {
     }
@@ -36,7 +37,8 @@ public final class ChunkPixelCodec {
     /// 解压完整方块状态色板；损坏负载返回空区块并记录日志。
     public static ChunkMapData decompressChunk(int chunkX, int chunkZ, byte[] packed, long version) {
         try (ByteArrayInputStream input = new ByteArrayInputStream(packed)) {
-            return ChunkMapData.load(NbtIo.readCompressed(input, NbtAccounter.unlimitedHeap()));
+            return ChunkMapData.load(NbtIo.readCompressed(input,
+                    NbtAccounter.create(NETWORK_NBT_QUOTA)));
         } catch (IOException | RuntimeException e) {
             LOGGER.warn("Failed to decode chunk map palette at {},{}", chunkX, chunkZ, e);
             ChunkMapData empty = new ChunkMapData(chunkX, chunkZ);

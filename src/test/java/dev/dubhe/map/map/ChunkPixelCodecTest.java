@@ -2,11 +2,15 @@ package dev.dubhe.map.map;
 
 import dev.dubhe.map.network.ChunkDeltaPayload;
 import dev.dubhe.map.network.ChunkDigestPayload;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -37,6 +41,21 @@ class ChunkPixelCodecTest {
         Assertions.assertEquals(Blocks.STONE, restored.stateAt(2, 3).state().getBlock());
         Assertions.assertEquals(72, restored.heightAt(2, 3));
         Assertions.assertEquals(1234L, restored.version());
+    }
+
+    @Test
+    void networkDecoderRejectsExcessiveNbt() throws IOException {
+        ChunkMapData data = new ChunkMapData(0, 0);
+        data.setPixel(0, 0, ChunkMapData.PixelState.of(Blocks.STONE.defaultBlockState()), 64);
+        CompoundTag oversized = data.save();
+        oversized.putIntArray("padding", new int[2_000_000]);
+        byte[] packed;
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            NbtIo.writeCompressed(oversized, output);
+            packed = output.toByteArray();
+        }
+        ChunkMapData decoded = ChunkPixelCodec.decompressChunk(0, 0, packed, 0L);
+        Assertions.assertTrue(decoded.isEmpty());
     }
 
     @Test
