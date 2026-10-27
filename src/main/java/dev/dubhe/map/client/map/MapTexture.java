@@ -18,13 +18,12 @@ import java.util.Map;
 
 /// 小地图像素纹理。
 ///
-/// 纹理固定覆盖 {@link #COVERED_BLOCKS} 见方的世界范围，且**玩家始终位于纹理中心**：
-/// 玩家移动时按像素平移纹理内容，因此 HUD 直接用整张纹理绘制，UV 恒为 `[0, 1]`，
-/// 圆形遮罩与边框可由片元着色器按 UV 解析式判定（无需每帧逐行填充）。
+/// 纹理覆盖比可见范围更大的世界区域，供方形旋转与视野缩放裁剪。
+/// 玩家所在方块始终位于纹理中心，HUD 按当前可见范围从中心读取纹理。
 public final class MapTexture {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/maptexture");
     /// 纹理覆盖的区块数（每边）。
-    public static final int SLOTS = 9;
+    public static final int SLOTS = 13;
     /// 纹理边长（像素），等于覆盖的方块数。
     public static final int PIXELS = SLOTS * ChunkMapData.SIZE;
 

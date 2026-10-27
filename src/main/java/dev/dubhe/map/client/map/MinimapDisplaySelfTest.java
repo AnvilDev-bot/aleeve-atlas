@@ -5,6 +5,7 @@ import dev.dubhe.map.api.ping.MinimapPingAPI;
 import dev.dubhe.map.client.AtlasKeyMappings;
 import dev.dubhe.map.config.AtlasClientConfigs;
 import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.config.MinimapShape;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -42,6 +43,11 @@ public final class MinimapDisplaySelfTest {
         ticks++;
         switch (ticks) {
             case 60 -> prepare(minecraft, player);
+            case 65 -> AtlasClientConfigs.CONFIG.minimap.shape = MinimapShape.SQUARE;
+            case 70 -> {
+                screenshot(minecraft, "atlas-minimap-square.png");
+                AtlasClientConfigs.CONFIG.minimap.shape = MinimapShape.CIRCLE;
+            }
             case 90 -> KeyMapping.click(AtlasKeyMappings.MINIMAP_ZOOM_IN.getDefaultKey());
             case 110 -> verifyZoom(minecraft);
             case 120 -> AtlasKeyMappings.FOCUS_MINIMAP.setDown(true);
@@ -63,6 +69,7 @@ public final class MinimapDisplaySelfTest {
         previousPitch = player.getXRot();
         setRotation(player, 65.0F, 0.0F);
         AtlasClientConfigs.CONFIG.minimap.lockNorth = false;
+        AtlasClientConfigs.CONFIG.minimap.shape = MinimapShape.CIRCLE;
         AtlasClientConfigs.CONFIG.minimap.colorScheme = MapColorScheme.VANILLA;
         AtlasClientConfigs.CONFIG.minimap.zoom = MinimapLayout.DEFAULT_ZOOM;
         MinimapPingAPI.setWorldPingsEnabled(false);

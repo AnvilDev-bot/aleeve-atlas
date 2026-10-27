@@ -90,11 +90,16 @@ public final class MinimapRenderer {
             graphics.pose().translate(-centerX, -centerY);
         }
 
-        // 视野缩放通过中心裁剪纹理实现，标记坐标使用相同的覆盖范围。
-        int uvSize = (int) layout.coveredBlocks();
+        // 方形按对角线尺寸绘制后由屏幕方形裁剪，圆形保持原可见范围。
+        int drawSize = circular ? size : MinimapLayout.squareDrawSize(size);
+        int drawX = circular ? x : Math.round(centerX - drawSize / 2.0F);
+        int drawY = circular ? y : Math.round(centerY - drawSize / 2.0F);
+        int uvSize = circular ? (int) layout.coveredBlocks()
+                : MinimapLayout.squareDrawSize((int) layout.coveredBlocks());
         float uvStart = (MapTexture.PIXELS - uvSize) / 2.0F;
-        graphics.blit(mapPipeline, texture.textureId(), x, y, uvStart, uvStart,
-                size, size, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS);
+        int mapTint = circular ? encodeCircleTint(uvSize) : 0xFFFFFFFF;
+        graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStart, uvStart,
+                drawSize, drawSize, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS, mapTint);
         TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
         graphics.pose().popMatrix();
         if (scissored) {
@@ -136,6 +141,13 @@ public final class MinimapRenderer {
     /// 玩家指示器旋转角：固定地图方向时随玩家朝向旋转，视角随动时固定朝上。
     static float arrowYawDegrees(float playerYaw, boolean lockNorth) {
         return lockNorth ? playerYaw : 0.0F;
+    }
+
+    /// 圆形遮罩使用顶点色 R 传递纹理裁剪比例的倒数，还原屏幕局部坐标。
+    private static int encodeCircleTint(int uvSize) {
+        float uvScale = MapTexture.PIXELS / (float) uvSize;
+        int red = Math.round(uvScale / 8.0F * 255.0F);
+        return 0xFF00FFFF | (red << 16);
     }
 
     /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。

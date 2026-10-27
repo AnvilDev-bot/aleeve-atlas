@@ -37,6 +37,19 @@ class MinimapLayoutTest {
     }
 
     @Test
+    void squareDrawSizeCoversEveryRotation() {
+        int visibleSize = 101;
+        int drawSize = MinimapLayout.squareDrawSize(visibleSize);
+        for (int degrees = 0; degrees < 360; degrees += 15) {
+            double radians = Math.toRadians(degrees);
+            double cornerExtent = (Math.abs(Math.cos(radians)) + Math.abs(Math.sin(radians)))
+                    * visibleSize / 2.0;
+            Assertions.assertTrue(cornerExtent <= drawSize / 2.0,
+                    "rotation=" + degrees);
+        }
+    }
+
+    @Test
     void containsRespectsShape() {
         MinimapLayout layout = new MinimapLayout(0, 0, 100, 0.0, 0.0);
         // 角落像素：方形包含、圆形不包含。

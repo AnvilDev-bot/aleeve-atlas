@@ -34,8 +34,8 @@ public final class ClientMapManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/clientmap");
     /// 每 tick 最多采样的区块数，避免集中采样造成掉帧。
     private static final int SAMPLES_PER_TICK = 6;
-    /// 小地图覆盖的区块半径（以玩家区块为中心的窗口）。
-    public static final int VIEW_CHUNK_RADIUS = 4;
+    /// 小地图采样半径，额外覆盖方形旋转所需的对角线范围。
+    public static final int VIEW_CHUNK_RADIUS = 6;
     /// 洞穴模式下触发重新采样的层高变化阈值（方块）。
     ///
     /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上。

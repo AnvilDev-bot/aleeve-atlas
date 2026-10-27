@@ -28,8 +28,8 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
     public static final int BASE_SIZE = 128;
     /// 小地图与屏幕边缘的间距（GUI 像素）。
     static final int MARGIN = 6;
-    /// 小地图覆盖的方块宽度。
-    public static final int COVERED_BLOCKS = 16 * (ClientMapManager.VIEW_CHUNK_RADIUS * 2 + 1);
+    /// 小地图可见基准范围；纹理额外覆盖旋转余量。
+    public static final int COVERED_BLOCKS = 16 * 9;
 
     /// 根据配置与屏幕尺寸计算布局；玩家为空时返回 {@code null}。
     public static MinimapLayout of(AtlasClientConfig config, Minecraft minecraft) {
@@ -82,6 +82,11 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
 
     public double coveredBlocks() {
         return Math.round(COVERED_BLOCKS / this.zoom);
+    }
+
+    /// 方形旋转前的绘制边长，保证旋转后的可视方形四角均有地形。
+    public static int squareDrawSize(int visibleSize) {
+        return (int) Math.ceil(visibleSize * Math.sqrt(2.0));
     }
 
     /// 世界坐标 → 小地图屏幕坐标（X 轴）。

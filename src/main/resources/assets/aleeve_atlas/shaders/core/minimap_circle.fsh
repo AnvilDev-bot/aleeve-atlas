@@ -2,8 +2,8 @@
 
 // 小地图地图纹理的圆形裁剪。
 //
-// 与 GUI 纹理管线共享顶点格式与矩阵 uniform，仅在片元阶段按 UV 半径丢弃圆外像素，
-// 圆形小地图之外的像素直接丢弃。
+// 与 GUI 纹理管线共享顶点格式与矩阵 uniform。顶点色 R 传递纹理裁剪比例的倒数，
+// 按屏幕局部半径丢弃圆外像素，避免纹理 UV 裁剪改变遮罩位置。
 
 layout(std140) uniform DynamicTransforms {
     mat4 ModelViewMat;
@@ -20,13 +20,14 @@ in vec4 vertexColor;
 out vec4 fragColor;
 
 void main() {
-    vec2 centered = texCoord0 - vec2(0.5);
+    float uvScale = max(vertexColor.r * 8.0, 0.001);
+    vec2 centered = (texCoord0 - vec2(0.5)) * uvScale;
     if (length(centered) * 2.0 > 1.0) {
         discard;
     }
-    vec4 color = texture(Sampler0, texCoord0) * vertexColor;
+    vec4 color = texture(Sampler0, texCoord0) * ColorModulator;
     if (color.a == 0.0) {
         discard;
     }
-    fragColor = color * ColorModulator;
+    fragColor = color;
 }
