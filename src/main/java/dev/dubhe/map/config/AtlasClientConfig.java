@@ -20,6 +20,10 @@ public class AtlasClientConfig {
     public WorldMap worldMap = new WorldMap();
 
     @CollapsibleObject
+    @Comment("Slime chunk settings.")
+    public SlimeChunks slimeChunks = new SlimeChunks();
+
+    @CollapsibleObject
     @Comment("Entity radar settings.")
     public Radar radar = new Radar();
 
@@ -41,6 +45,17 @@ public class AtlasClientConfig {
 
         @Comment("World map compass size in GUI-scaled pixels (32 ~ 192).")
         public double compassSize = 72.0;
+
+        @Comment("Show chunk boundaries on the world map.")
+        public boolean showChunkGrid = false;
+
+        @Comment("Highlight slime chunks on the world map.")
+        public boolean showSlimeChunks = false;
+    }
+
+    public static class SlimeChunks {
+        @Comment("Manual world seed for slime chunks. Empty uses the host or /seed result.")
+        public String seed = "";
     }
 
     public static class Minimap {
@@ -82,6 +97,15 @@ public class AtlasClientConfig {
 
         @Comment("Show the current in-game time below the minimap.")
         public boolean showTime = false;
+
+        @Comment("Show chunk boundaries on the minimap.")
+        public boolean showChunkGrid = false;
+
+        @Comment("Highlight slime chunks on the minimap.")
+        public boolean showSlimeChunks = false;
+
+        @Comment("Adjust minimap brightness with the in-game time.")
+        public boolean timeBrightness = false;
     }
 
     public static class Radar {
@@ -90,9 +114,6 @@ public class AtlasClientConfig {
 
         @Comment("Fade-out grace period in seconds for occluded markers (0.5 ~ 1.5).")
         public double fadeOutSeconds = 1.0;
-
-        @Comment("In hybrid mode, also expand icons for all entity types while the player list key is held.")
-        public boolean hybridExpandAllIcons = false;
 
         @CollapsibleObject
         @Comment("Per-category radar settings.")

@@ -76,16 +76,21 @@ class WaypointStoreDimensionTest {
     @Test
     void visibleInFiltersByDistance() {
         WaypointStore store = WaypointStore.open(this.tempDir, "key", Level.OVERWORLD);
-        Waypoint near = Waypoint.create("near", new BlockPos(0, 64, 0), Level.OVERWORLD,
-                0xFFFFFFFF);
+        Waypoint near = new Waypoint(UUID.randomUUID(), "near", new BlockPos(0, 64, 0),
+                Level.OVERWORLD, 0xFFFFFFFF, "default", true, 32, false, "", true);
         Waypoint far = new Waypoint(UUID.randomUUID(), "far", new BlockPos(1000, 64, 0),
                 Level.OVERWORLD, 0xFFFFFFFF, "default", true, 100, false, "", true);
+        Waypoint unlimited = new Waypoint(UUID.randomUUID(), "unlimited", new BlockPos(1000, 64, 0),
+                Level.OVERWORLD, 0xFFFFFFFF, "default", true,
+                Waypoint.DEFAULT_VISIBLE_DISTANCE, false, "", true);
         store.upsert(near);
         store.upsert(far);
+        store.upsert(unlimited);
 
         List<Waypoint> visible = store.visibleIn(0.0, 0.0);
-        Assertions.assertEquals(1, visible.size());
-        Assertions.assertEquals("near", visible.get(0).name());
+        Assertions.assertEquals(2, visible.size());
+        Assertions.assertTrue(visible.stream().anyMatch(point -> point.name().equals("near")));
+        Assertions.assertTrue(visible.stream().anyMatch(point -> point.name().equals("unlimited")));
     }
 
     @Test

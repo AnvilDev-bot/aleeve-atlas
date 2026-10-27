@@ -124,7 +124,8 @@ public final class WaypointStore {
             }
             double dx = waypoint.pos().getX() + 0.5 - x;
             double dz = waypoint.pos().getZ() + 0.5 - z;
-            if (dx * dx + dz * dz <= (double) waypoint.visibleDistance()
+            if (waypoint.visibleDistance() < 0
+                    || dx * dx + dz * dz <= (double) waypoint.visibleDistance()
                     * waypoint.visibleDistance()) {
                 result.add(waypoint);
             }

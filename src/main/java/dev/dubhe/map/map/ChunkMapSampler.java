@@ -48,11 +48,21 @@ public final class ChunkMapSampler {
                 int worldZ = baseZ + localZ;
                 int surfaceY = minY;
                 ChunkMapData.PixelState pixel = ChunkMapData.PixelState.EMPTY;
+                boolean foundCaveAir = layerTopY == null;
                 for (int y = topY; y >= minY; y--) {
                     cursor.set(worldX, y, worldZ);
                     BlockState state = chunk.getBlockState(cursor);
                     FluidState fluid = state.getFluidState();
-                    if (state.isAir() || (fluid.isEmpty()
+                    if (state.isAir()) {
+                        foundCaveAir = true;
+                        continue;
+                    }
+                    // 水下玩家所在列可能从扫描上限到世界底部都没有空气，
+                    // 首个流体方块本身就是该列可见的洞穴截面。
+                    if (!foundCaveAir && !fluid.isEmpty()) {
+                        foundCaveAir = true;
+                    }
+                    if (!foundCaveAir || (fluid.isEmpty()
                             && state.getMapColor(level, cursor) == MapColor.NONE)) {
                         continue;
                     }

@@ -26,6 +26,7 @@ void main() {
         discard;
     }
     vec4 color = texture(Sampler0, texCoord0) * ColorModulator;
+    color.rgb *= vertexColor.g;
     if (color.a == 0.0) {
         discard;
     }

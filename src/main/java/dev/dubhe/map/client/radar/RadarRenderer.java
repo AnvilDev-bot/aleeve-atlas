@@ -29,12 +29,13 @@ import java.util.UUID;
 
 /// 实体雷达的小地图与世界地图标记渲染。
 ///
-/// 圆点模式下按类别配色绘制；混合联动模式下按住玩家列表键（默认 Tab）时，
-/// 玩家标记切换为皮肤头像。两种地图共用分类、距离、可见性与渐隐规则。
+/// 圆点模式下按类别配色绘制；玩家列表按住模式下按住玩家列表键时，
+/// 玩家标记切换为皮肤头像和实体图标。四种模式共用分类、距离、可见性与渐隐规则。
 public final class RadarRenderer {
     /// 玩家头像尺寸（GUI 像素）。
-    private static final int HEAD_SIZE = 6;
-    private static final int ICON_SIZE = 6;
+    private static final int HEAD_SIZE = 3;
+    private static final int ICON_SIZE = 8;
+    private static final float ICON_SCALE = 0.5F;
     /// 掉落物合并粒度（像素），同格内只绘制一个圆点。
     private static final double ITEM_MERGE_PIXELS = 4.0;
     /// 皮肤未就绪时的占位纹理。
@@ -60,8 +61,18 @@ public final class RadarRenderer {
             }
 
             @Override
-            public boolean contains(double x, double y) {
-                return layout.contains(x, y, circular);
+            public boolean contains(double screenX, double screenY, double margin) {
+                double centerX = layout.x() + layout.size() / 2.0;
+                double centerY = layout.y() + layout.size() / 2.0;
+                if (circular) {
+                    double dx = screenX - centerX;
+                    double dy = screenY - centerY;
+                    return Math.hypot(dx, dy) <= layout.size() / 2.0 - margin;
+                }
+                return screenX >= layout.x() + margin
+                        && screenX <= layout.x() + layout.size() - margin
+                        && screenY >= layout.y() + margin
+                        && screenY <= layout.y() + layout.size() - margin;
             }
 
             @Override
@@ -87,8 +98,9 @@ public final class RadarRenderer {
             }
 
             @Override
-            public boolean contains(double x, double y) {
-                return x >= 0.0 && x <= viewWidth && y >= 0.0 && y <= viewHeight;
+            public boolean contains(double x, double y, double margin) {
+                return x >= margin && x <= viewWidth - margin
+                        && y >= margin && y <= viewHeight - margin;
             }
         });
     }
@@ -100,12 +112,14 @@ public final class RadarRenderer {
         if (level == null || player == null) {
             return;
         }
+        if (config.radar.displayMode == RadarDisplayMode.OFF) {
+            return;
+        }
         RadarDisplayMode mode = config.radar.displayMode;
         boolean showIcons = mode == RadarDisplayMode.ICON;
-        boolean hybrid = mode == RadarDisplayMode.HYBRID;
-        boolean playerListDown = hybrid && minecraft.options.keyPlayerList.isDown();
-        boolean expandAllIcons = showIcons
-                || (playerListDown && config.radar.hybridExpandAllIcons);
+        boolean playerListHeld = mode == RadarDisplayMode.HYBRID;
+        boolean playerListDown = playerListHeld && minecraft.options.keyPlayerList.isDown();
+        boolean expandAllIcons = showIcons || playerListDown;
         Set<Long> itemDots = new HashSet<>();
         int maxDistance = AtlasSession.maxRadarDistance();
         double maxDistanceSq = (double) maxDistance * maxDistance;
@@ -141,15 +155,15 @@ public final class RadarRenderer {
             }
             double screenX = projection.screenX(entity);
             double screenY = projection.screenY(entity);
-            if (!projection.contains(screenX, screenY)) {
-                continue;
-            }
             boolean drawHead = opacity >= 1.0F && category == RadarCategory.PLAYER
                     && shouldDrawPlayerHead(mode, playerListDown);
             boolean drawIcon = opacity >= 1.0F && expandAllIcons
                     && category != RadarCategory.ITEM;
-            // 8×8 头像与物品图标使用更大的边距，圆点和菱形保持较小边距。
-            double margin = drawHead || drawIcon ? 6.0 : 4.0;
+            double margin = drawHead ? Math.sqrt(2.0) * HEAD_SIZE / 2.0 + 1.0
+                    : drawIcon ? Math.sqrt(2.0) * ICON_SIZE / 2.0 + 1.0 : 4.5;
+            if (!projection.contains(screenX, screenY, margin)) {
+                continue;
+            }
             double[] fitted = projection.fit(screenX, screenY, margin);
             screenX = fitted[0];
             screenY = fitted[1];
@@ -183,7 +197,7 @@ public final class RadarRenderer {
 
         double screenY(Entity entity);
 
-        boolean contains(double x, double y);
+        boolean contains(double x, double y, double margin);
 
         /// 将标记中心限制在地图边界内，世界地图默认无需调整。
         default double[] fit(double x, double y, double margin) {
@@ -238,9 +252,11 @@ public final class RadarRenderer {
         if (egg == null) {
             return false;
         }
-        int x = (int) Math.round(screenX) - ICON_SIZE / 2;
-        int z = (int) Math.round(screenZ) - ICON_SIZE / 2;
-        graphics.renderItem(new ItemStack(egg), x, z);
+        graphics.pose().pushMatrix();
+        graphics.pose().translate((float) screenX, (float) screenZ);
+        graphics.pose().scale(ICON_SCALE, ICON_SCALE);
+        graphics.renderItem(new ItemStack(egg), -8, -8);
+        graphics.pose().popMatrix();
         return true;
     }
 

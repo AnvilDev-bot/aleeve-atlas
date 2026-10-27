@@ -121,7 +121,7 @@ public final class WaypointEditScreen extends Screen {
         this.distanceBox = addRenderableWidget(new EditBox(font, left, 0, 140, 20,
                 Component.translatable("aleeve_atlas.screen.waypoint_edit.visible_distance")));
         this.distanceBox.setMaxLength(6);
-        this.distanceBox.setFilter(value -> value.chars().allMatch(Character::isDigit));
+        this.distanceBox.setFilter(value -> value.matches("-?\\d*"));
         this.distanceBox.setValue(this.distanceValue != null ? this.distanceValue
                 : Integer.toString(visibleDistance));
 
@@ -262,7 +262,7 @@ public final class WaypointEditScreen extends Screen {
                     "aleeve_atlas.screen.waypoint_edit.invalid_number");
             return null;
         }
-        if (visibleDistance < 0 || visibleDistance > MAX_VISIBLE_DISTANCE) {
+        if (visibleDistance < -1 || visibleDistance > MAX_VISIBLE_DISTANCE) {
             this.errorMessage = Component.translatable(
                     "aleeve_atlas.screen.waypoint_edit.invalid_distance",
                     MAX_VISIBLE_DISTANCE);

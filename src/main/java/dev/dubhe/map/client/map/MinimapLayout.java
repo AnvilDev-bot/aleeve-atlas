@@ -31,19 +31,39 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
     /// 小地图可见基准范围；纹理额外覆盖旋转余量。
     public static final int COVERED_BLOCKS = 16 * 9;
 
+    private static double focusProgress;
+    private static long lastFocusUpdate;
+
     /// 根据配置与屏幕尺寸计算布局；玩家为空时返回 {@code null}。
     public static MinimapLayout of(AtlasClientConfig config, Minecraft minecraft) {
         LocalPlayer player = minecraft.player;
         if (player == null) {
+            focusProgress = 0.0;
+            lastFocusUpdate = 0L;
             return null;
         }
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        int[] box = focused(minecraft) ? focusedBox(screenWidth, screenHeight)
-                : computeBox(config.minimap.position, config.minimap.scale,
-                        config.minimap.offsetX, config.minimap.offsetY, screenWidth, screenHeight);
+        int[] normal = computeBox(config.minimap.position, config.minimap.scale,
+                config.minimap.offsetX, config.minimap.offsetY, screenWidth, screenHeight);
+        boolean focused = focused(minecraft);
+        long now = System.nanoTime();
+        double elapsed = lastFocusUpdate == 0L ? 0.0 : (now - lastFocusUpdate) / 1.0E9;
+        lastFocusUpdate = now;
+        double delta = Math.min(elapsed, 0.1) * 8.0;
+        focusProgress = focused ? Math.min(1.0, focusProgress + delta)
+                : Math.max(0.0, focusProgress - delta);
+        int[] box = normal;
+        if (focusProgress > 0.0) {
+            int[] expanded = focusedBox(screenWidth, screenHeight);
+            box = new int[3];
+            for (int index = 0; index < box.length; index++) {
+                box[index] = (int) Math.round(normal[index]
+                        + (expanded[index] - normal[index]) * focusProgress);
+            }
+        }
         return new MinimapLayout(box[0], box[1], box[2],
-                Math.floor(player.getX()), Math.floor(player.getZ()), config.minimap.zoom);
+                player.getX(), player.getZ(), config.minimap.zoom);
     }
 
     /// 计算小地图的尺寸与左上角坐标：`[x, y, size]`。

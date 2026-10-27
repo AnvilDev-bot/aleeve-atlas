@@ -7,6 +7,7 @@ import dev.dubhe.map.api.territory.TerritoryGroup;
 import dev.dubhe.map.client.AtlasKeyMappings;
 import dev.dubhe.map.client.radar.RadarRenderer;
 import dev.dubhe.map.client.waypoint.ClientWaypoints;
+import dev.dubhe.map.client.waypoint.WaypointActions;
 import dev.dubhe.map.client.waypoint.WaypointEditScreen;
 import dev.dubhe.map.client.waypoint.WaypointListScreen;
 import dev.dubhe.map.client.waypoint.WaypointRenderer;
@@ -69,8 +70,9 @@ public final class WorldMapScreen extends Screen {
     /// 虚线边框实线段长度（像素）。
     private static final int BORDER_DASH_LENGTH = 2;
     private static final int MIDDLE_HOLD_TICKS = 8;
-    private static final int CONTEXT_MENU_WIDTH = 136;
-    private static final int CONTEXT_MENU_HEIGHT = 24;
+    private static final int CONTEXT_MENU_WIDTH = 160;
+    private static final int CONTEXT_MENU_ROW_HEIGHT = 20;
+    private static final int OPEN_ANIMATION_TICKS = 10;
 
     /// 当前打开的世界地图界面；未打开时为 null。
     private static WorldMapScreen active;
@@ -81,6 +83,14 @@ public final class WorldMapScreen extends Screen {
     private double centerX;
     private double centerZ;
     private float pixelsPerChunk = 4.0F;
+    private float targetPixelsPerChunk = 4.0F;
+    private boolean zoomAnchored;
+    private double zoomAnchorWorldX;
+    private double zoomAnchorWorldZ;
+    private double zoomAnchorScreenX;
+    private double zoomAnchorScreenY;
+    private int openAnimationTicks;
+    private float animationScale = 1.0F;
     private boolean dragging;
     private double lastMouseX;
     private double lastMouseY;
@@ -89,6 +99,8 @@ public final class WorldMapScreen extends Screen {
     private double middleWorldX;
     private double middleWorldZ;
     private boolean wheelOpened;
+    private Double wheelCursorX;
+    private Double wheelCursorY;
     private ContextMenu contextMenu;
 
     public WorldMapScreen(MapCanvas canvas, MapDimensionCache cache, double centerX,
@@ -171,11 +183,11 @@ public final class WorldMapScreen extends Screen {
     private void addTeamButtons() {
         boolean synchronizedMode = AtlasSession.synchronizedMode();
         Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
-        int buttonWidth = Math.max(20, Math.min(120, (width - 24) / 3));
+        int buttonWidth = Math.max(20, Math.min(72, (width - 24) / 5));
         int buttonHeight = 20;
         int x = width - buttonWidth - 6;
         int y = 6;
-        Button share = Button.builder(label, button -> this.shareNearestWaypoint())
+        Button share = Button.builder(label, button -> this.shareVisibleWaypoints())
                 .bounds(x, y, buttonWidth, buttonHeight)
                 .tooltip(Tooltip.create(synchronizedMode
                         ? Component.translatable("aleeve_atlas.screen.world_map.share_team.tip")
@@ -202,38 +214,46 @@ public final class WorldMapScreen extends Screen {
         Minecraft.getInstance().setScreen(new ConfigurationScreen(container, this));
     }
 
-    /// 把视野中心最近的路径点分享给队伍。
-    private void shareNearestWaypoint() {
+    /// 分享当前视野内的全部路径点。
+    private void shareVisibleWaypoints() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return;
         }
-        Waypoint nearest = null;
-        double bestDistance = Double.MAX_VALUE;
+        int count = 0;
         for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
-            double dx = waypoint.pos().getX() + 0.5 - this.centerX;
-            double dz = waypoint.pos().getZ() + 0.5 - this.centerZ;
-            double distance = dx * dx + dz * dz;
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                nearest = waypoint;
+            double x = width / 2.0 + (waypoint.pos().getX() + 0.5 - this.centerX)
+                    * this.pixelsPerChunk;
+            double y = height / 2.0 + (waypoint.pos().getZ() + 0.5 - this.centerZ)
+                    * this.pixelsPerChunk;
+            if (waypoint.shareable() && x >= 0.0 && x <= width && y >= 0.0 && y <= height) {
+                ClientWaypoints.share(waypoint);
+                count++;
             }
         }
-        if (nearest == null) {
-            minecraft.player.displayClientMessage(
-                    Component.translatable("aleeve_atlas.message.waypoint_none"), true);
-            return;
-        }
-        ClientWaypoints.share(nearest);
-        minecraft.player.displayClientMessage(
-                Component.translatable("aleeve_atlas.message.waypoint_shared_team",
-                        nearest.displayName().getString()), true);
+        Component message = count == 0
+                ? Component.translatable("aleeve_atlas.message.waypoint_none")
+                : Component.translatable("aleeve_atlas.message.waypoints_shared_team", count);
+        minecraft.player.displayClientMessage(message, true);
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         int viewWidth = width;
         int viewHeight = height;
+        float animationProgress = Mth.clamp((this.openAnimationTicks + partialTick)
+                / OPEN_ANIMATION_TICKS, 0.0F, 1.0F);
+        float eased = 1.0F - (float) Math.pow(1.0F - animationProgress, 3.0);
+        float animationScale = 0.8F + 0.2F * eased;
+        this.animationScale = animationScale;
+        int logicalMouseX = (int) Math.round(this.logicalMouseX(mouseX));
+        int logicalMouseY = (int) Math.round(this.logicalMouseY(mouseY));
+        if (animationProgress < 1.0F) {
+            graphics.pose().pushMatrix();
+            graphics.pose().translate(viewWidth / 2.0F, viewHeight / 2.0F);
+            graphics.pose().scale(animationScale, animationScale);
+            graphics.pose().translate(-viewWidth / 2.0F, -viewHeight / 2.0F);
+        }
 
         // 黑色背景代表未探索区域。不调用 renderBackground：模糊背景每帧只允许一次。
         graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
@@ -271,7 +291,9 @@ public final class WorldMapScreen extends Screen {
             }
         }
 
-        this.drawTerritories(graphics, mouseX, mouseY);
+        this.drawTerritories(graphics, logicalMouseX, logicalMouseY);
+        ChunkOverlayRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
+                this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
         this.drawWaypoints(graphics);
         this.drawPings(graphics);
         RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
@@ -281,18 +303,38 @@ public final class WorldMapScreen extends Screen {
         CompassRenderer.renderOnWorldMap(graphics);
         // 组件渲染后再绘制领地标签，确保标签位于最上层。
         this.drawTerritoryLabels(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
-        this.drawLocationInfo(graphics, mouseX, mouseY);
+        super.render(graphics, logicalMouseX, logicalMouseY, partialTick);
+        this.drawLocationInfo(graphics, logicalMouseX, logicalMouseY);
         this.drawContextMenu(graphics);
+        if (animationProgress < 1.0F) {
+            graphics.pose().popMatrix();
+        }
     }
 
     @Override
     public void tick() {
         super.tick();
+        this.openAnimationTicks = Math.min(OPEN_ANIMATION_TICKS, this.openAnimationTicks + 1);
+        float previous = this.pixelsPerChunk;
+        this.pixelsPerChunk += (this.targetPixelsPerChunk - this.pixelsPerChunk) * 0.25F;
+        if (Math.abs(this.targetPixelsPerChunk - this.pixelsPerChunk) < 0.005F) {
+            this.pixelsPerChunk = this.targetPixelsPerChunk;
+        }
+        if (this.zoomAnchored) {
+            this.centerX = this.zoomAnchorWorldX
+                    - (this.zoomAnchorScreenX - width / 2.0) / this.pixelsPerChunk;
+            this.centerZ = this.zoomAnchorWorldZ
+                    - (this.zoomAnchorScreenY - height / 2.0) / this.pixelsPerChunk;
+            this.zoomAnchored = this.pixelsPerChunk != this.targetPixelsPerChunk;
+        }
+        if (previous != this.pixelsPerChunk) {
+            this.refreshCanvas();
+        }
         if (this.middleHeld && !this.wheelOpened
                 && ++this.middleHoldTicks >= MIDDLE_HOLD_TICKS) {
             this.contextMenu = null;
             this.wheelOpened = true;
+            this.rememberCursorAndCenter();
             PingWheelMenu.open(this);
         }
     }
@@ -538,6 +580,15 @@ public final class WorldMapScreen extends Screen {
             }
             WaypointRenderer.renderOnWorldMap(graphics, screenX, screenY, waypoint.colorArgb(),
                     waypoint.icon());
+            Component name = waypoint.displayName();
+            int textWidth = minecraft.font.width(name);
+            int labelX = (int) Math.round(screenX) - textWidth / 2;
+            int labelY = (int) Math.round(screenY) + 7;
+            if (labelY + 10 <= height) {
+                graphics.fill(labelX - 2, labelY - 1, labelX + textWidth + 2, labelY + 10,
+                        0x80000000);
+                graphics.drawString(minecraft.font, name, labelX, labelY, 0xFFFFFFFF, true);
+            }
         }
     }
 
@@ -602,17 +653,19 @@ public final class WorldMapScreen extends Screen {
         }
         int x = this.contextMenu.screenX();
         int y = this.contextMenu.screenY();
-        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + CONTEXT_MENU_HEIGHT, 0xF0181818);
+        int menuHeight = this.contextMenuHeight();
+        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + menuHeight, 0xF0181818);
         graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + 1, 0xFFAAAAAA);
-        graphics.fill(x, y + CONTEXT_MENU_HEIGHT - 1, x + CONTEXT_MENU_WIDTH,
-                y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
-        graphics.fill(x, y, x + 1, y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
+        graphics.fill(x, y + menuHeight - 1, x + CONTEXT_MENU_WIDTH,
+                y + menuHeight, 0xFFAAAAAA);
+        graphics.fill(x, y, x + 1, y + menuHeight, 0xFFAAAAAA);
         graphics.fill(x + CONTEXT_MENU_WIDTH - 1, y, x + CONTEXT_MENU_WIDTH,
-                y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
-        Component action = Component.translatable(this.contextMenu.waypoint() == null
-                ? "aleeve_atlas.screen.world_map.add_waypoint"
-                : "aleeve_atlas.screen.world_map.delete_waypoint");
-        graphics.drawString(Minecraft.getInstance().font, action, x + 8, y + 8, 0xFFFFFFFF);
+                y + menuHeight, 0xFFAAAAAA);
+        for (int index = 0; index < this.contextMenu.actions().size(); index++) {
+            graphics.drawString(Minecraft.getInstance().font,
+                    this.contextMenu.actions().get(index).label(),
+                    x + 8, y + 10 + index * CONTEXT_MENU_ROW_HEIGHT, 0xFFFFFFFF);
+        }
     }
 
     /// 显示鼠标下方的方块、群系和最高优先级领地。
@@ -655,13 +708,27 @@ public final class WorldMapScreen extends Screen {
         graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
     }
 
+    private double logicalMouseX(double mouseX) {
+        return width / 2.0 + (mouseX - width / 2.0) / this.animationScale;
+    }
+
+    private double logicalMouseY(double mouseY) {
+        return height / 2.0 + (mouseY - height / 2.0) / this.animationScale;
+    }
+
+    private MouseButtonEvent logicalMouseEvent(MouseButtonEvent event) {
+        return new MouseButtonEvent(this.logicalMouseX(event.x()), this.logicalMouseY(event.y()),
+                event.buttonInfo());
+    }
+
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        event = this.logicalMouseEvent(event);
         this.middleHeld = false;
         if (this.contextMenu != null) {
             if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
                     && this.contextMenuContains(event.x(), event.y())) {
-                this.executeContextMenu();
+                this.executeContextMenu(event.y());
             } else {
                 this.contextMenu = null;
             }
@@ -702,35 +769,71 @@ public final class WorldMapScreen extends Screen {
     private void openContextMenu(double screenX, double screenY) {
         this.dragging = false;
         Waypoint waypoint = this.findWaypointAt(screenX, screenY);
+        List<ContextAction> actions = new ArrayList<>();
+        BlockPos target = new BlockPos((int) Math.floor(this.screenToWorldX(screenX)),
+                this.surfaceYAt(this.screenToWorldX(screenX), this.screenToWorldZ(screenY)),
+                (int) Math.floor(this.screenToWorldZ(screenY)));
+        if (waypoint == null) {
+            actions.add(new ContextAction(Component.translatable(
+                    "aleeve_atlas.screen.world_map.add_waypoint"),
+                    () -> this.createWaypointAt(screenX, screenY)));
+        } else {
+            if (waypoint.shareable()) {
+                actions.add(new ContextAction(Component.translatable(
+                        "aleeve_atlas.screen.world_map.share_team"),
+                        () -> ClientWaypoints.share(waypoint)));
+            }
+            target = waypoint.pos();
+        }
+        BlockPos teleportTarget = target;
+        actions.add(new ContextAction(Component.translatable(
+                "aleeve_atlas.screen.world_map.teleport"),
+                () -> WaypointActions.teleport(teleportTarget)));
+        actions.add(new ContextAction(Component.translatable(
+                "aleeve_atlas.screen.world_map.share_coordinates"),
+                () -> WaypointActions.shareCoordinates(teleportTarget)));
+        if (waypoint != null) {
+            actions.add(new ContextAction(Component.translatable(
+                    "aleeve_atlas.screen.world_map.delete_waypoint"),
+                    () -> this.deleteWaypoint(waypoint)));
+        }
+        int menuHeight = actions.size() * CONTEXT_MENU_ROW_HEIGHT + 4;
         int menuX = (int) Math.max(4, Math.min(width - CONTEXT_MENU_WIDTH - 4, screenX));
-        int menuY = (int) Math.max(4, Math.min(height - CONTEXT_MENU_HEIGHT - 4, screenY));
+        int menuY = (int) Math.max(4, Math.min(height - menuHeight - 4, screenY));
         this.contextMenu = new ContextMenu(this.screenToWorldX(screenX),
-                this.screenToWorldZ(screenY), menuX, menuY, waypoint);
+                this.screenToWorldZ(screenY), menuX, menuY, actions);
     }
 
     private boolean contextMenuContains(double x, double y) {
         return this.contextMenu != null && x >= this.contextMenu.screenX()
                 && x < this.contextMenu.screenX() + CONTEXT_MENU_WIDTH
                 && y >= this.contextMenu.screenY()
-                && y < this.contextMenu.screenY() + CONTEXT_MENU_HEIGHT;
+                && y < this.contextMenu.screenY() + this.contextMenuHeight();
     }
 
-    private void executeContextMenu() {
+    private int contextMenuHeight() {
+        return this.contextMenu.actions().size() * CONTEXT_MENU_ROW_HEIGHT + 4;
+    }
+
+    private void executeContextMenu(double mouseY) {
         if (this.contextMenu == null) {
             return;
         }
-        Waypoint waypoint = this.contextMenu.waypoint();
-        if (waypoint == null) {
-            this.createWaypoint(this.contextMenu.worldX(), this.contextMenu.worldZ());
-        } else {
-            var store = ClientWaypoints.store();
-            boolean removed = store != null && store.remove(waypoint.id());
-            if (removed && AtlasClientConfigs.CONFIG.waypoint.sendPolicy
-                    == WaypointSendPolicy.AUTO_SYNC) {
-                ClientWaypoints.shareDelete(waypoint);
-            }
+        int index = (int) Math.floor((mouseY - this.contextMenu.screenY() - 4.0)
+                / CONTEXT_MENU_ROW_HEIGHT);
+        if (index >= 0 && index < this.contextMenu.actions().size()) {
+            this.contextMenu.actions().get(index).action().run();
         }
         this.contextMenu = null;
+    }
+
+    private void deleteWaypoint(Waypoint waypoint) {
+        var store = ClientWaypoints.store();
+        boolean removed = store != null && store.remove(waypoint.id());
+        if (removed && AtlasClientConfigs.CONFIG.waypoint.sendPolicy
+                == WaypointSendPolicy.AUTO_SYNC) {
+            ClientWaypoints.shareDelete(waypoint);
+        }
     }
 
     /// 命中地图上最近的启用路径点。
@@ -779,9 +882,29 @@ public final class WorldMapScreen extends Screen {
     void finishWheel() {
         this.wheelOpened = false;
         this.middleHeld = false;
+        this.restoreWheelCursor();
         if (active == this && Minecraft.getInstance().screen != this) {
             active = null;
         }
+    }
+
+    private void rememberCursorAndCenter() {
+        Minecraft minecraft = Minecraft.getInstance();
+        this.wheelCursorX = minecraft.mouseHandler.xpos();
+        this.wheelCursorY = minecraft.mouseHandler.ypos();
+        var window = minecraft.getWindow();
+        GLFW.glfwSetCursorPos(window.handle(), window.getScreenWidth() / 2.0,
+                window.getScreenHeight() / 2.0);
+    }
+
+    private void restoreWheelCursor() {
+        if (this.wheelCursorX == null || this.wheelCursorY == null) {
+            return;
+        }
+        GLFW.glfwSetCursorPos(Minecraft.getInstance().getWindow().handle(),
+                this.wheelCursorX, this.wheelCursorY);
+        this.wheelCursorX = null;
+        this.wheelCursorY = null;
     }
 
     private void createPing(double worldX, double worldZ, MapPingData.PingIcon icon) {
@@ -806,6 +929,7 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        event = this.logicalMouseEvent(event);
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && this.middleHeld) {
             this.middleHeld = false;
             if (!this.wheelOpened && this.middleHoldTicks < MIDDLE_HOLD_TICKS) {
@@ -826,6 +950,7 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        event = this.logicalMouseEvent(event);
         if (this.contextMenu != null) {
             this.contextMenu = null;
         }
@@ -833,6 +958,7 @@ public final class WorldMapScreen extends Screen {
             return true;
         }
         if (this.dragging) {
+            this.zoomAnchored = false;
             // 事件携带的是从按下点起的总位移，因此用相邻事件差得到帧增量。
             this.centerX -= (event.x() - this.lastMouseX) / this.pixelsPerChunk;
             this.centerZ -= (event.y() - this.lastMouseY) / this.pixelsPerChunk;
@@ -846,17 +972,25 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        mouseX = this.logicalMouseX(mouseX);
+        mouseY = this.logicalMouseY(mouseY);
         this.contextMenu = null;
         this.middleHeld = false;
         this.wheelOpened = false;
         if (scrollY != 0.0) {
-            float previous = this.pixelsPerChunk;
-            this.pixelsPerChunk = ConfigBounds.clamp(
-                    (float) (this.pixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
+            double anchorX = this.screenToWorldX(mouseX);
+            double anchorZ = this.screenToWorldZ(mouseY);
+            this.targetPixelsPerChunk = ConfigBounds.clamp(
+                    (float) (this.targetPixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
                     MIN_PIXELS_PER_CHUNK, MAX_PIXELS_PER_CHUNK);
-            if (previous != this.pixelsPerChunk) {
-                this.refreshCanvas();
-            }
+            this.zoomAnchorWorldX = anchorX;
+            this.zoomAnchorWorldZ = anchorZ;
+            this.zoomAnchorScreenX = mouseX;
+            this.zoomAnchorScreenY = mouseY;
+            this.zoomAnchored = true;
+            this.centerX = anchorX - (mouseX - width / 2.0) / this.pixelsPerChunk;
+            this.centerZ = anchorZ - (mouseY - height / 2.0) / this.pixelsPerChunk;
+            this.refreshCanvas();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
@@ -893,7 +1027,10 @@ public final class WorldMapScreen extends Screen {
     }
 
     private record ContextMenu(double worldX, double worldZ, int screenX, int screenY,
-            Waypoint waypoint) {
+            List<ContextAction> actions) {
+    }
+
+    private record ContextAction(Component label, Runnable action) {
     }
 
     /// 按当前视野中心重绘画布。

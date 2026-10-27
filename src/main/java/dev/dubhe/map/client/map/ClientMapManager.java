@@ -18,10 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -44,7 +42,8 @@ public final class ClientMapManager {
     ///
     /// 以 {@link ChunkPos#asLong} 编码为键。标记与消费都在客户端主线程：
     /// 标记来自方块更新包处理，消费来自客户端 tick，无需并发容器。
-    private static final Set<Long> DIRTY_CHUNKS = new HashSet<>();
+    private static final Set<Long> DIRTY_SURFACE_CHUNKS = new HashSet<>();
+    private static final Set<Long> DIRTY_CAVE_CHUNKS = new HashSet<>();
 
     private final MapTexture texture = new MapTexture(AleeveAtlas.id("minimap"));
     private final Map<String, MapDimensionCache> caches = new HashMap<>();
@@ -86,31 +85,14 @@ public final class ClientMapManager {
     ///
     /// 由客户端方块变更监听调用，使地图反映破坏与放置的结果。
     public static void markChunkChanged(int chunkX, int chunkZ) {
-        DIRTY_CHUNKS.add(ChunkPos.asLong(chunkX, chunkZ));
+        long key = ChunkPos.asLong(chunkX, chunkZ);
+        DIRTY_SURFACE_CHUNKS.add(key);
+        DIRTY_CAVE_CHUNKS.add(key);
     }
 
-    /// 取出并清空待重采样的区块。
-    ///
-    /// 地表与洞穴缓存相互独立，两种模式都要失效：只清当前模式时，
-    /// 切换到另一模式会命中另一份缓存中的过期像素。
-    private static void drainDirtyChunks(MapDimensionCache surface, MapDimensionCache cave) {
-        if (DIRTY_CHUNKS.isEmpty()) {
-            return;
-        }
-        // 先取出快照再清空：遍历中移除普通 HashSet 会抛并发修改异常。
-        List<Long> pending = new ArrayList<>(DIRTY_CHUNKS);
-        DIRTY_CHUNKS.clear();
-        for (Long key : pending) {
-            int chunkX = ChunkPos.getX(key);
-            int chunkZ = ChunkPos.getZ(key);
-            // 仅移除缓存条目，下次采样会重新生成。
-            if (surface != null) {
-                surface.invalidate(chunkX, chunkZ);
-            }
-            if (cave != null) {
-                cave.invalidate(chunkX, chunkZ);
-            }
-        }
+    /// 取出并清空当前地图模式待重采样的区块。
+    private static Set<Long> dirtySnapshot(Set<Long> dirtyChunks) {
+        return dirtyChunks.isEmpty() ? Set.of() : Set.copyOf(dirtyChunks);
     }
 
     /// 每个客户端 tick 调用：采样玩家周围缺失的区块。
@@ -136,26 +118,33 @@ public final class ClientMapManager {
             }
             this.currentServerKey = serverKey;
             this.currentDimension = level.dimension();
-            this.caveCache = this.caveCacheFor(minecraft, serverKey, level.dimension());
+            DIRTY_SURFACE_CHUNKS.clear();
+            DIRTY_CAVE_CHUNKS.clear();
+            this.caveCache = null;
             this.texture.clearAll();
         }
 
         final ChunkPos center = minecraft.player.chunkPosition();
-        this.texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
-        // 进入地下或有顶棚遮挡时自动切换到洞穴分层模式。
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
+        this.texture.setCaveMode(caveMode);
+        this.texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
         int caveTop = minecraft.player.blockPosition().getY() + 8;
-        if (needsCaveRescan(caveMode, this.caveLayerTop, caveTop)) {
-            // 层高变化明显：重建洞穴缓存，让下一次采样反映新层级。
-            this.caveCache.flush();
-            this.caveCache = this.caveCacheFor(minecraft, this.currentServerKey, level.dimension());
+        if (caveMode && (this.caveCache == null || this.caveLayerTop == null
+                || needsCaveRescan(true, this.caveLayerTop, caveTop))) {
+            if (this.caveCache != null) {
+                this.caveCache.flush();
+            }
+            this.caveCache = this.caveCacheFor(minecraft, this.currentServerKey,
+                    level.dimension(), caveTop);
         }
         this.caveLayerTop = caveMode ? caveTop : null;
 
-        // 方块变更后先丢弃受影响区块的缓存，下一次采样即会重建这些像素。
-        drainDirtyChunks(cache, this.caveCache);
+        // 方块变更后保留受影响区块的旧图像，直到新的采样成功完成。
+        Set<Long> activeDirtyChunks = caveMode ? DIRTY_CAVE_CHUNKS : DIRTY_SURFACE_CHUNKS;
+        Set<Long> dirtyChunks = dirtySnapshot(activeDirtyChunks);
 
         int sampled = 0;
+        Set<Long> refreshedDirtyChunks = new HashSet<>();
         int radius = VIEW_CHUNK_RADIUS;
         for (int ring = 0; ring <= radius && sampled < SAMPLES_PER_TICK; ring++) {
             for (int dx = -ring; dx <= ring && sampled < SAMPLES_PER_TICK; dx++) {
@@ -169,15 +158,19 @@ public final class ClientMapManager {
                     Integer layerTop = caveMode
                             ? minecraft.player.blockPosition().getY() + 8
                             : null;
+                    long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
                     if (!caveMode) {
                         Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
-                        if (existing.isPresent()) {
+                        if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
                             this.texture.putChunk(existing.get());
                             continue;
                         }
-                    } else if (this.caveCache.get(chunkX, chunkZ).isPresent()) {
-                        this.texture.putChunk(this.caveCache.get(chunkX, chunkZ).get());
-                        continue;
+                    } else {
+                        Optional<ChunkMapData> existing = this.caveCache.get(chunkX, chunkZ);
+                        if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
+                            this.texture.putChunk(existing.get());
+                            continue;
+                        }
                     }
                     ChunkMapData sampledData = ChunkMapSampler.sample(level,
                             new ChunkPos(chunkX, chunkZ), layerTop);
@@ -185,6 +178,9 @@ public final class ClientMapManager {
                         continue;
                     }
                     sampledData.setVersion(System.currentTimeMillis());
+                    if (dirtyChunks.contains(chunkKey)) {
+                        refreshedDirtyChunks.add(chunkKey);
+                    }
                     // 分层数据写入独立缓存，不污染地表地图。
                     if (caveMode) {
                         this.caveCache.put(sampledData);
@@ -196,6 +192,7 @@ public final class ClientMapManager {
                 }
             }
         }
+        activeDirtyChunks.removeAll(refreshedDirtyChunks);
         // 合并本 tick 的像素改动，只上传一次纹理。
         this.texture.flushDirty();
         if (sampled > 0 || schemeChanged) {
@@ -245,7 +242,8 @@ public final class ClientMapManager {
         this.currentServerKey = null;
         this.currentDimension = null;
         // 脏标记属会话级状态：切换服务器后旧坐标不应触发新会话的缓存失效。
-        DIRTY_CHUNKS.clear();
+        DIRTY_SURFACE_CHUNKS.clear();
+        DIRTY_CAVE_CHUNKS.clear();
         this.texture.clearAll();
     }
 
@@ -257,11 +255,11 @@ public final class ClientMapManager {
         });
     }
 
-    /// 洞穴分层缓存目录：在地表层目录下加 `_cave` 后缀区分。
+    /// 洞穴分层缓存目录：在地表层目录名后附加 `_cave_<layerTop>`。
     private MapDimensionCache caveCacheFor(Minecraft minecraft, String serverKey,
-            ResourceKey<Level> dimension) {
+            ResourceKey<Level> dimension, int layerTop) {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
-        Path caveBase = base.resolveSibling(base.getFileName() + "_cave");
+        Path caveBase = base.resolveSibling(base.getFileName() + "_cave_" + layerTop);
         return new MapDimensionCache(caveBase);
     }
 

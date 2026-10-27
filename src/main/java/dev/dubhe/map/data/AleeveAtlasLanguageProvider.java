@@ -98,14 +98,19 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.screen.waypoint_edit.invalid_number",
                 "Coordinates and visible distance must be integers");
         add("aleeve_atlas.screen.waypoint_edit.invalid_distance",
-                "Visible distance must be between 0 and %s");
+                "Visible distance must be -1 or between 0 and %s");
         add("aleeve_atlas.screen.waypoint_edit.invalid_color",
                 "Color must use #RRGGBB format");
         add("aleeve_atlas.screen.world_map.share_team", "Share to Team");
         add("aleeve_atlas.screen.world_map.share_team.tip",
-                "Share the nearest waypoint with your team");
+                "Share all visible waypoints with your team");
         add("aleeve_atlas.message.waypoint_none", "No waypoint to share");
         add("aleeve_atlas.message.waypoint_shared_team", "Shared waypoint: %s");
+        add("aleeve_atlas.message.waypoints_shared_team", "Shared %s visible waypoint(s) with your team");
+        add("aleeve_atlas.message.slime_seed_recorded", "World seed recorded: %s");
+
+        add("aleeve_atlas.screen.world_map.teleport", "Teleport");
+        add("aleeve_atlas.screen.world_map.share_coordinates", "Send coordinates to chat");
 
         add("aleeve_atlas.screen.world_map", "World Map");
         add("aleeve_atlas.screen.world_map.hint",

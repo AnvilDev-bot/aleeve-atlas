@@ -61,7 +61,7 @@ public final class WaypointUiSelfTest {
                     && clickButton(screen, "aleeve_atlas.screen.waypoint_list.add");
             case 3 -> screen instanceof WaypointEditScreen && prepareCreateForm(screen)
                     && clickButton(screen, "aleeve_atlas.screen.waypoint_edit.save");
-            case 4 -> screen instanceof WaypointListScreen
+            case 4 -> screen instanceof WaypointListScreen list && selectFirstWaypoint(list)
                     && clickButton(screen, "aleeve_atlas.screen.waypoint_list.edit");
             case 5 -> screen instanceof WaypointEditScreen
                     && clickButton(screen, "aleeve_atlas.screen.waypoint_edit.save");
@@ -154,6 +154,12 @@ public final class WaypointUiSelfTest {
                     minecraft.level.dimension(), 0xFF55FFFF));
         }
         screen.reloadEntries();
+    }
+
+    private static boolean selectFirstWaypoint(WaypointListScreen screen) {
+        MouseButtonEvent event = new MouseButtonEvent(20, 44,
+                new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0));
+        return screen.mouseClicked(event, false);
     }
 
     /// 通过 Screen 的鼠标事件点击按钮，覆盖按钮与地图拖动的事件分发。

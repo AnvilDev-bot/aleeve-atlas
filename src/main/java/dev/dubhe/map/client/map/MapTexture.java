@@ -27,6 +27,8 @@ public final class MapTexture {
     /// 纹理边长（像素），等于覆盖的方块数。
     public static final int PIXELS = SLOTS * ChunkMapData.SIZE;
 
+    private static final int CAVE_BACKGROUND = 0x80000000;
+
     private final Identifier textureId;
     /// 是否存在待上传的像素改动。
     private boolean dirty;
@@ -43,6 +45,7 @@ public final class MapTexture {
     private boolean initialized;
     private boolean centered;
     private MapColorScheme colorScheme = MapColorScheme.VANILLA;
+    private boolean caveMode;
 
     public MapTexture(Identifier textureId) {
         this.textureId = textureId;
@@ -70,6 +73,17 @@ public final class MapTexture {
 
     public boolean ready() {
         return this.initialized;
+    }
+
+    public void setCaveMode(boolean caveMode) {
+        if (this.caveMode != caveMode) {
+            this.caveMode = caveMode;
+            this.clearAll();
+        }
+    }
+
+    public double uvStart(double worldCoordinate, int uvSize) {
+        return (PIXELS - uvSize) / 2.0 + worldCoordinate - Math.floor(worldCoordinate);
     }
 
     /// 配色变更后立即按现有色板重绘，无需重新采样。
@@ -161,12 +175,12 @@ public final class MapTexture {
         this.source.clear();
         this.drawnVersions.clear();
         this.centered = false;
-        this.fill(MapPalette.TRANSPARENT);
+        this.fill(this.caveMode ? CAVE_BACKGROUND : MapPalette.TRANSPARENT);
         this.upload();
     }
 
     private void redrawAll() {
-        this.fill(MapPalette.TRANSPARENT);
+        this.fill(this.caveMode ? CAVE_BACKGROUND : MapPalette.TRANSPARENT);
         this.drawnVersions.clear();
         for (ChunkMapData data : this.source.values()) {
             this.drawChunk(data);
@@ -194,8 +208,10 @@ public final class MapTexture {
                     continue;
                 }
                 int shadow = lighting == null ? 0 : lighting[localZ * ChunkMapData.SIZE + localX];
-                this.setPixel(x, y, ChunkColorizer.colorAt(data, localX, localZ,
-                        this.colorScheme, Minecraft.getInstance().level, cursor, shadow));
+                int color = ChunkColorizer.colorAt(data, localX, localZ,
+                        this.colorScheme, Minecraft.getInstance().level, cursor, shadow);
+                this.setPixel(x, y, this.caveMode && color == MapPalette.TRANSPARENT
+                        ? CAVE_BACKGROUND : color);
             }
         }
     }

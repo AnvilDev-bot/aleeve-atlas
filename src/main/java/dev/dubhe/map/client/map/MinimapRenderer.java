@@ -96,11 +96,15 @@ public final class MinimapRenderer {
         int drawY = circular ? y : Math.round(centerY - drawSize / 2.0F);
         int uvSize = circular ? (int) layout.coveredBlocks()
                 : MinimapLayout.squareDrawSize((int) layout.coveredBlocks());
-        float uvStart = (MapTexture.PIXELS - uvSize) / 2.0F;
-        int mapTint = circular ? encodeCircleTint(uvSize) : 0xFFFFFFFF;
-        graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStart, uvStart,
+        float uvStartX = (float) texture.uvStart(player.getX(), uvSize);
+        float uvStartZ = (float) texture.uvStart(player.getZ(), uvSize);
+        float brightness = timeBrightness(minecraft, config);
+        int mapTint = circular ? encodeCircleTint(uvSize, brightness)
+                : brightnessColor(brightness);
+        graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStartX, uvStartZ,
                 drawSize, drawSize, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS, mapTint);
         TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
+        ChunkOverlayRenderer.renderOnMinimap(graphics, config, layout, circular);
         graphics.pose().popMatrix();
         if (scissored) {
             graphics.disableScissor();
@@ -144,10 +148,25 @@ public final class MinimapRenderer {
     }
 
     /// 圆形遮罩使用顶点色 R 传递纹理裁剪比例的倒数，还原屏幕局部坐标。
-    private static int encodeCircleTint(int uvSize) {
+    private static int encodeCircleTint(int uvSize, float brightness) {
         float uvScale = MapTexture.PIXELS / (float) uvSize;
         int red = Math.round(uvScale / 8.0F * 255.0F);
-        return 0xFF00FFFF | (red << 16);
+        int green = Math.round(brightness * 255.0F);
+        return 0xFF000000 | (red << 16) | (green << 8);
+    }
+
+    private static int brightnessColor(float brightness) {
+        int channel = Math.round(brightness * 255.0F);
+        return 0xFF000000 | (channel << 16) | (channel << 8) | channel;
+    }
+
+    private static float timeBrightness(Minecraft minecraft, AtlasClientConfig config) {
+        if (!config.minimap.timeBrightness || minecraft.level == null) {
+            return 1.0F;
+        }
+        long dayTime = minecraft.level.getDayTime() % 24000L;
+        double daylight = 0.5 + 0.5 * Math.cos((dayTime - 6000L) * Math.PI / 12000.0);
+        return (float) (0.45 + 0.55 * daylight);
     }
 
     /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。

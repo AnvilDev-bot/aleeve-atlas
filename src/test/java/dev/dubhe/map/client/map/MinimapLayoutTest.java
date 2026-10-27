@@ -29,6 +29,15 @@ class MinimapLayoutTest {
     }
 
     @Test
+    void fractionalPlayerPositionMapsToExactMinimapCenter() {
+        MinimapLayout layout = new MinimapLayout(31, 47, 128, -12.375, 24.875, 1.5);
+        Assertions.assertEquals(layout.x() + layout.size() / 2.0,
+                layout.worldToScreenX(layout.centerWorldX()), 1.0E-6);
+        Assertions.assertEquals(layout.y() + layout.size() / 2.0,
+                layout.worldToScreenZ(layout.centerWorldZ()), 1.0E-6);
+    }
+
+    @Test
     void focusedLayoutFillsScreenShortSide() {
         int[] box = MinimapLayout.focusedBox(640, 360);
         Assertions.assertEquals(360, box[2]);

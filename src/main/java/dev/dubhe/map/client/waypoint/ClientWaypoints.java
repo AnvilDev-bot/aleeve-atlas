@@ -262,7 +262,7 @@ public final class ClientWaypoints {
 
     /// 把路径点分享给在线队友。
     public static void share(Waypoint waypoint) {
-        if (!AtlasSession.synchronizedMode()) {
+        if (!AtlasSession.synchronizedMode() || !waypoint.shareable()) {
             return;
         }
         ClientPacketDistributor.sendToServer(

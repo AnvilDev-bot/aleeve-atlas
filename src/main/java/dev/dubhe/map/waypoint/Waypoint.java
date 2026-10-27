@@ -38,7 +38,7 @@ public record Waypoint(
     /// 死亡点图标标识。
     public static final String DEATH_ICON = "death";
     public static final String DEATH_NAME_KEY = "aleeve_atlas.waypoint.death";
-    public static final int DEFAULT_VISIBLE_DISTANCE = 256;
+    public static final int DEFAULT_VISIBLE_DISTANCE = -1;
 
     /// 新建一个普通路径点。
     public static Waypoint create(String name, BlockPos pos, ResourceKey<Level> dimension,
