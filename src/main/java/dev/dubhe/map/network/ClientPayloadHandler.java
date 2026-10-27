@@ -2,6 +2,7 @@ package dev.dubhe.map.network;
 
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.AtlasSession;
+import dev.dubhe.map.storage.ServerKey;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -28,6 +29,7 @@ public final class ClientPayloadHandler {
         }
         AtlasSession.onServerHandshake(payload.maxRadarDistance(), payload.nonTeamVisibility(),
                 payload.syncEnabled());
+        ServerKey.setRemoteCacheId(payload.mapCacheId());
         if (payload.syncEnabled()) {
             LOGGER.info("Entered synchronized mode");
         } else {
@@ -37,6 +39,7 @@ public final class ClientPayloadHandler {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        ServerKey.clearRemoteCacheId();
         AtlasSession.reset();
     }
 }

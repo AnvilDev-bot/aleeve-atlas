@@ -17,6 +17,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -101,7 +102,7 @@ public final class MinimapRenderer {
                 : MinimapLayout.squareDrawSize((int) layout.coveredBlocks());
         float uvStartX = (float) texture.uvStart(player.getX(), uvSize);
         float uvStartZ = (float) texture.uvStart(player.getZ(), uvSize);
-        float brightness = timeBrightness(minecraft, config);
+        float brightness = lightBrightness(minecraft, config);
         int mapTint = circular ? encodeCircleTint(uvSize, brightness, 0, size)
                 : brightnessColor(brightness);
         graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStartX, uvStartZ,
@@ -171,13 +172,14 @@ public final class MinimapRenderer {
         return 0xFF000000 | (channel << 16) | (channel << 8) | channel;
     }
 
-    private static float timeBrightness(Minecraft minecraft, AtlasClientConfig config) {
-        if (!config.minimap.timeBrightness || minecraft.level == null) {
+    private static float lightBrightness(Minecraft minecraft, AtlasClientConfig config) {
+        if (!config.minimap.lightBrightness || minecraft.level == null
+                || minecraft.player == null) {
             return 1.0F;
         }
-        long dayTime = minecraft.level.getDayTime() % 24000L;
-        double daylight = 0.5 + 0.5 * Math.cos((dayTime - 6000L) * Math.PI / 12000.0);
-        return (float) (0.45 + 0.55 * daylight);
+        int light = minecraft.level.getMaxLocalRawBrightness(minecraft.player.blockPosition());
+        float normalized = Mth.clamp(light / 15.0F, 0.0F, 1.0F);
+        return 0.35F + 0.65F * normalized;
     }
 
     /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。

@@ -37,7 +37,7 @@ public final class AtlasPayloads {
         // `optional()` 返回新副本，必须接收返回值。
         PayloadRegistrar registrar = event.registrar(AleeveAtlas.PROTOCOL_VERSION).optional();
 
-        // 握手：服务端在玩家登录后下发，含协同模式与可见性锁定项。
+        // 握手：服务端下发协同模式、锁定项和地图缓存标识。
         registrar.playToClient(HandshakePayload.TYPE, HandshakePayload.STREAM_CODEC,
                 ClientPayloadHandler::handleHandshake);
 

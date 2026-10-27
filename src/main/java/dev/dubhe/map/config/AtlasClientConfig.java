@@ -95,8 +95,8 @@ public class AtlasClientConfig {
         @Comment("Highlight slime chunks on the minimap.")
         public boolean showSlimeChunks = false;
 
-        @Comment("Adjust minimap brightness with the in-game time.")
-        public boolean timeBrightness = false;
+        @Comment("Adjust minimap brightness with local light level.")
+        public boolean lightBrightness = false;
     }
 
     public static class Radar {

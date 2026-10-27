@@ -9,11 +9,21 @@ import java.nio.file.Path;
 /// 服务器/存档标识解析。
 ///
 /// 地图缓存与路径点按「服务器或存档」隔离：
-/// - 多人服务器取 IP/端口的不可逆稳定哈希，避免泄露地址原文；
+/// - 多人服务器安装模组时使用服务端持久下发的标识；未安装时使用服务器地址的不可逆哈希；
 /// - 单机存档取存档目录名的稳定哈希，保证不同存档互不干扰且不泄露绝对路径；
 /// - 两者均无法取得时回退到 `unknown`。
 public final class ServerKey {
+    private static volatile String remoteCacheId;
+
     private ServerKey() {
+    }
+
+    public static void setRemoteCacheId(String cacheId) {
+        remoteCacheId = cacheId == null || cacheId.isBlank() ? null : cacheId;
+    }
+
+    public static void clearRemoteCacheId() {
+        remoteCacheId = null;
     }
 
     /// 解析当前连接的服务器或存档标识。
@@ -21,7 +31,11 @@ public final class ServerKey {
         if (minecraft == null) {
             return "unknown";
         }
+        String cacheId = remoteCacheId;
         ServerData server = minecraft.getCurrentServer();
+        if (server != null && cacheId != null) {
+            return "server_" + AtlasPaths.hashServerKey(cacheId).substring(0, 16);
+        }
         if (server != null && server.ip != null && !server.ip.isBlank()) {
             return AtlasPaths.hashServerKey(server.ip);
         }

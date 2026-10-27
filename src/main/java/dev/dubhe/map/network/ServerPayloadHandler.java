@@ -23,9 +23,11 @@ public final class ServerPayloadHandler {
             return;
         }
         var config = AleeveAtlas.CONFIG;
+        String mapCacheId = MapCacheIdentity.get(player.level().getServer().overworld()).id();
         PacketDistributor.sendToPlayer(player,
                 new HandshakePayload(AleeveAtlas.PROTOCOL_VERSION, config.sync.enabled,
-                        config.radar.maxRadarDistance, config.radar.nonTeamPlayerVisibility));
+                        config.radar.maxRadarDistance, config.radar.nonTeamPlayerVisibility,
+                        mapCacheId));
         PlayerPositionHandler.sendSnapshot(player);
     }
 
