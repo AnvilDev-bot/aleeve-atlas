@@ -1,0 +1,900 @@
+package dev.dubhe.map.client.map;
+
+import dev.dubhe.map.AleeveAtlas;
+import dev.dubhe.map.AtlasSession;
+import dev.dubhe.map.api.territory.AtlasTerritory;
+import dev.dubhe.map.api.territory.TerritoryGroup;
+import dev.dubhe.map.client.AtlasKeyMappings;
+import dev.dubhe.map.client.radar.RadarRenderer;
+import dev.dubhe.map.client.waypoint.ClientWaypoints;
+import dev.dubhe.map.client.waypoint.WaypointEditScreen;
+import dev.dubhe.map.client.waypoint.WaypointListScreen;
+import dev.dubhe.map.client.waypoint.WaypointRenderer;
+import dev.dubhe.map.config.AtlasClientConfigs;
+import dev.dubhe.map.config.ConfigBounds;
+import dev.dubhe.map.config.WaypointSendPolicy;
+import dev.dubhe.map.map.ChunkMapData;
+import dev.dubhe.map.map.MapDimensionCache;
+import dev.dubhe.map.ping.ClientPings;
+import dev.dubhe.map.ping.MapPingData;
+import dev.dubhe.map.ping.PingRenderer;
+import dev.dubhe.map.territory.TerritoryRegistry;
+import dev.dubhe.map.territory.TerritoryRuns;
+import dev.dubhe.map.waypoint.Waypoint;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/// 全屏世界地图。
+///
+/// 支持鼠标拖拽平移与滚轮无级缩放；未探索区块显示为黑色网格背景。
+/// 双击创建路径点、中键发起标点、右键打开路径点菜单。
+public final class WorldMapScreen extends Screen {
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/worldmap");
+    /// 每区块像素数的缩放范围。
+    private static final float MIN_PIXELS_PER_CHUNK = 1.0F;
+    private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
+    private static final int BACKGROUND_COLOR = 0xF0101010;
+    private static final int PLAYER_COLOR = 0xFFFFFFFF;
+    /// 低于该区块像素尺寸时隐藏领地名称标签。
+    private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
+    /// 虚线边框的节距（像素）。
+    private static final int BORDER_DASH_PERIOD = 4;
+    /// 虚线边框实线段长度（像素）。
+    private static final int BORDER_DASH_LENGTH = 2;
+    private static final int MIDDLE_HOLD_TICKS = 8;
+    private static final int CONTEXT_MENU_WIDTH = 136;
+    private static final int CONTEXT_MENU_HEIGHT = 24;
+
+    /// 当前打开的世界地图界面；未打开时为 null。
+    private static WorldMapScreen active;
+
+    private final MapCanvas canvas;
+    private final MapDimensionCache cache;
+    /// 视野中心（世界方块坐标）。
+    private double centerX;
+    private double centerZ;
+    private float pixelsPerChunk = 4.0F;
+    private boolean dragging;
+    private double lastMouseX;
+    private double lastMouseY;
+    private boolean middleHeld;
+    private int middleHoldTicks;
+    private double middleWorldX;
+    private double middleWorldZ;
+    private boolean wheelOpened;
+    private ContextMenu contextMenu;
+
+    public WorldMapScreen(MapCanvas canvas, MapDimensionCache cache, double centerX,
+            double centerZ) {
+        super(Component.translatable("aleeve_atlas.screen.world_map"));
+        this.canvas = canvas;
+        this.cache = cache;
+        this.centerX = centerX;
+        this.centerZ = centerZ;
+    }
+
+    @Override
+    protected void init() {
+        if (!this.canvas.ready()) {
+            this.canvas.register();
+        }
+        this.refreshCanvas();
+        this.addTeamButtons();
+        active = this;
+        this.verifyScrollIfRequested();
+    }
+
+    /// 自检：按环境变量指定的步数连续平移，验证像素搬移路径。
+    ///
+    /// 仅用于自动化验收，正常游玩不触发。
+    private void verifyScrollIfRequested() {
+        String raw = System.getenv("ALEEVE_ATLAS_SCROLL_SELFTEST");
+        if (raw == null || this.cache == null) {
+            return;
+        }
+        int steps;
+        try {
+            steps = Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            LOGGER.warn("Invalid ALEEVE_ATLAS_SCROLL_SELFTEST value: {}", raw, e);
+            return;
+        }
+        // 以玩家位置为基准，按小步长连续平移，模拟真实拖拽的位移节奏。
+        // 步长 1 区块用于验证阈值缓存是否按预期减少重建次数。
+        double startX = this.centerX;
+        double startZ = this.centerZ;
+        for (int i = 1; i <= steps; i++) {
+            this.centerX = startX + i * ChunkMapData.SIZE;
+            this.centerZ = startZ + (i % 2 == 0 ? i : -i) * ChunkMapData.SIZE;
+            this.refreshCanvas();
+        }
+        // 平移结束后回到原点，便于截图核对画面是否与平移前一致。
+        this.centerX = startX;
+        this.centerZ = startZ;
+        this.refreshCanvas();
+    }
+
+    @Override
+    public void added() {
+        super.added();
+        active = this;
+    }
+
+    @Override
+    public void removed() {
+        if (active == this) {
+            active = null;
+        }
+        super.removed();
+    }
+
+    /// 地图数据发生外部变更时重绘已打开的界面。
+    public static void onMapDataChanged() {
+        WorldMapScreen screen = active;
+        if (screen != null && Minecraft.getInstance().screen == screen) {
+            screen.refreshCanvas();
+        }
+    }
+
+    static void clearActive() {
+        active = null;
+    }
+
+    /// 队伍相关按钮：独立模式下置灰并给出说明。
+    private void addTeamButtons() {
+        boolean synchronizedMode = AtlasSession.synchronizedMode();
+        Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
+        int buttonWidth = Math.max(20, Math.min(120, (width - 24) / 3));
+        int buttonHeight = 20;
+        int x = width - buttonWidth - 6;
+        int y = 6;
+        Button share = Button.builder(label, button -> this.shareNearestWaypoint())
+                .bounds(x, y, buttonWidth, buttonHeight)
+                .tooltip(Tooltip.create(synchronizedMode
+                        ? Component.translatable("aleeve_atlas.screen.world_map.share_team.tip")
+                        : Component.translatable(
+                                "aleeve_atlas.message.server_unsupported")))
+                .build();
+        share.active = synchronizedMode;
+        addRenderableWidget(share);
+
+        // 路径点管理与客户端配置入口，与分享按钮保持 6px 间隔。
+        addRenderableWidget(Button.builder(
+                        Component.translatable("aleeve_atlas.screen.waypoint_list"),
+                        button -> Minecraft.getInstance().setScreen(new WaypointListScreen(this)))
+                .bounds(x - buttonWidth - 6, y, buttonWidth, 20).build());
+        addRenderableWidget(Button.builder(
+                        Component.translatable("aleeve_atlas.screen.world_map.client_config"),
+                        button -> this.openClientConfig())
+                .bounds(x - (buttonWidth + 6) * 2, y, buttonWidth, 20).build());
+    }
+
+    /// 打开模组客户端配置，并保留当前世界地图作为返回页。
+    private void openClientConfig() {
+        var container = ModList.get().getModContainerById(AleeveAtlas.MOD_ID).orElseThrow();
+        Minecraft.getInstance().setScreen(new ConfigurationScreen(container, this));
+    }
+
+    /// 把视野中心最近的路径点分享给队伍。
+    private void shareNearestWaypoint() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.player == null) {
+            return;
+        }
+        Waypoint nearest = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
+            double dx = waypoint.pos().getX() + 0.5 - this.centerX;
+            double dz = waypoint.pos().getZ() + 0.5 - this.centerZ;
+            double distance = dx * dx + dz * dz;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearest = waypoint;
+            }
+        }
+        if (nearest == null) {
+            minecraft.player.displayClientMessage(
+                    Component.translatable("aleeve_atlas.message.waypoint_none"), true);
+            return;
+        }
+        ClientWaypoints.share(nearest);
+        minecraft.player.displayClientMessage(
+                Component.translatable("aleeve_atlas.message.waypoint_shared_team",
+                        nearest.displayName().getString()), true);
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        int viewWidth = width;
+        int viewHeight = height;
+
+        // 黑色背景代表未探索区域。不调用 renderBackground：模糊背景每帧只允许一次。
+        graphics.fill(0, 0, viewWidth, viewHeight, BACKGROUND_COLOR);
+
+        if (this.canvas.ready()) {
+            int canvasOriginPixelX = this.canvas.originChunkX() * ChunkMapData.SIZE;
+            int canvasOriginPixelZ = this.canvas.originChunkZ() * ChunkMapData.SIZE;
+            // 视口左上角对应的世界坐标：屏幕像素 / 每区块像素 = 世界方块偏移。
+            double topLeftWorldX = this.centerX - (double) viewWidth / 2.0 / this.pixelsPerChunk;
+            double topLeftWorldZ = this.centerZ - (double) viewHeight / 2.0 / this.pixelsPerChunk;
+
+            // 画布在世界坐标中的覆盖范围，与视口求交，避免采样越界导致画面拉伸。
+            double canvasLeft = canvasOriginPixelX;
+            double canvasTop = canvasOriginPixelZ;
+            double canvasRight = canvasOriginPixelX + MapCanvas.PIXELS;
+            double canvasBottom = canvasOriginPixelZ + MapCanvas.PIXELS;
+            double visibleLeft = Math.max(topLeftWorldX, canvasLeft);
+            double visibleTop = Math.max(topLeftWorldZ, canvasTop);
+            double visibleRight = Math.min(topLeftWorldX + (double) viewWidth / this.pixelsPerChunk,
+                    canvasRight);
+            double visibleBottom = Math.min(topLeftWorldZ + (double) viewHeight / this.pixelsPerChunk,
+                    canvasBottom);
+            if (visibleRight > visibleLeft && visibleBottom > visibleTop) {
+                int screenX = (int) Math.round((visibleLeft - topLeftWorldX) * this.pixelsPerChunk);
+                int screenY = (int) Math.round((visibleTop - topLeftWorldZ) * this.pixelsPerChunk);
+                int screenWidth = (int) Math.round((visibleRight - visibleLeft) * this.pixelsPerChunk);
+                int screenHeight = (int) Math.round((visibleBottom - visibleTop) * this.pixelsPerChunk);
+                int u = (int) Math.round(visibleLeft - canvasLeft);
+                int v = (int) Math.round(visibleTop - canvasTop);
+                int pixelWidth = (int) Math.round(visibleRight - visibleLeft);
+                int pixelHeight = (int) Math.round(visibleBottom - visibleTop);
+                graphics.blit(RenderPipelines.GUI_TEXTURED, this.canvas.textureId(), screenX, screenY,
+                        u, v, screenWidth, screenHeight, pixelWidth, pixelHeight, MapCanvas.PIXELS,
+                        MapCanvas.PIXELS);
+            }
+        }
+
+        this.drawTerritories(graphics, mouseX, mouseY);
+        this.drawWaypoints(graphics);
+        this.drawPings(graphics);
+        RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
+                Minecraft.getInstance(), this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
+        this.drawPlayerMarker(graphics);
+        this.drawOverlayText(graphics);
+        // 组件渲染后再绘制领地标签，确保标签位于最上层。
+        this.drawTerritoryLabels(graphics);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        this.drawLocationInfo(graphics, mouseX, mouseY);
+        this.drawContextMenu(graphics);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.middleHeld && !this.wheelOpened
+                && ++this.middleHoldTicks >= MIDDLE_HOLD_TICKS) {
+            this.contextMenu = null;
+            this.wheelOpened = true;
+            PingWheelMenu.open(this);
+        }
+    }
+
+    /// 领地覆层。
+    ///
+    /// 缩小到区块像素小于标签宽度时自动隐藏名称；悬停任一区块高亮其边框并展示信息卡片。
+    private void drawTerritories(GuiGraphics graphics, int mouseX, int mouseY) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        ResourceKey<Level> dimension = minecraft.level.dimension();
+        TerritoryRegistry registry = AtlasTerritory.clientRegistry();
+        List<TerritoryGroup> groups = registry.orderedForDimension(dimension);
+        if (groups.isEmpty()) {
+            return;
+        }
+        ChunkPos hovered = this.chunkAtScreen(mouseX, mouseY);
+        List<TerritoryGroup> hoveredGroups = hovered == null ? List.of()
+                : registry.hitAt(dimension, hovered);
+
+        for (TerritoryGroup group : groups) {
+            int fill = withOpacity(group.themeColorRgb(), group.fillOpacity());
+            boolean highlighted = hoveredGroups.contains(group);
+            int border = highlighted ? 0xFFFFFFFF : group.borderStyle().colorArgb();
+            // 填充：按横向连续路段批量绘制，减少绘制调用。
+            for (TerritoryRuns.Run run : TerritoryRuns.of(group.chunks())) {
+                // 按整段两端计算矩形：放大后单个区块可能超出视口，
+                // 若按首区块可见性判断会整段跳过，导致放大地图时领地消失。
+                int[] span = this.runScreenRect(run);
+                int left = Math.max(0, span[0]);
+                int top = Math.max(0, span[1]);
+                int right = Math.min(this.width, span[0] + span[2]);
+                int bottom = Math.min(this.height, span[1] + span[3]);
+                if (right > left && bottom > top) {
+                    graphics.fill(left, top, right, bottom, fill);
+                }
+            }
+            // 边框：仅在与非领地交界处逐区块描边。
+            for (ChunkPos chunk : group.chunks()) {
+                int[] rect = this.chunkScreenRect(chunk);
+                if (rect == null) {
+                    continue;
+                }
+                this.drawChunkOutline(graphics, group, chunk, rect, border);
+            }
+        }
+
+        // 悬停信息卡片按 zOrder 从高到低合并展示。
+        if (!hoveredGroups.isEmpty()) {
+            List<Component> lines = new ArrayList<>();
+            for (TerritoryGroup group : hoveredGroups) {
+                lines.add(group.displayName().copy().withStyle(ChatFormatting.AQUA));
+                lines.addAll(group.tooltip());
+            }
+            this.drawTooltipLines(graphics, minecraft, lines, mouseX, mouseY);
+        }
+    }
+
+    /// 绘制简易信息卡片（避免依赖 1.21.11 的 tooltip 组件装配）。
+    private void drawTooltipLines(GuiGraphics graphics, Minecraft minecraft,
+            List<Component> lines, int mouseX, int mouseY) {
+        int lineHeight = 10;
+        int padding = 3;
+        int maxWidth = 0;
+        for (Component line : lines) {
+            maxWidth = Math.max(maxWidth, minecraft.font.width(line));
+        }
+        int boxWidth = maxWidth + padding * 2;
+        int boxHeight = lines.size() * lineHeight + padding * 2;
+        int x = Math.min(mouseX + 8, Math.max(0, width - boxWidth - 4));
+        int y = Math.min(mouseY + 8, Math.max(0, height - boxHeight - 4));
+        graphics.fill(x, y, x + boxWidth, y + boxHeight, 0xF0100010);
+        graphics.fill(x, y, x + boxWidth, y + 1, 0xFF5000FF);
+        graphics.fill(x, y + boxHeight - 1, x + boxWidth, y + boxHeight, 0xFF5000FF);
+        int textY = y + padding;
+        for (Component line : lines) {
+            graphics.drawString(minecraft.font, line, x + padding, textY, 0xFFFFFFFF, true);
+            textY += lineHeight;
+        }
+    }
+
+    /// 领地名称标签。在组件渲染之后调用，确保标签位于最上层。
+    ///
+    /// 逐个连通分量比较其屏幕像素面积与名称文本宽度：面积不足以容纳文本时隐藏标签，
+    /// 仅保留色块，避免大量飞地标签相互重叠（AC-10）。
+    private void drawTerritoryLabels(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || this.pixelsPerChunk < MIN_PIXELS_FOR_LABEL) {
+            return;
+        }
+        TerritoryRegistry registry = AtlasTerritory.clientRegistry();
+        var groups = registry.orderedForDimension(minecraft.level.dimension());
+        if (groups.isEmpty()) {
+            return;
+        }
+        for (TerritoryGroup group : groups) {
+            TerritoryRegistry.CachedTerritory cached = registry.cached(group.territoryId());
+            if (cached == null) {
+                continue;
+            }
+            int textWidth = minecraft.font.width(group.displayName());
+            for (TerritoryRegistry.TerritoryComponent component : cached.components()) {
+                if (component.anchor() == null) {
+                    continue;
+                }
+                // 分量的屏幕像素面积不足以容纳文本时隐藏标签。
+                // 面积单位为平方像素，右侧以文本宽度的 8 倍作为阈值，避免细长分量也显示标签。
+                if (component.chunks().size() * this.pixelsPerChunk * this.pixelsPerChunk
+                        < textWidth * 8.0F) {
+                    continue;
+                }
+                // 锚点可能偏移出视口：此时退化为该分量内任一可见区块，保证标签仍可见。
+                int[] rect = this.chunkScreenRect(component.anchor());
+                if (rect == null) {
+                    rect = this.firstVisibleChunkRect(component);
+                }
+                if (rect == null) {
+                    continue;
+                }
+                // 名称标签带深色背景框，避免在浅色地形上难以辨认。
+                int tx = rect[0] + rect[2] / 2 - textWidth / 2;
+                int ty = rect[1] + rect[3] / 2 - 4;
+                graphics.fill(tx - 2, ty - 2, tx + textWidth + 2, ty + 10, 0xB0000000);
+                graphics.drawString(minecraft.font, group.displayName(), tx, ty, 0xFFFFFFFF,
+                        false);
+            }
+        }
+    }
+
+    /// 分量内第一个可见区块的屏幕矩形；全部不可见时返回 null。
+    private int[] firstVisibleChunkRect(TerritoryRegistry.TerritoryComponent component) {
+        for (ChunkPos chunk : component.chunks()) {
+            int[] rect = this.chunkScreenRect(chunk);
+            if (rect != null) {
+                return rect;
+            }
+        }
+        return null;
+    }
+
+    /// 区块在屏幕上的矩形：`[x, y, width, height]`；完全不可见时返回 null。
+    /// 连续路段的屏幕矩形（不裁剪）：用于把整段填充裁到视口内。
+    private int[] runScreenRect(TerritoryRuns.Run run) {
+        double leftWorld = (run.startX() << 4);
+        double rightWorld = ((run.endX() + 1) << 4);
+        double topWorld = (run.z() << 4);
+        double bottomWorld = ((run.z() + 1) << 4);
+        int x = (int) Math.round(width / 2.0 + (leftWorld - this.centerX) * this.pixelsPerChunk);
+        int y = (int) Math.round(height / 2.0 + (topWorld - this.centerZ) * this.pixelsPerChunk);
+        int x2 = (int) Math.round(width / 2.0 + (rightWorld - this.centerX) * this.pixelsPerChunk);
+        int y2 = (int) Math.round(height / 2.0 + (bottomWorld - this.centerZ) * this.pixelsPerChunk);
+        return new int[] { x, y, x2 - x, y2 - y };
+    }
+
+    private int[] chunkScreenRect(ChunkPos chunk) {
+        double centerChunkX = (chunk.x << 4) + 8.0;
+        double centerChunkZ = (chunk.z << 4) + 8.0;
+        double screenX = width / 2.0 + (centerChunkX - this.centerX) * this.pixelsPerChunk;
+        double screenY = height / 2.0 + (centerChunkZ - this.centerZ) * this.pixelsPerChunk;
+        int size = Math.max(1, Math.round(ChunkMapData.SIZE * this.pixelsPerChunk));
+        int x = (int) Math.round(screenX) - size / 2;
+        int y = (int) Math.round(screenY) - size / 2;
+        if (x + size < 0 || x > width || y + size < 0 || y > height) {
+            return null;
+        }
+        return new int[] { x, y, size, size };
+    }
+
+    /// 仅在领地与非领地交界处描边。
+    private void drawChunkOutline(GuiGraphics graphics, TerritoryGroup group, ChunkPos chunk,
+            int[] rect, int color) {
+        int borderWidth = Math.max(1, Math.round(group.borderStyle().width()));
+        boolean dashed = group.borderStyle().dashed();
+        Set<ChunkPos> chunks = group.chunks();
+        int x = rect[0];
+        int y = rect[1];
+        int size = rect[2];
+        if (!chunks.contains(new ChunkPos(chunk.x, chunk.z - 1))) {
+            this.drawBorderSegment(graphics, x, y, size, borderWidth, color, dashed, true);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x, chunk.z + 1))) {
+            this.drawBorderSegment(graphics, x, y + size - borderWidth, size, borderWidth, color,
+                    dashed, true);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x - 1, chunk.z))) {
+            this.drawBorderSegment(graphics, x, y, borderWidth, size, color, dashed, false);
+        }
+        if (!chunks.contains(new ChunkPos(chunk.x + 1, chunk.z))) {
+            this.drawBorderSegment(graphics, x + size - borderWidth, y, borderWidth, size, color,
+                    dashed, false);
+        }
+    }
+
+    /// 绘制一段领地边框；虚线样式下按固定节距间隔填充。
+    private void drawBorderSegment(GuiGraphics graphics, int x, int y, int width, int height,
+            int color, boolean dashed, boolean horizontal) {
+        if (!dashed) {
+            graphics.fill(x, y, x + width, y + height, color);
+            return;
+        }
+        int length = horizontal ? width : height;
+        for (int offset = 0; offset < length; offset += BORDER_DASH_PERIOD) {
+            int dashLength = Math.min(BORDER_DASH_LENGTH, length - offset);
+            if (horizontal) {
+                graphics.fill(x + offset, y, x + offset + dashLength, y + height, color);
+            } else {
+                graphics.fill(x, y + offset, x + width, y + offset + dashLength, color);
+            }
+        }
+    }
+
+    /// 鼠标位置对应的区块；在世界地图外返回 null。
+    private ChunkPos chunkAtScreen(double mouseX, double mouseY) {
+        if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) {
+            return null;
+        }
+        double worldX = this.screenToWorldX(mouseX);
+        double worldZ = this.screenToWorldZ(mouseY);
+        return new ChunkPos((int) Math.floor(worldX) >> 4, (int) Math.floor(worldZ) >> 4);
+    }
+
+    /// 主题色 + 填充透明度。
+    private static int withOpacity(int rgb, float opacity) {
+        int alpha = Math.round(Mth.clamp(opacity, 0.0F, 1.0F) * 255.0F);
+        return (alpha << 24) | (rgb & 0xFFFFFF);
+    }
+
+    /// 世界地图上的路径点标记。
+    private void drawWaypoints(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        for (var waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
+            double screenX = width / 2.0
+                    + (waypoint.pos().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+            double screenY = height / 2.0
+                    + (waypoint.pos().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+            if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
+                continue;
+            }
+            WaypointRenderer.renderOnWorldMap(graphics, screenX, screenY, waypoint.colorArgb(),
+                    waypoint.icon());
+        }
+    }
+
+    /// 世界地图上的临时标点波纹。
+    private void drawPings(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        String dimension = MapPingData.dimensionId(minecraft.level.dimension());
+        for (MapPingData ping : PingRenderer.activePings()) {
+            if (!ping.dimensionId().equals(dimension)) {
+                continue;
+            }
+            float opacity = PingRenderer.opacityByPolicy(minecraft, ping);
+            if (opacity <= 0.0F) {
+                continue;
+            }
+            double screenX = width / 2.0 + (ping.position().x - this.centerX) * this.pixelsPerChunk;
+            double screenY = height / 2.0 + (ping.position().z - this.centerZ) * this.pixelsPerChunk;
+            if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
+                continue;
+            }
+            PingRenderer.renderOnWorldMap(graphics, screenX, screenY, ping, opacity);
+        }
+    }
+
+    /// 屏幕坐标 → 世界坐标（X 轴）。
+    private double screenToWorldX(double screenX) {
+        return this.centerX + (screenX - width / 2.0) / this.pixelsPerChunk;
+    }
+
+    /// 屏幕坐标 → 世界坐标（Z 轴）。
+    private double screenToWorldZ(double screenY) {
+        return this.centerZ + (screenY - height / 2.0) / this.pixelsPerChunk;
+    }
+
+    /// 背景由 {@link #render} 自行填充，避免父类每帧二次模糊（1.21.11 限制）。
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    }
+
+    /// 玩家在小地图上的位置标记。
+    private void drawPlayerMarker(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return;
+        }
+        double screenX = width / 2.0 + (minecraft.player.getX() - this.centerX) * this.pixelsPerChunk;
+        double screenY = height / 2.0 + (minecraft.player.getZ() - this.centerZ) * this.pixelsPerChunk;
+        if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
+            return;
+        }
+        int x = (int) Math.round(screenX);
+        int y = (int) Math.round(screenY);
+        MapMarkerRenderer.drawDot(graphics, x, y, 8, PLAYER_COLOR);
+    }
+
+    private void drawContextMenu(GuiGraphics graphics) {
+        if (this.contextMenu == null) {
+            return;
+        }
+        int x = this.contextMenu.screenX();
+        int y = this.contextMenu.screenY();
+        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + CONTEXT_MENU_HEIGHT, 0xF0181818);
+        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + 1, 0xFFAAAAAA);
+        graphics.fill(x, y + CONTEXT_MENU_HEIGHT - 1, x + CONTEXT_MENU_WIDTH,
+                y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
+        graphics.fill(x, y, x + 1, y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
+        graphics.fill(x + CONTEXT_MENU_WIDTH - 1, y, x + CONTEXT_MENU_WIDTH,
+                y + CONTEXT_MENU_HEIGHT, 0xFFAAAAAA);
+        Component action = Component.translatable(this.contextMenu.waypoint() == null
+                ? "aleeve_atlas.screen.world_map.add_waypoint"
+                : "aleeve_atlas.screen.world_map.delete_waypoint");
+        graphics.drawString(Minecraft.getInstance().font, action, x + 8, y + 8, 0xFFFFFFFF);
+    }
+
+    /// 显示鼠标下方的方块、群系和最高优先级领地。
+    private void drawLocationInfo(GuiGraphics graphics, int mouseX, int mouseY) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return;
+        }
+        double worldX = this.screenToWorldX(mouseX);
+        double worldZ = this.screenToWorldZ(mouseY);
+        BlockPos pos = new BlockPos((int) Math.floor(worldX), this.surfaceYAt(worldX, worldZ),
+                (int) Math.floor(worldZ));
+        BlockState state = minecraft.level.getBlockState(pos);
+        Component block = state.isAir()
+                ? Component.translatable("aleeve_atlas.screen.world_map.unknown")
+                : state.getBlock().getName();
+        Holder<Biome> biome = minecraft.level.getBiome(pos);
+        String biomeKey = biome.unwrapKey().map(key -> "biome." + key.identifier().getNamespace()
+                        + "." + key.identifier().getPath())
+                .orElse("aleeve_atlas.screen.world_map.unknown");
+        Component location = Component.translatable("aleeve_atlas.screen.world_map.location",
+                block, Component.translatable(biomeKey));
+        List<TerritoryGroup> territories = AtlasTerritory.clientRegistry()
+                .hitAt(minecraft.level.dimension(), new ChunkPos(pos));
+        if (!territories.isEmpty()) {
+            location = Component.empty().append(location).append("  ")
+                    .append(Component.translatable("aleeve_atlas.screen.world_map.territory",
+                            territories.get(0).displayName()));
+        }
+        graphics.drawString(minecraft.font, location, 6, height - 28, 0xFFDDDDDD);
+    }
+
+    private void drawOverlayText(GuiGraphics graphics) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Component center = Component.translatable("aleeve_atlas.screen.world_map.center",
+                "%.0f".formatted(this.centerX), "%.0f".formatted(this.centerZ),
+                "%.1f".formatted(this.pixelsPerChunk));
+        graphics.drawString(minecraft.font, center, 6, 32, 0xFFFFFFFF);
+        Component hint = Component.translatable("aleeve_atlas.screen.world_map.hint");
+        graphics.drawString(minecraft.font, hint, 6, height - 14, 0xFFAAAAAA);
+    }
+
+    @Override
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        this.middleHeld = false;
+        if (this.contextMenu != null) {
+            if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                    && this.contextMenuContains(event.x(), event.y())) {
+                this.executeContextMenu();
+            } else {
+                this.contextMenu = null;
+            }
+            return true;
+        }
+        if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
+            this.middleHeld = true;
+            this.wheelOpened = false;
+            this.middleHoldTicks = 0;
+            this.middleWorldX = this.screenToWorldX(event.x());
+            this.middleWorldZ = this.screenToWorldZ(event.y());
+            this.dragging = false;
+            return true;
+        }
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            this.openContextMenu(event.x(), event.y());
+            return true;
+        }
+        // 双击左键在地图位置创建路径点。
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && doubleClick) {
+            this.createWaypointAt(event.x(), event.y());
+            this.dragging = false;
+            return true;
+        }
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.dragging = true;
+            this.lastMouseX = event.x();
+            this.lastMouseY = event.y();
+            return true;
+        }
+        return false;
+    }
+
+    /// 在地图位置打开创建路径点或删除路径点的菜单。
+    private void openContextMenu(double screenX, double screenY) {
+        this.dragging = false;
+        Waypoint waypoint = this.findWaypointAt(screenX, screenY);
+        int menuX = (int) Math.max(4, Math.min(width - CONTEXT_MENU_WIDTH - 4, screenX));
+        int menuY = (int) Math.max(4, Math.min(height - CONTEXT_MENU_HEIGHT - 4, screenY));
+        this.contextMenu = new ContextMenu(this.screenToWorldX(screenX),
+                this.screenToWorldZ(screenY), menuX, menuY, waypoint);
+    }
+
+    private boolean contextMenuContains(double x, double y) {
+        return this.contextMenu != null && x >= this.contextMenu.screenX()
+                && x < this.contextMenu.screenX() + CONTEXT_MENU_WIDTH
+                && y >= this.contextMenu.screenY()
+                && y < this.contextMenu.screenY() + CONTEXT_MENU_HEIGHT;
+    }
+
+    private void executeContextMenu() {
+        if (this.contextMenu == null) {
+            return;
+        }
+        Waypoint waypoint = this.contextMenu.waypoint();
+        if (waypoint == null) {
+            this.createWaypoint(this.contextMenu.worldX(), this.contextMenu.worldZ());
+        } else {
+            var store = ClientWaypoints.store();
+            boolean removed = store != null && store.remove(waypoint.id());
+            if (removed && AtlasClientConfigs.CONFIG.waypoint.sendPolicy
+                    == WaypointSendPolicy.AUTO_SYNC) {
+                ClientWaypoints.shareDelete(waypoint);
+            }
+        }
+        this.contextMenu = null;
+    }
+
+    /// 命中地图上最近的启用路径点。
+    private Waypoint findWaypointAt(double screenX, double screenY) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return null;
+        }
+        Waypoint nearest = null;
+        double nearestDistance = 12.0 * 12.0;
+        for (Waypoint waypoint : ClientWaypoints.waypointsFor(minecraft.level.dimension())) {
+            double x = width / 2.0
+                    + (waypoint.pos().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+            double y = height / 2.0
+                    + (waypoint.pos().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+            double distance = (x - screenX) * (x - screenX) + (y - screenY) * (y - screenY);
+            if (distance <= nearestDistance) {
+                nearest = waypoint;
+                nearestDistance = distance;
+            }
+        }
+        return nearest;
+    }
+
+    /// 在指定屏幕位置创建路径点编辑界面。
+    private void createWaypointAt(double screenX, double screenY) {
+        this.createWaypoint(this.screenToWorldX(screenX), this.screenToWorldZ(screenY));
+    }
+
+    private void createWaypoint(double worldX, double worldZ) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null) {
+            return;
+        }
+        int y = this.surfaceYAt(worldX, worldZ);
+        BlockPos pos = new BlockPos((int) Math.floor(worldX), y, (int) Math.floor(worldZ));
+        minecraft.setScreen(new WaypointEditScreen(this, pos));
+    }
+
+    /// 根据指定类型创建中键标点。
+    void createWheelPing(MapPingData.PingIcon icon) {
+        this.createPing(this.middleWorldX, this.middleWorldZ, icon);
+    }
+
+    /// WheelScreen 关闭后清理中键状态。
+    void finishWheel() {
+        this.wheelOpened = false;
+        this.middleHeld = false;
+        if (active == this && Minecraft.getInstance().screen != this) {
+            active = null;
+        }
+    }
+
+    private void createPing(double worldX, double worldZ, MapPingData.PingIcon icon) {
+        int y = this.surfaceYAt(worldX, worldZ);
+        ClientPings.createLocal(new Vec3(worldX, y, worldZ), icon);
+    }
+
+    /// 由地图缓存推断地表高度；无数据时回退到海平面以上默认值。
+    private int surfaceYAt(double worldX, double worldZ) {
+        ChunkPos pos = new ChunkPos((int) Math.floor(worldX) >> 4, (int) Math.floor(worldZ) >> 4);
+        var data = this.cache == null ? null : this.cache.get(pos.x, pos.z).orElse(null);
+        if (data == null) {
+            return 64;
+        }
+        int localX = (int) Math.floor(worldX) & 15;
+        int localZ = (int) Math.floor(worldZ) & 15;
+        return data.heightAt(localX, localZ);
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent event) {
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && this.middleHeld) {
+            this.middleHeld = false;
+            if (!this.wheelOpened && this.middleHoldTicks < MIDDLE_HOLD_TICKS) {
+                this.createPing(this.middleWorldX, this.middleWorldZ, MapPingData.PingIcon.GENERAL);
+            }
+            return true;
+        }
+        if (super.mouseReleased(event)) {
+            this.dragging = false;
+            return true;
+        }
+        if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            this.dragging = false;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (this.contextMenu != null) {
+            this.contextMenu = null;
+        }
+        if (this.wheelOpened || this.middleHeld) {
+            return true;
+        }
+        if (this.dragging) {
+            // 事件携带的是从按下点起的总位移，因此用相邻事件差得到帧增量。
+            this.centerX -= (event.x() - this.lastMouseX) / this.pixelsPerChunk;
+            this.centerZ -= (event.y() - this.lastMouseY) / this.pixelsPerChunk;
+            this.lastMouseX = event.x();
+            this.lastMouseY = event.y();
+            this.refreshCanvas();
+            return true;
+        }
+        return super.mouseDragged(event, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        this.contextMenu = null;
+        this.middleHeld = false;
+        this.wheelOpened = false;
+        if (scrollY != 0.0) {
+            float previous = this.pixelsPerChunk;
+            this.pixelsPerChunk = ConfigBounds.clamp(
+                    (float) (this.pixelsPerChunk * (scrollY > 0 ? 1.25 : 0.8)),
+                    MIN_PIXELS_PER_CHUNK, MAX_PIXELS_PER_CHUNK);
+            if (previous != this.pixelsPerChunk) {
+                this.refreshCanvas();
+            }
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    @Override
+    public boolean keyPressed(KeyEvent event) {
+        this.middleHeld = false;
+        if (this.contextMenu != null || this.wheelOpened) {
+            this.contextMenu = null;
+            this.middleHeld = false;
+            return true;
+        }
+        // ESC 与呼出键均可关闭世界地图。
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE
+                || AtlasKeyMappings.OPEN_WORLD_MAP.matches(event)) {
+            this.onClose();
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+
+    @Override
+    public void onClose() {
+        this.contextMenu = null;
+        this.wheelOpened = false;
+        this.middleHeld = false;
+        Minecraft.getInstance().setScreen(null);
+    }
+
+    @Override
+    public boolean isPauseScreen() {
+        return false;
+    }
+
+    private record ContextMenu(double worldX, double worldZ, int screenX, int screenY,
+            Waypoint waypoint) {
+    }
+
+    /// 按当前视野中心重绘画布。
+    private void refreshCanvas() {
+        int centerChunkX = (int) Math.floor(this.centerX / ChunkMapData.SIZE);
+        int centerChunkZ = (int) Math.floor(this.centerZ / ChunkMapData.SIZE);
+        this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache);
+    }
+}

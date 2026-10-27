@@ -23,8 +23,8 @@ Minecraft 1.21.11（NeoForge 21.11.x）的小地图与世界地图模组，提�
 
 ## 包坐标
 
-- Java 包：`dev.dubhe.atlas`
-- Maven group：`dev.dubhe.atlas`
+- Java 包：`dev.dubhe.map`
+- Maven group：`dev.dubhe.map`
 - 模组 ID：`aleeve_atlas`
 
 ## 外部模组接入
@@ -32,9 +32,9 @@ Minecraft 1.21.11（NeoForge 21.11.x）的小地图与世界地图模组，提�
 ### 临时标点（Ping Wheel 等）
 
 ```java
-import dev.dubhe.atlas.api.ping.MapPingCreatedEvent;
-import dev.dubhe.atlas.api.ping.MinimapPingAPI;
-import dev.dubhe.atlas.ping.MapPingData;
+import dev.dubhe.map.api.ping.MapPingCreatedEvent;
+import dev.dubhe.map.api.ping.MinimapPingAPI;
+import dev.dubhe.map.ping.MapPingData;
 
 // 外部模组在 3D 视界标点后推送给本模组，小地图/世界地图即刻渲染波纹标点
 MinimapPingAPI.registerPing(position, dimensionId, MapPingData.PingIcon.GENERAL,
@@ -47,8 +47,8 @@ NeoForge.EVENT_BUS.addListener((MapPingCreatedEvent event) -> { ... });
 ### 领地覆层（FTB Chunks / OPAC 等）
 
 ```java
-import dev.dubhe.atlas.api.territory.AtlasTerritory;
-import dev.dubhe.atlas.territory.SimpleTerritory;
+import dev.dubhe.map.api.territory.AtlasTerritory;
+import dev.dubhe.map.territory.SimpleTerritory;
 
 AtlasTerritory.client().upsertTerritory(
         SimpleTerritory.of("my_territory", Level.OVERWORLD, chunks, name, 0x33AAFF));

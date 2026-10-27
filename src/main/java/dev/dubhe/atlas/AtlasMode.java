@@ -1,7 +1,0 @@
-package dev.dubhe.atlas;
-
-/// 运行模式：仅客户端安装时为独立模式，双端均安装时为协同模式。
-public enum AtlasMode {
-    STANDALONE,
-    SYNCHRONIZED
-}
