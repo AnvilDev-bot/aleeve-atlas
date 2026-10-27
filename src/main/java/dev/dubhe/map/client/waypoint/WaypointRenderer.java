@@ -25,7 +25,7 @@ public final class WaypointRenderer {
     /// 落在小地图范围内的路径点绘制在对应坐标；超出范围的钳制到边缘，
     /// 以缩小标记提示方向，避免玩家看不到视野外路径点的方位。
     public static void renderOnMinimap(GuiGraphics graphics, MinimapLayout layout,
-            boolean circular) {
+            boolean circular, double rotationDegrees) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) {
@@ -33,10 +33,12 @@ public final class WaypointRenderer {
         }
         List<Waypoint> waypoints = ClientWaypoints.visibleWaypoints();
         for (Waypoint waypoint : waypoints) {
-            double screenX = layout.worldToScreenX(waypoint.pos().getX() + 0.5);
-            double screenZ = layout.worldToScreenZ(waypoint.pos().getZ() + 0.5);
-            if (layout.containsRotated(screenX, screenZ, circular)) {
-                double[] fitted = layout.fitInside(screenX, screenZ, circular, 4.0);
+            double[] rotated = layout.rotatedScreenPoint(waypoint.pos().getX() + 0.5,
+                    waypoint.pos().getZ() + 0.5, rotationDegrees);
+            double screenX = rotated[0];
+            double screenZ = rotated[1];
+            if (layout.contains(screenX, screenZ, circular)) {
+                double[] fitted = layout.fitInside(screenX, screenZ, circular, 4.0, 0.0);
                 drawMarker(graphics, fitted[0], fitted[1], waypoint.colorArgb(),
                         waypoint.icon());
                 continue;
@@ -57,7 +59,7 @@ public final class WaypointRenderer {
             return;
         }
         // 边缘标记使用指向目标的光滑三角箭头，中心内缩以避免超出地图边界。
-        double[] fitted = layout.fitInside(screenX, screenZ, circular, 6.0);
+        double[] fitted = layout.fitInside(screenX, screenZ, circular, 6.0, 0.0);
         double angle = MapMarkerRenderer.directionAngle(dx, dz);
         MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 10, angle, color);
     }

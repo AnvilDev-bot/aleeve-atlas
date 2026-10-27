@@ -14,11 +14,21 @@ import java.util.Optional;
 /// 基于主相机的投影矩阵做透视投影；观察空间 z 轴朝向屏幕内为负，
 /// 因此仅当目标位于相机前方（z < 0）时才返回有效屏幕坐标。
 public final class WorldProjection {
+    private static final double LOOK_TOLERANCE_PIXELS = 24.0;
+
     private WorldProjection() {
     }
 
     /// 投影结果：屏幕坐标与到相机的距离（方块）。
     public record Projected(double screenX, double screenY, double distance) {
+    }
+
+    /// 投影点是否位于准星附近的圆形容差范围内。
+    static boolean isLookingAt(Projected projected, int guiWidth, int guiHeight) {
+        double deltaX = projected.screenX() - guiWidth / 2.0;
+        double deltaY = projected.screenY() - guiHeight / 2.0;
+        return deltaX * deltaX + deltaY * deltaY
+                <= LOOK_TOLERANCE_PIXELS * LOOK_TOLERANCE_PIXELS;
     }
 
     /// 把世界坐标投影到 GUI 缩放后的屏幕坐标；不在视野前方时返回 {@link Optional#empty()}。

@@ -24,7 +24,7 @@ public final class PingRenderer {
 
     /// 在小地图上绘制活动标点。
     public static void renderOnMinimap(GuiGraphics graphics, MinimapLayout layout,
-            boolean circular) {
+            boolean circular, double rotationDegrees) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
             return;
@@ -38,14 +38,16 @@ public final class PingRenderer {
             if (opacity <= 0.0F) {
                 continue;
             }
-            double screenX = layout.worldToScreenX(ping.position().x);
-            double screenZ = layout.worldToScreenZ(ping.position().z);
-            if (!layout.containsRotated(screenX, screenZ, circular)) {
+            double[] rotated = layout.rotatedScreenPoint(ping.position().x,
+                    ping.position().z, rotationDegrees);
+            double screenX = rotated[0];
+            double screenZ = rotated[1];
+            if (!layout.contains(screenX, screenZ, circular)) {
                 drawOffscreenArrow(graphics, layout, screenX, screenZ, circular, ping, opacity);
                 continue;
             }
             double[] fitted = layout.fitInside(screenX, screenZ, circular,
-                    MAX_RIPPLE_PIXELS + 3.0);
+                    MAX_RIPPLE_PIXELS + 3.0, 0.0);
             drawPing(graphics, fitted[0], fitted[1], ping, opacity);
         }
     }
@@ -90,7 +92,7 @@ public final class PingRenderer {
         if (dx == 0.0 && dz == 0.0) {
             return;
         }
-        double[] fitted = layout.fitInside(screenX, screenZ, circular, 7.0);
+        double[] fitted = layout.fitInside(screenX, screenZ, circular, 7.0, 0.0);
         double angle = MapMarkerRenderer.directionAngle(dx, dz);
         int color = applyOpacity(ping.icon().colorArgb(), opacity);
         MapMarkerRenderer.drawArrow(graphics, fitted[0], fitted[1], 12, angle, color);

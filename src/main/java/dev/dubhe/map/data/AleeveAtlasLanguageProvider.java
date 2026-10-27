@@ -18,6 +18,9 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("key.category.aleeve_atlas.main", "Aleeve Atlas");
         add("key.aleeve_atlas.open_world_map", "Open World Map");
         add("key.aleeve_atlas.new_waypoint", "New Waypoint");
+        add("key.aleeve_atlas.minimap_zoom_in", "Zoom Minimap In");
+        add("key.aleeve_atlas.minimap_zoom_out", "Zoom Minimap Out");
+        add("key.aleeve_atlas.focus_minimap", "Hold to Center Minimap");
 
         add("aleeve_atlas.message.server_unsupported",
                 "Server support component is not installed.");

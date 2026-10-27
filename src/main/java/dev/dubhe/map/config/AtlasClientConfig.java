@@ -41,8 +41,11 @@ public class AtlasClientConfig {
         @Comment("Map coloring scheme used by both minimap and world map.")
         public MapColorScheme colorScheme = MapColorScheme.VANILLA;
 
-        @Comment("Minimap zoom multiplier (0.5 ~ 4.0).")
+        @Comment("Minimap screen size multiplier (0.5 ~ 4.0).")
         public double scale = 1.0;
+
+        @Comment("Minimap world view zoom (1.0 ~ 4.0). Higher values show a smaller area.")
+        public double zoom = 1.5;
 
         @Comment("Minimap screen corner.")
         public MinimapPosition position = MinimapPosition.TOP_RIGHT;

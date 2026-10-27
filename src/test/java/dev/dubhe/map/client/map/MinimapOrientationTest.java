@@ -19,4 +19,15 @@ class MinimapOrientationTest {
             Assertions.assertTrue(rotatedY < 0.0, "yaw=" + yaw + " 时玩家朝向应在屏幕上方");
         }
     }
+
+    @Test
+    void markerPositionsFollowMapRotation() {
+        MinimapLayout layout = new MinimapLayout(0, 0, 128, 0.0, 0.0);
+        double[] locked = layout.rotatedScreenPoint(0.0, -24.0, 0.0);
+        double[] rotating = layout.rotatedScreenPoint(0.0, -24.0,
+                MinimapRenderer.mapRotationDegrees(0.0F, false));
+        Assertions.assertTrue(locked[1] < layout.y() + layout.size() / 2.0);
+        Assertions.assertTrue(rotating[1] > layout.y() + layout.size() / 2.0);
+        Assertions.assertEquals(locked[0], rotating[0], 1.0E-6);
+    }
 }

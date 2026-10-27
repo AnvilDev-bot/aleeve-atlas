@@ -1,5 +1,6 @@
 package dev.dubhe.map.client.map;
 
+import dev.dubhe.map.client.AtlasKeyMappings;
 import dev.dubhe.map.config.AtlasClientConfig;
 import dev.dubhe.map.config.AtlasClientConfigs;
 import dev.dubhe.map.config.ConfigBounds;
@@ -10,8 +11,20 @@ import net.minecraft.client.player.LocalPlayer;
 /// 小地图在屏幕上的布局。
 ///
 /// 同时供 HUD 渲染与实体雷达使用，保证地图像素与实体标记共用同一套坐标映射。
-public record MinimapLayout(int x, int y, int size, double centerWorldX, double centerWorldZ) {
-    /// 1.0 倍缩放时的小地图边长（GUI 像素）。
+public record MinimapLayout(int x, int y, int size, double centerWorldX, double centerWorldZ,
+        double zoom) {
+    public MinimapLayout {
+        zoom = ConfigBounds.clamp(zoom, MIN_ZOOM, MAX_ZOOM);
+    }
+
+    public MinimapLayout(int x, int y, int size, double centerWorldX, double centerWorldZ) {
+        this(x, y, size, centerWorldX, centerWorldZ, 1.0);
+    }
+
+    public static final double MIN_ZOOM = 1.0;
+    public static final double MAX_ZOOM = 4.0;
+    public static final double DEFAULT_ZOOM = 1.5;
+    /// 1.0 倍界面缩放时的小地图边长（GUI 像素）。
     public static final int BASE_SIZE = 128;
     /// 小地图与屏幕边缘的间距（GUI 像素）。
     static final int MARGIN = 6;
@@ -26,9 +39,11 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         }
         int screenWidth = minecraft.getWindow().getGuiScaledWidth();
         int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        int[] box = computeBox(config.minimap.position, config.minimap.scale,
-                config.minimap.offsetX, config.minimap.offsetY, screenWidth, screenHeight);
-        return new MinimapLayout(box[0], box[1], box[2], player.getX(), player.getZ());
+        int[] box = focused(minecraft) ? focusedBox(screenWidth, screenHeight)
+                : computeBox(config.minimap.position, config.minimap.scale,
+                        config.minimap.offsetX, config.minimap.offsetY, screenWidth, screenHeight);
+        return new MinimapLayout(box[0], box[1], box[2],
+                Math.floor(player.getX()), Math.floor(player.getZ()), config.minimap.zoom);
     }
 
     /// 计算小地图的尺寸与左上角坐标：`[x, y, size]`。
@@ -56,16 +71,46 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
         return new int[] { origin[0], origin[1], size };
     }
 
+    public static boolean focused(Minecraft minecraft) {
+        return minecraft.screen == null && AtlasKeyMappings.FOCUS_MINIMAP.isDown();
+    }
+
+    static int[] focusedBox(int screenWidth, int screenHeight) {
+        int size = Math.max(1, Math.min(screenWidth, screenHeight));
+        return new int[] { (screenWidth - size) / 2, (screenHeight - size) / 2, size };
+    }
+
+    public double coveredBlocks() {
+        return Math.round(COVERED_BLOCKS / this.zoom);
+    }
+
     /// 世界坐标 → 小地图屏幕坐标（X 轴）。
     public double worldToScreenX(double worldX) {
         double centerScreenX = this.x + this.size / 2.0;
-        return centerScreenX + (worldX - this.centerWorldX) / COVERED_BLOCKS * this.size;
+        return centerScreenX + (worldX - this.centerWorldX) / this.coveredBlocks() * this.size;
     }
 
     /// 世界坐标 → 小地图屏幕坐标（Z 轴）。
     public double worldToScreenZ(double worldZ) {
         double centerScreenZ = this.y + this.size / 2.0;
-        return centerScreenZ + (worldZ - this.centerWorldZ) / COVERED_BLOCKS * this.size;
+        return centerScreenZ + (worldZ - this.centerWorldZ) / this.coveredBlocks() * this.size;
+    }
+
+    /// 标记位置随地图旋转，调用方在旋转后的坐标上绘制不旋转的图标。
+    public double[] rotatedScreenPoint(double worldX, double worldZ, double rotationDegrees) {
+        return rotatePoint(this.worldToScreenX(worldX), this.worldToScreenZ(worldZ),
+                this.x + this.size / 2.0, this.y + this.size / 2.0, rotationDegrees);
+    }
+
+    public static double[] rotatePoint(double screenX, double screenZ,
+            double centerX, double centerZ, double rotationDegrees) {
+        double dx = screenX - centerX;
+        double dz = screenZ - centerZ;
+        double radians = Math.toRadians(rotationDegrees);
+        return new double[] {
+            centerX + dx * Math.cos(radians) - dz * Math.sin(radians),
+            centerZ + dx * Math.sin(radians) + dz * Math.cos(radians)
+        };
     }
 
     /// 判断屏幕坐标是否落在小地图范围内（圆形形态下按圆形判定）。

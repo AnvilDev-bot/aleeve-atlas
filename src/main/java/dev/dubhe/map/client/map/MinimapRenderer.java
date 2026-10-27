@@ -90,32 +90,38 @@ public final class MinimapRenderer {
             graphics.pose().translate(-centerX, -centerY);
         }
 
-        // 整张纹理铺满小地图方形：纹理中心即玩家所在位置（偏移 <1 像素）。
-        graphics.blit(mapPipeline, texture.textureId(), x, y, 0.0F, 0.0F,
-                size, size, MapTexture.PIXELS, MapTexture.PIXELS, MapTexture.PIXELS,
-                MapTexture.PIXELS);
-
-        // 领地覆层在地图之上、路径点/雷达之下。
+        // 视野缩放通过中心裁剪纹理实现，标记坐标使用相同的覆盖范围。
+        int uvSize = (int) layout.coveredBlocks();
+        float uvStart = (MapTexture.PIXELS - uvSize) / 2.0F;
+        graphics.blit(mapPipeline, texture.textureId(), x, y, uvStart, uvStart,
+                size, size, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS);
         TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
-
-        // 路径点与实体雷达标记绘制在地图之上、边框与箭头之下。
-        WaypointRenderer.renderOnMinimap(graphics, layout, circular);
-        PingRenderer.renderOnMinimap(graphics, layout, circular);
-        RadarRenderer.render(graphics, config, layout, minecraft);
         graphics.pose().popMatrix();
         if (scissored) {
             graphics.disableScissor();
         }
 
-        // 叠加层（边框与指示器）不参与地图旋转：
-        // 北向锁定时地图固定、指示器随视角转；视角随动时地图已旋转、指示器固定朝上。
+        // 标记位置随地图旋转，图标与文字在屏幕坐标中保持正向。
+        if (scissored) {
+            graphics.enableScissor(x, y, x + size, y + size);
+        }
+        WaypointRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
+        PingRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
+        RadarRenderer.render(graphics, config, layout, minecraft, rotationDegrees);
+        if (scissored) {
+            graphics.disableScissor();
+        }
+
         float arrowYaw = arrowYawDegrees(player.getYRot(), config.minimap.lockNorth);
         int tint = encodeOverlayTint(arrowYaw, circular, config.minimap.lockNorth);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE, x, y, 0.0F, 0.0F,
                 size, size, 2, 2, 2, 2, tint);
 
-        TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular);
-        drawInfo(graphics, config, minecraft, size, x, y);
+        CompassRenderer.renderOnMinimap(graphics, layout, rotationDegrees);
+        TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular, rotationDegrees);
+        if (!MinimapLayout.focused(minecraft)) {
+            drawInfo(graphics, config, minecraft, size, x, y);
+        }
         // 记录渲染耗时，供性能验收读取。
         AtlasProfiling.recordMinimap(
                 System.nanoTime() - startedAt);

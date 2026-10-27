@@ -35,6 +35,30 @@ public final class AtlasKeyMappings {
             GLFW.GLFW_KEY_N,
             CATEGORY);
 
+    public static final KeyMapping MINIMAP_ZOOM_IN = new KeyMapping(
+            "key.aleeve_atlas.minimap_zoom_in",
+            KeyConflictContext.IN_GAME,
+            KeyModifier.NONE,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_EQUAL,
+            CATEGORY);
+
+    public static final KeyMapping MINIMAP_ZOOM_OUT = new KeyMapping(
+            "key.aleeve_atlas.minimap_zoom_out",
+            KeyConflictContext.IN_GAME,
+            KeyModifier.NONE,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_MINUS,
+            CATEGORY);
+
+    public static final KeyMapping FOCUS_MINIMAP = new KeyMapping(
+            "key.aleeve_atlas.focus_minimap",
+            KeyConflictContext.IN_GAME,
+            KeyModifier.NONE,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_Z,
+            CATEGORY);
+
     private AtlasKeyMappings() {
     }
 
@@ -43,5 +67,8 @@ public final class AtlasKeyMappings {
         event.registerCategory(CATEGORY);
         event.register(OPEN_WORLD_MAP);
         event.register(NEW_WAYPOINT);
+        event.register(MINIMAP_ZOOM_IN);
+        event.register(MINIMAP_ZOOM_OUT);
+        event.register(FOCUS_MINIMAP);
     }
 }

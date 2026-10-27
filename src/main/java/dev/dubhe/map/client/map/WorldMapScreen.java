@@ -277,6 +277,7 @@ public final class WorldMapScreen extends Screen {
                 Minecraft.getInstance(), this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
         this.drawPlayerMarker(graphics);
         this.drawOverlayText(graphics);
+        CompassRenderer.renderOnWorldMap(graphics);
         // 组件渲染后再绘制领地标签，确保标签位于最上层。
         this.drawTerritoryLabels(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);

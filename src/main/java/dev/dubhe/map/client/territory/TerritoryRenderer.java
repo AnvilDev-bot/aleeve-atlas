@@ -44,7 +44,7 @@ public final class TerritoryRenderer {
         if (groups.isEmpty()) {
             return;
         }
-        double blocksPerPixel = (double) MinimapLayout.COVERED_BLOCKS / layout.size();
+        double blocksPerPixel = layout.coveredBlocks() / layout.size();
         // 各区块的最高 zOrder：重叠区块的边框只由最高优先级领地绘制。
         Map<ChunkPos, Integer> topZOrder = topZOrderByChunk(groups);
         for (TerritoryGroup group : groups) {
@@ -54,9 +54,6 @@ public final class TerritoryRenderer {
                         double worldZ = (chunk.z << 4) + 8.0;
                         double screenX = layout.worldToScreenX(worldX);
                         double screenZ = layout.worldToScreenZ(worldZ);
-                        if (!layout.contains(screenX, screenZ, circular)) {
-                            return null;
-                        }
                         int size = Math.max(1, (int) Math.round(16.0 / blocksPerPixel));
                         return new int[] { (int) Math.round(screenX) - size / 2,
                             (int) Math.round(screenZ) - size / 2, size };
@@ -182,14 +179,8 @@ public final class TerritoryRenderer {
     private static void fillClipped(GuiGraphics graphics, int x, int y, int width, int height,
             int color, boolean circular, MinimapLayout layout) {
         if (!circular) {
-            // 方形形态按小地图边界裁剪：区块跨出边界时填充不得溢到 HUD 之外。
-            int left = Math.max(layout.x(), x);
-            int top = Math.max(layout.y(), y);
-            int right = Math.min(layout.x() + layout.size(), x + width);
-            int bottom = Math.min(layout.y() + layout.size(), y + height);
-            if (right > left && bottom > top) {
-                graphics.fill(left, top, right, bottom, color);
-            }
+            // 方形由外层裁剪区在地图旋转后裁切，保留旋转进入视野的边缘区块。
+            graphics.fill(x, y, x + width, y + height, color);
             return;
         }
         double centerX = layout.x() + layout.size() / 2.0;
@@ -203,7 +194,7 @@ public final class TerritoryRenderer {
 
     /// 各连通分量的名称标签。
     public static void renderLabelsOnMinimap(GuiGraphics graphics, MinimapLayout layout,
-            boolean circular) {
+            boolean circular, double rotationDegrees) {
         AtlasClientConfig config = AtlasClientConfigs.CONFIG;
         if (!config.territory.showOnMinimap || !config.territory.showLabelOnMinimap) {
             return;
@@ -224,8 +215,9 @@ public final class TerritoryRenderer {
                 }
                 double worldX = (component.anchor().x << 4) + 8.0;
                 double worldZ = (component.anchor().z << 4) + 8.0;
-                double screenX = layout.worldToScreenX(worldX);
-                double screenZ = layout.worldToScreenZ(worldZ);
+                double[] rotated = layout.rotatedScreenPoint(worldX, worldZ, rotationDegrees);
+                double screenX = rotated[0];
+                double screenZ = rotated[1];
                 if (!layout.contains(screenX, screenZ, circular)) {
                     continue;
                 }

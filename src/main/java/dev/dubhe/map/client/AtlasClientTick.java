@@ -2,8 +2,11 @@ package dev.dubhe.map.client;
 
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.client.map.AtlasWorldMap;
+import dev.dubhe.map.client.map.MinimapLayout;
 import dev.dubhe.map.client.waypoint.ClientWaypoints;
 import dev.dubhe.map.client.waypoint.WaypointEditScreen;
+import dev.dubhe.map.config.AtlasClientConfigs;
+import dev.dubhe.map.config.ConfigBounds;
 import dev.dubhe.map.ping.ClientPings;
 import dev.dubhe.map.ping.MapPingData;
 import dev.dubhe.map.sync.ClientMapSync;
@@ -111,6 +114,16 @@ public final class AtlasClientTick {
         }
         while (AtlasKeyMappings.NEW_WAYPOINT.consumeClick()) {
             minecraft.setScreen(new WaypointEditScreen(null, minecraft.player.blockPosition()));
+        }
+        while (AtlasKeyMappings.MINIMAP_ZOOM_IN.consumeClick()) {
+            AtlasClientConfigs.CONFIG.minimap.zoom = ConfigBounds.clamp(
+                    AtlasClientConfigs.CONFIG.minimap.zoom + 0.25,
+                    MinimapLayout.MIN_ZOOM, MinimapLayout.MAX_ZOOM);
+        }
+        while (AtlasKeyMappings.MINIMAP_ZOOM_OUT.consumeClick()) {
+            AtlasClientConfigs.CONFIG.minimap.zoom = ConfigBounds.clamp(
+                    AtlasClientConfigs.CONFIG.minimap.zoom - 0.25,
+                    MinimapLayout.MIN_ZOOM, MinimapLayout.MAX_ZOOM);
         }
     }
 

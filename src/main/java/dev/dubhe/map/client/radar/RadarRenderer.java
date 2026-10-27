@@ -46,27 +46,27 @@ public final class RadarRenderer {
 
     /// 在小地图上绘制雷达标记。
     public static void render(GuiGraphics graphics, AtlasClientConfig config,
-            MinimapLayout layout, Minecraft minecraft) {
+            MinimapLayout layout, Minecraft minecraft, double rotationDegrees) {
         boolean circular = config.minimap.shape == MinimapShape.CIRCLE;
         renderMarkers(graphics, config, minecraft, new MarkerProjection() {
             @Override
             public double screenX(Entity entity) {
-                return layout.worldToScreenX(entity.getX());
+                return layout.rotatedScreenPoint(entity.getX(), entity.getZ(), rotationDegrees)[0];
             }
 
             @Override
             public double screenY(Entity entity) {
-                return layout.worldToScreenZ(entity.getZ());
+                return layout.rotatedScreenPoint(entity.getX(), entity.getZ(), rotationDegrees)[1];
             }
 
             @Override
             public boolean contains(double x, double y) {
-                return layout.containsRotated(x, y, circular);
+                return layout.contains(x, y, circular);
             }
 
             @Override
             public double[] fit(double x, double y, double margin) {
-                return layout.fitInside(x, y, circular, margin);
+                return layout.fitInside(x, y, circular, margin, 0.0);
             }
         });
     }
