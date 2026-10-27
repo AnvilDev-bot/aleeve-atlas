@@ -266,7 +266,7 @@ public final class WorldMapScreen extends Screen {
         float framePixelsPerChunk = this.pixelsPerChunk;
         double frameCenterX = this.centerX;
         double frameCenterZ = this.centerZ;
-        if (partialTick > 0.0F && this.previousPixelsPerChunk != this.pixelsPerChunk) {
+        if (this.previousPixelsPerChunk != this.pixelsPerChunk) {
             framePixelsPerChunk = Mth.lerp(partialTick,
                     this.previousPixelsPerChunk, this.pixelsPerChunk);
             if (this.zoomAnchored) {

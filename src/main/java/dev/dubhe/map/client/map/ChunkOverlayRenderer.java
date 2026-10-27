@@ -52,10 +52,10 @@ public final class ChunkOverlayRenderer {
         int centerChunkZ = chunkAt(layout.centerWorldZ());
         for (int chunkX = centerChunkX - range; chunkX <= centerChunkX + range; chunkX++) {
             for (int chunkZ = centerChunkZ - range; chunkZ <= centerChunkZ + range; chunkZ++) {
-                int left = (int) Math.floor(layout.worldToScreenX(chunkX * 16.0));
-                int top = (int) Math.floor(layout.worldToScreenZ(chunkZ * 16.0));
-                int right = (int) Math.ceil(layout.worldToScreenX((chunkX + 1) * 16.0));
-                int bottom = (int) Math.ceil(layout.worldToScreenZ((chunkZ + 1) * 16.0));
+                int left = (int) Math.round(layout.worldToScreenX(chunkX * 16.0));
+                int top = (int) Math.round(layout.worldToScreenZ(chunkZ * 16.0));
+                int right = (int) Math.round(layout.worldToScreenX((chunkX + 1) * 16.0));
+                int bottom = (int) Math.round(layout.worldToScreenZ((chunkZ + 1) * 16.0));
                 drawCell(graphics, config.minimap.showChunkGrid,
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
                         left, top, Math.max(1, right - left), Math.max(1, bottom - top), circular,
