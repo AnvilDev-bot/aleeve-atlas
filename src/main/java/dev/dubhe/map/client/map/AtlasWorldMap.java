@@ -33,6 +33,7 @@ public final class AtlasWorldMap {
 
     /// 资源重载后标记画布失效，下次打开时重新注册纹理。
     public static void onResourceReload() {
+        dev.dubhe.map.client.cartography.ImportedMapRenderer.clear();
         if (canvas != null) {
             canvas.onResourceReload();
         }
@@ -40,6 +41,7 @@ public final class AtlasWorldMap {
 
     /// 关闭并释放画布。
     public static void release() {
+        dev.dubhe.map.client.cartography.ImportedMapRenderer.clear();
         WorldMapScreen.clearActive();
         if (canvas != null) {
             canvas.close();

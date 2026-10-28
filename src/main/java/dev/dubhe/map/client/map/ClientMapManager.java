@@ -131,6 +131,7 @@ public final class ClientMapManager {
         final ChunkPos center = minecraft.player.chunkPosition();
         boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
         this.texture.setCaveMode(caveMode);
+        this.texture.setImportedStore(dev.dubhe.map.client.cartography.ClientCartography.currentStore());
         this.texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
         int caveTop = minecraft.player.blockPosition().getY() + 8;
         if (caveMode && (this.caveCache == null || this.caveLayerTop == null

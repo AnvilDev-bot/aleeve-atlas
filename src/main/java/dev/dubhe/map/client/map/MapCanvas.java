@@ -3,6 +3,11 @@ package dev.dubhe.map.client.map;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.map.client.profiling.AtlasProfiling;
 import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.cartography.ImportedMapStore;
+import dev.dubhe.map.cartography.MapSnapshot;
+import dev.dubhe.map.client.cartography.ClientCartography;
+import net.minecraft.world.level.material.MapColor;
+import java.util.List;
 import dev.dubhe.map.map.ChunkColorizer;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.MapDimensionCache;
@@ -50,6 +55,9 @@ public final class MapCanvas {
     private boolean positioned;
     private final Map<Long, Long> drawnVersions = new HashMap<>();
     private MapColorScheme colorScheme = MapColorScheme.VANILLA;
+    private ImportedMapStore importedStore;
+    private long importedRevision = -1;
+    private List<MapSnapshot> importedMaps = List.of();
 
     public MapCanvas(Identifier textureId) {
         this.textureId = textureId;
@@ -102,6 +110,15 @@ public final class MapCanvas {
             MapColorScheme scheme) {
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
+        ImportedMapStore nextStore = ClientCartography.currentStore();
+        if (nextStore != this.importedStore || (nextStore != null && nextStore.revision() != this.importedRevision)) {
+            this.importedStore = nextStore;
+            this.importedRevision = nextStore == null ? -1 : nextStore.revision();
+            this.positioned = false;
+        }
+        if (nextStore != null) this.importedMaps = nextStore.intersecting(targetX * 16 - 32, targetZ * 16 - 32,
+                (targetX + CHUNKS_PER_SIDE) * 16 + 32, (targetZ + CHUNKS_PER_SIDE) * 16 + 32);
+        else this.importedMaps = List.of();
         if (scheme != this.colorScheme) {
             this.colorScheme = scheme;
             this.positioned = false;
@@ -275,8 +292,9 @@ public final class MapCanvas {
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
                 boolean line = (localX & 3) == 0 || (localZ & 3) == 0;
+                int imported = this.importedColor(baseX + localX, baseZ + localZ);
                 this.setPixel(baseX + localX, baseZ + localZ,
-                        line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
+                        imported != 0 ? imported : line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
             }
         }
     }
@@ -287,9 +305,10 @@ public final class MapCanvas {
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
                 int shadow = lighting == null ? 0 : lighting[localZ * ChunkMapData.SIZE + localX];
-                this.setPixel(baseX + localX, baseZ + localZ,
-                        ChunkColorizer.colorAt(data, localX, localZ, this.colorScheme,
-                                Minecraft.getInstance().level, cursor, shadow));
+                int color = ChunkColorizer.colorAt(data, localX, localZ, this.colorScheme,
+                        Minecraft.getInstance().level, cursor, shadow);
+                if (color == 0) color = this.importedColor(baseX + localX, baseZ + localZ);
+                this.setPixel(baseX + localX, baseZ + localZ, color);
             }
         }
     }
@@ -300,6 +319,11 @@ public final class MapCanvas {
                 this.setPixel(x, y, argb);
             }
         }
+    }
+
+    private int importedColor(int x, int z) {
+        return MapColor.getColorFromPackedId(ImportedMapStore.pixelAt(this.importedMaps,
+                this.originChunkX * 16 + x, this.originChunkZ * 16 + z));
     }
 
     /// 写入原生纹理坐标，X 向右、Y 向下，与原版地图纹理一致。

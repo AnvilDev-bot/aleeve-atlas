@@ -2,6 +2,10 @@ package dev.dubhe.map.client.map;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.cartography.ImportedMapStore;
+import dev.dubhe.map.cartography.MapSnapshot;
+import net.minecraft.world.level.material.MapColor;
+import java.util.List;
 import dev.dubhe.map.map.ChunkColorizer;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.MapPalette;
@@ -46,6 +50,16 @@ public final class MapTexture {
     private boolean centered;
     private MapColorScheme colorScheme = MapColorScheme.VANILLA;
     private boolean caveMode;
+    private ImportedMapStore importedStore;
+    private long importedRevision = -1;
+    private List<MapSnapshot> importedMaps = List.of();
+
+    public void setImportedStore(ImportedMapStore store) {
+        if (store == this.importedStore && (store == null || store.revision() == this.importedRevision)) return;
+        this.importedStore = store;
+        this.importedRevision = store == null ? -1 : store.revision();
+        if (this.centered) this.redrawAll();
+    }
 
     public MapTexture(Identifier textureId) {
         this.textureId = textureId;
@@ -181,6 +195,14 @@ public final class MapTexture {
 
     private void redrawAll() {
         this.fill(this.caveMode ? CAVE_BACKGROUND : MapPalette.TRANSPARENT);
+        this.importedMaps = this.caveMode || this.importedStore == null ? List.of()
+                : this.importedStore.intersecting(this.originPixelX, this.originPixelZ,
+                        this.originPixelX + PIXELS - 1, this.originPixelZ + PIXELS - 1);
+        if (!this.importedMaps.isEmpty()) {
+            for (int z = 0; z < PIXELS; z++) for (int x = 0; x < PIXELS; x++) {
+                this.setPixel(x, z, this.importedColor(x, z));
+            }
+        }
         this.drawnVersions.clear();
         for (ChunkMapData data : this.source.values()) {
             this.drawChunk(data);
@@ -210,6 +232,7 @@ public final class MapTexture {
                 int shadow = lighting == null ? 0 : lighting[localZ * ChunkMapData.SIZE + localX];
                 int color = ChunkColorizer.colorAt(data, localX, localZ,
                         this.colorScheme, Minecraft.getInstance().level, cursor, shadow);
+                if (!this.caveMode && color == 0) color = this.importedColor(x, y);
                 this.setPixel(x, y, this.caveMode && color == MapPalette.TRANSPARENT
                         ? CAVE_BACKGROUND : color);
             }
@@ -222,6 +245,11 @@ public final class MapTexture {
                 this.setPixel(x, y, argb);
             }
         }
+    }
+
+    private int importedColor(int x, int z) {
+        return MapColor.getColorFromPackedId(ImportedMapStore.pixelAt(this.importedMaps,
+                this.originPixelX + x, this.originPixelZ + z));
     }
 
     /// 写入原生纹理坐标，X 向右、Y 向下，与原版地图纹理一致。

@@ -15,6 +15,42 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("aleeve_atlas.cartography.import", "Import map");
+        add("aleeve_atlas.cartography.craft", "Create map");
+        add("aleeve_atlas.cartography.cancel_selection", "Cancel selection");
+        add("aleeve_atlas.cartography.confirm_title", "Create vanilla map");
+        add("aleeve_atlas.cartography.lock", "Lock map (glass pane)");
+        add("aleeve_atlas.cartography.bounds", "128 × 128 blocks: (%s, %s) – (%s, %s)");
+        add("aleeve_atlas.cartography.cost", "Cost: 1 empty map");
+        add("aleeve_atlas.cartography.cost_locked", "Cost: 1 empty map + 1 glass pane");
+        add("aleeve_atlas.cartography.cost_creative", "Creative mode: no materials consumed");
+        add("aleeve_atlas.cartography.selection_help", "Left click: preview · Middle drag: pan · Right click / Esc: cancel");
+        add("aleeve_atlas.cartography.submitting", "Creating map…");
+        add("aleeve_atlas.cartography.imported", "Map snapshot imported.");
+        add("aleeve_atlas.cartography.crafted", "Map created.");
+        add("aleeve_atlas.cartography.other_dimension", "Map saved in dimension %s.");
+        add("aleeve_atlas.cartography.busy", "Please wait before trying again.");
+        add("aleeve_atlas.cartography.changed", "The held item, dimension, or request changed. Please select again.");
+        add("aleeve_atlas.cartography.missing", "The server could not find this map.");
+        add("aleeve_atlas.cartography.region", "Select a complete vanilla map cell inside the world border.");
+        add("aleeve_atlas.cartography.invalid", "Invalid map data.");
+        add("aleeve_atlas.cartography.empty", "This area has no known map content.");
+        add("aleeve_atlas.cartography.glass_missing", "Requires an ordinary glass pane in your inventory.");
+        add("aleeve_atlas.cartography.save_failed", "Could not save the imported map. See the log.");
+        add("aleeve_atlas.cartography.reference_height", "(reference height)");
+        add("aleeve_atlas.cartography.target.red_x", "Buried treasure");
+        add("aleeve_atlas.cartography.target.target_x", "Map target");
+        add("aleeve_atlas.cartography.target.target_point", "Map target");
+        add("aleeve_atlas.cartography.target.mansion", "Woodland mansion");
+        add("aleeve_atlas.cartography.target.monument", "Ocean monument");
+        add("aleeve_atlas.cartography.target.village_desert", "Desert village");
+        add("aleeve_atlas.cartography.target.village_plains", "Plains village");
+        add("aleeve_atlas.cartography.target.village_savanna", "Savanna village");
+        add("aleeve_atlas.cartography.target.village_snowy", "Snowy village");
+        add("aleeve_atlas.cartography.target.village_taiga", "Taiga village");
+        add("aleeve_atlas.cartography.target.jungle_temple", "Jungle temple");
+        add("aleeve_atlas.cartography.target.swamp_hut", "Swamp hut");
+        add("aleeve_atlas.cartography.target.trial_chambers", "Trial chambers");
         add("key.category.aleeve_atlas.main", "Aleeve Atlas");
         add("key.aleeve_atlas.open_world_map", "Open World Map");
         add("key.aleeve_atlas.new_waypoint", "New Waypoint");
