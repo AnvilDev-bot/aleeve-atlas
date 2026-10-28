@@ -24,6 +24,15 @@ public class AtlasServerConfig {
     @Comment("Team provider settings.")
     public Team team = new Team();
 
+    @CollapsibleObject
+    @Comment("Structure search settings.")
+    public Structures structures = new Structures();
+
+    public static class Structures {
+        @Comment("Allow vanilla locate searches in unexplored areas; searches may load structure start data.")
+        public boolean allowUnexploredSearch = false;
+    }
+
     public static class Sync {
         @Comment("Enable synchronized mode features.")
         public boolean enabled = true;

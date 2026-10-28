@@ -6,6 +6,11 @@ import dev.dubhe.map.cartography.Cartography;
 import dev.dubhe.map.cartography.MapSnapshot;
 import dev.dubhe.map.client.cartography.ClientCartography;
 import dev.dubhe.map.client.cartography.CartographyConfirmScreen;
+import dev.dubhe.map.client.structure.ClientStructures;
+import dev.dubhe.map.client.structure.ClientStructureSearch;
+import dev.dubhe.map.client.structure.StructurePanel;
+import dev.dubhe.map.client.structure.StructureRenderer;
+import dev.dubhe.map.structure.StructureRecord;
 import net.minecraft.world.item.Items;
 import dev.dubhe.map.api.territory.AtlasTerritory;
 import dev.dubhe.map.api.territory.TerritoryGroup;
@@ -119,6 +124,9 @@ public final class WorldMapScreen extends Screen {
     private ClientCartography.HeldMap craftingHeld;
     private MapSnapshot importedHighlight;
     private long importedHighlightUntil;
+    private final StructurePanel structures = new StructurePanel(this::focusStructure);
+    private Button structureButton;
+    private StructureRecord hoveredStructure;
 
     public WorldMapScreen(MapCanvas canvas, MapDimensionCache cache, double centerX,
             double centerZ) {
@@ -141,6 +149,13 @@ public final class WorldMapScreen extends Screen {
         this.refreshCanvas();
         this.addTeamButtons();
         this.addCartographyButtons();
+        int structureWidth = Math.max(20, Math.min(72, (this.width - 42) / 6));
+        this.structureButton = addRenderableWidget(Button.builder(ClientStructureSearch.text("title"), b -> {
+            this.contextMenu = null;
+            this.dragging = false;
+            this.structures.toggle();
+        }).bounds(6, 6, structureWidth, 20).build());
+        this.structures.init(this.width, this.height, this::addRenderableWidget);
         active = this;
         this.verifyScrollIfRequested();
     }
@@ -198,13 +213,16 @@ public final class WorldMapScreen extends Screen {
     }
 
     private void addCartographyButtons() {
-        int buttonWidth = Math.max(20, Math.min(72, (this.width - 36) / 5));
+        int buttonWidth = Math.max(20, Math.min(72, (this.width - 42) / 6));
         int x = this.width - 6 - 4 * buttonWidth - 3 * 6;
         this.importButton = addRenderableWidget(Button.builder(ClientCartography.text("import"),
                 b -> ClientCartography.importMap(this)).bounds(x, 6, buttonWidth, 20).build());
         this.craftButton = addRenderableWidget(Button.builder(ClientCartography.text("craft"), b -> {
             if (this.craftingHeld != null) this.finishCartography();
             else {
+                if (this.structures.open()) {
+                    this.structures.toggle();
+                }
                 this.craftingHeld = ClientCartography.held(Items.MAP);
                 this.contextMenu = null; this.middleHeld = false; this.wheelOpened = false; this.dragging = false;
             }
@@ -287,7 +305,7 @@ public final class WorldMapScreen extends Screen {
     private void addTeamButtons() {
         boolean synchronizedMode = AtlasSession.synchronizedMode();
         Component label = Component.translatable("aleeve_atlas.screen.world_map.share_team");
-        int buttonWidth = Math.max(20, Math.min(72, (width - 36) / 5));
+        int buttonWidth = Math.max(20, Math.min(72, (width - 42) / 6));
         int buttonHeight = 20;
         int x = width - buttonWidth - 6;
         int y = 6;
@@ -436,6 +454,7 @@ public final class WorldMapScreen extends Screen {
                 this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
         RadarRenderer.renderOnWorldMap(graphics, AtlasClientConfigs.CONFIG,
                 Minecraft.getInstance(), this.centerX, this.centerZ, this.pixelsPerChunk, width, height);
+        this.drawStructures(graphics, logicalMouseX, logicalMouseY);
         this.drawWaypoints(graphics);
         this.drawPings(graphics);
         this.drawPlayerMarker(graphics);
@@ -447,9 +466,13 @@ public final class WorldMapScreen extends Screen {
         this.drawWaypointLabels(graphics);
         CompassRenderer.renderOnWorldMap(graphics);
         this.drawTerritoryLabels(graphics);
-        super.render(graphics, mouseX, mouseY, partialTick);
         this.drawLocationInfo(graphics, logicalMouseX, logicalMouseY);
         this.drawContextMenu(graphics);
+        this.structures.render(graphics, mouseX, mouseY);
+        super.render(graphics, mouseX, mouseY, partialTick);
+        if (this.hoveredStructure != null && !this.structures.contains(mouseX, mouseY) && mouseY > 30) {
+            graphics.setComponentTooltipForNextFrame(this.font, StructureRenderer.description(this.hoveredStructure), mouseX, mouseY);
+        }
         if (this.craftingHeld != null) graphics.drawCenteredString(this.font, ClientCartography.text("selection_help"),
                 this.width / 2, this.height - 12, 0xFFFFFFFF);
         this.pixelsPerChunk = actualPixelsPerChunk;
@@ -462,6 +485,8 @@ public final class WorldMapScreen extends Screen {
     public void tick() {
         super.tick();
         this.updateCartographyButtons();
+        this.structureButton.active = this.craftingHeld == null;
+        this.structures.update();
         this.openAnimationTicks = Math.min(OPEN_ANIMATION_TICKS, this.openAnimationTicks + 1);
         float previous = this.pixelsPerChunk;
         this.previousPixelsPerChunk = previous;
@@ -751,6 +776,40 @@ public final class WorldMapScreen extends Screen {
         }
     }
 
+    private void drawStructures(GuiGraphics graphics, double mouseX, double mouseY) {
+        this.hoveredStructure = null;
+        var store = ClientStructures.current();
+        if (store == null) {
+            return;
+        }
+        double closest = 49;
+        for (StructureRecord record : store.all()) {
+            double x = this.width / 2d + (record.position().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+            double y = this.height / 2d + (record.position().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+            if (x < -12 || y < -12 || x > this.width + 12 || y > this.height + 12) {
+                continue;
+            }
+            StructureRenderer.icon(graphics, record.kind(), x, y, this.structures.selected(record));
+            double distance = (x - mouseX) * (x - mouseX) + (y - mouseY) * (y - mouseY);
+            if (this.craftingHeld == null && distance < closest) {
+                closest = distance;
+                this.hoveredStructure = record;
+            }
+        }
+    }
+
+    private void focusStructure(StructureRecord record) {
+        this.centerX = record.position().getX() + 0.5 - this.structures.width() / (2d * this.pixelsPerChunk);
+        this.centerZ = record.position().getZ() + 0.5;
+        this.previousCenterX = this.centerX;
+        this.previousCenterZ = this.centerZ;
+        this.zoomAnchored = false;
+        this.contextMenu = null;
+        this.middleHeld = false;
+        this.dragging = false;
+        this.refreshCanvas();
+    }
+
     private void drawWaypointLabels(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
@@ -943,6 +1002,15 @@ public final class WorldMapScreen extends Screen {
             return true;
         }
         if (super.mouseClicked(event, doubleClick)) {
+            return true;
+        }
+        if (this.structures.click(event)) {
+            this.dragging = false;
+            return true;
+        }
+        if (this.craftingHeld == null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                && event.y() > 30 && this.hoveredStructure != null) {
+            this.structures.select(this.hoveredStructure);
             return true;
         }
         this.alignCameraToRenderedFrame();
@@ -1161,6 +1229,11 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseReleased(MouseButtonEvent event) {
+        if (this.structures.contains(event.x(), event.y())) {
+            this.middleHeld = false;
+            this.dragging = false;
+            return true;
+        }
         if (this.craftingHeld != null) { this.dragging = false; return true; }
         if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE && this.middleHeld) {
             this.alignCameraToRenderedFrame();
@@ -1183,6 +1256,9 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        if (this.structures.contains(event.x(), event.y()) && !this.dragging) {
+            return true;
+        }
         if (this.contextMenu != null) {
             this.contextMenu = null;
         }
@@ -1206,6 +1282,9 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.structures.scroll(mouseX, mouseY, scrollY)) {
+            return true;
+        }
         this.alignCameraToRenderedFrame();
         double mapMouseX = this.logicalMouseX(mouseX);
         double mapMouseY = this.logicalMouseY(mouseY);
@@ -1236,6 +1315,10 @@ public final class WorldMapScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent event) {
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE && this.structures.open()) {
+            this.structures.toggle();
+            return true;
+        }
         if (this.craftingHeld != null && event.key() == GLFW.GLFW_KEY_ESCAPE) { this.finishCartography(); return true; }
         this.middleHeld = false;
         if (this.contextMenu != null || this.wheelOpened) {

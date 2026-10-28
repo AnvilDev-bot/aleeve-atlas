@@ -15,6 +15,40 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("aleeve_atlas.structure.title", "Structures");
+        add("aleeve_atlas.structure.all_types", "All structure types");
+        add("aleeve_atlas.structure.all_records", "All known");
+        add("aleeve_atlas.structure.favorites_only", "Favorites");
+        add("aleeve_atlas.structure.follow", "Follow type");
+        add("aleeve_atlas.structure.unfollow", "Unfollow type");
+        add("aleeve_atlas.structure.search_known", "Search known");
+        add("aleeve_atlas.structure.search_nearest", "Find nearest");
+        add("aleeve_atlas.structure.favorite", "Favorite selected");
+        add("aleeve_atlas.structure.unfavorite", "Remove favorite");
+        add("aleeve_atlas.structure.empty", "No known structures match. Explore nearby chunks or receive records from your team.");
+        add("aleeve_atlas.structure.coordinates", "XYZ: %s, %s, %s");
+        add("aleeve_atlas.structure.distance", "Horizontal distance: %s m");
+        add("aleeve_atlas.structure.locate_tip", "Find one nearest structure from your current position, including unexplored areas.");
+        add("aleeve_atlas.structure.searching", "Searching…");
+        add("aleeve_atlas.structure.status.found", "Structure found");
+        add("aleeve_atlas.structure.status.not_found", "No structure found within the vanilla search range");
+        add("aleeve_atlas.structure.status.disabled", "Unexplored search is disabled by the server or unsupported");
+        add("aleeve_atlas.structure.status.cooldown", "Please wait 10 seconds between searches");
+        add("aleeve_atlas.structure.status.busy", "The server is processing another structure search");
+        add("aleeve_atlas.structure.status.failed", "Structure search failed or timed out");
+        add("aleeve_atlas.structure.source.discovered", "Naturally discovered");
+        add("aleeve_atlas.structure.source.shared", "Shared by team");
+        add("aleeve_atlas.structure.source.searched", "Found by search");
+        add("aleeve_atlas.structure.type.village_desert", "Desert Village");
+        add("aleeve_atlas.structure.type.village_plains", "Plains Village");
+        add("aleeve_atlas.structure.type.village_savanna", "Savanna Village");
+        add("aleeve_atlas.structure.type.village_snowy", "Snowy Village");
+        add("aleeve_atlas.structure.type.village_taiga", "Taiga Village");
+        add("aleeve_atlas.structure.type.mansion", "Woodland Mansion");
+        add("aleeve_atlas.structure.type.monument", "Ocean Monument");
+        add("aleeve_atlas.structure.type.jungle_pyramid", "Jungle Temple");
+        add("aleeve_atlas.structure.type.swamp_hut", "Swamp Hut");
+        add("aleeve_atlas.structure.type.trial_chambers", "Trial Chambers");
         add("aleeve_atlas.cartography.import", "Import map");
         add("aleeve_atlas.cartography.craft", "Create map");
         add("aleeve_atlas.cartography.cancel_selection", "Cancel selection");

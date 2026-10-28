@@ -2,6 +2,7 @@ package dev.dubhe.map.structure;
 
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.client.structure.ClientStructures;
+import dev.dubhe.map.client.structure.ClientStructureSearch;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -11,6 +12,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /// 结构数据使用独立可选通道，批次上限限制网络和主线程处理成本。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID)
@@ -24,6 +27,9 @@ public final class StructurePayloads {
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar("structures-1").optional();
         registrar.playToClient(Discovery.TYPE, Discovery.CODEC, ClientStructures::receiveDiscovery);
+        registrar.playToClient(Policy.TYPE, Policy.CODEC, ClientStructureSearch::policy);
+        registrar.playToServer(Search.TYPE, Search.CODEC, ServerStructureSearch::request);
+        registrar.playToClient(SearchResult.TYPE, SearchResult.CODEC, ClientStructureSearch::result);
         registrar.playBidirectional(Share.TYPE, Share.CODEC, (payload, context) -> {
             if (context.flow().isServerbound()) {
                 ServerStructures.share(payload, context);
@@ -43,6 +49,57 @@ public final class StructurePayloads {
             records.add(StructureRecord.read(buffer));
         }
         return records;
+    }
+
+    public enum SearchStatus {
+        FOUND, NOT_FOUND, DISABLED, COOLDOWN, BUSY, FAILED
+    }
+
+    public record Policy(boolean allowed) implements CustomPacketPayload {
+        public static final Type<Policy> TYPE = new Type<>(AleeveAtlas.id("structure_policy"));
+        public static final StreamCodec<FriendlyByteBuf, Policy> CODEC = StreamCodec.of(
+                (b, p) -> b.writeBoolean(p.allowed), b -> new Policy(b.readBoolean()));
+
+        @Override
+        public Type<Policy> type() {
+            return TYPE;
+        }
+    }
+
+    public record Search(UUID requestId, StructureKind kind) implements CustomPacketPayload {
+        public static final Type<Search> TYPE = new Type<>(AleeveAtlas.id("structure_search"));
+        public static final StreamCodec<FriendlyByteBuf, Search> CODEC = StreamCodec.of((b, p) -> {
+            b.writeUUID(p.requestId);
+            b.writeEnum(p.kind);
+        }, b -> new Search(b.readUUID(), b.readEnum(StructureKind.class)));
+
+        @Override
+        public Type<Search> type() {
+            return TYPE;
+        }
+    }
+
+    public record SearchResult(UUID requestId, SearchStatus status, @Nullable StructureRecord record) implements CustomPacketPayload {
+        public static final Type<SearchResult> TYPE = new Type<>(AleeveAtlas.id("structure_search_result"));
+        public static final StreamCodec<FriendlyByteBuf, SearchResult> CODEC = StreamCodec.of((b, p) -> {
+            b.writeUUID(p.requestId);
+            b.writeEnum(p.status);
+            b.writeBoolean(p.record != null);
+            if (p.record != null) {
+                p.record.write(b);
+            }
+        }, b -> new SearchResult(b.readUUID(), b.readEnum(SearchStatus.class), b.readBoolean() ? StructureRecord.read(b) : null));
+
+        public SearchResult {
+            if ((status == SearchStatus.FOUND) != (record != null)) {
+                throw new IllegalArgumentException("Inconsistent structure search result");
+            }
+        }
+
+        @Override
+        public Type<SearchResult> type() {
+            return TYPE;
+        }
     }
 
     private static void writeRecords(FriendlyByteBuf buffer, List<StructureRecord> records) {

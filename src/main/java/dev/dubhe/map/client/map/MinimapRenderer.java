@@ -120,6 +120,7 @@ public final class MinimapRenderer {
                     x + size - clipInset, y + size - clipInset);
         }
         RadarRenderer.render(graphics, config, layout, minecraft, rotationDegrees);
+        dev.dubhe.map.client.structure.StructureRenderer.minimap(graphics, layout, circular, rotationDegrees);
         WaypointRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
         PingRenderer.renderOnMinimap(graphics, layout, circular, rotationDegrees);
         if (scissored) {
