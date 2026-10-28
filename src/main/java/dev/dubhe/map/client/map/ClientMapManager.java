@@ -233,8 +233,11 @@ public final class ClientMapManager {
 
     public boolean hasSampledChunk(int chunkX, int chunkZ) {
         MapDimensionCache surface = this.currentCache();
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean sameWorld = minecraft.level != null && minecraft.level.dimension().equals(this.currentDimension)
+                && serverKey(minecraft).equals(this.currentServerKey);
         return (surface != null && surface.get(chunkX, chunkZ).isPresent())
-                || (this.caveCache != null && this.caveCache.get(chunkX, chunkZ).isPresent());
+                || (sameWorld && this.caveCache != null && this.caveCache.get(chunkX, chunkZ).isPresent());
     }
 
     public void flush() {

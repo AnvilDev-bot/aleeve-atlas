@@ -124,9 +124,10 @@ public final class WorldMapScreen extends Screen {
     private ClientCartography.HeldMap craftingHeld;
     private MapSnapshot importedHighlight;
     private long importedHighlightUntil;
-    private final StructurePanel structures = new StructurePanel(this::focusStructure);
+    private final StructurePanel structures = new StructurePanel(this::focusStructure,
+            () -> Minecraft.getInstance().screen == this);
     private Button structureButton;
-    private StructureRecord hoveredStructure;
+    private @org.jspecify.annotations.Nullable StructureRecord hoveredStructure;
 
     public WorldMapScreen(MapCanvas canvas, MapDimensionCache cache, double centerX,
             double centerZ) {
@@ -467,10 +468,10 @@ public final class WorldMapScreen extends Screen {
         CompassRenderer.renderOnWorldMap(graphics);
         this.drawTerritoryLabels(graphics);
         this.drawLocationInfo(graphics, logicalMouseX, logicalMouseY);
-        this.drawContextMenu(graphics);
+        this.drawContextMenu(graphics, mouseX, mouseY);
         this.structures.render(graphics, mouseX, mouseY);
         super.render(graphics, mouseX, mouseY, partialTick);
-        if (this.hoveredStructure != null && !this.structures.contains(mouseX, mouseY) && mouseY > 30) {
+        if (this.hoveredStructure != null && this.contextMenu == null && !this.structures.contains(mouseX, mouseY) && mouseY > 30) {
             graphics.setComponentTooltipForNextFrame(this.font, StructureRenderer.description(this.hoveredStructure), mouseX, mouseY);
         }
         if (this.craftingHeld != null) graphics.drawCenteredString(this.font, ClientCartography.text("selection_help"),
@@ -810,6 +811,25 @@ public final class WorldMapScreen extends Screen {
         this.refreshCanvas();
     }
 
+    private @org.jspecify.annotations.Nullable StructureRecord findStructureAt(double mouseX, double mouseY) {
+        var store = ClientStructures.current();
+        if (store == null) {
+            return null;
+        }
+        StructureRecord nearest = null;
+        double distance = 49;
+        for (StructureRecord record : store.all()) {
+            double x = this.width / 2d + (record.position().getX() + 0.5 - this.centerX) * this.pixelsPerChunk;
+            double y = this.height / 2d + (record.position().getZ() + 0.5 - this.centerZ) * this.pixelsPerChunk;
+            double squared = (x - mouseX) * (x - mouseX) + (y - mouseY) * (y - mouseY);
+            if (squared < distance) {
+                distance = squared;
+                nearest = record;
+            }
+        }
+        return nearest;
+    }
+
     private void drawWaypointLabels(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
@@ -892,24 +912,29 @@ public final class WorldMapScreen extends Screen {
         MapMarkerRenderer.drawDot(graphics, x, y, 6, PLAYER_COLOR);
     }
 
-    private void drawContextMenu(GuiGraphics graphics) {
+    private void drawContextMenu(GuiGraphics graphics, int mouseX, int mouseY) {
         if (this.contextMenu == null) {
             return;
         }
         int x = this.contextMenu.screenX();
         int y = this.contextMenu.screenY();
         int menuHeight = this.contextMenuHeight();
-        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + menuHeight, 0xF0181818);
-        graphics.fill(x, y, x + CONTEXT_MENU_WIDTH, y + 1, 0xFFAAAAAA);
-        graphics.fill(x, y + menuHeight - 1, x + CONTEXT_MENU_WIDTH,
+        int menuWidth = this.contextMenu.width();
+        graphics.fill(x, y, x + menuWidth, y + menuHeight, 0xF0181818);
+        graphics.fill(x, y, x + menuWidth, y + 1, 0xFFAAAAAA);
+        graphics.fill(x, y + menuHeight - 1, x + menuWidth,
                 y + menuHeight, 0xFFAAAAAA);
         graphics.fill(x, y, x + 1, y + menuHeight, 0xFFAAAAAA);
-        graphics.fill(x + CONTEXT_MENU_WIDTH - 1, y, x + CONTEXT_MENU_WIDTH,
+        graphics.fill(x + menuWidth - 1, y, x + menuWidth,
                 y + menuHeight, 0xFFAAAAAA);
         for (int index = 0; index < this.contextMenu.actions().size(); index++) {
-            graphics.drawString(Minecraft.getInstance().font,
-                    this.contextMenu.actions().get(index).label(),
+            Component label = this.contextMenu.actions().get(index).label();
+            graphics.drawString(this.font, this.font.plainSubstrByWidth(label.getString(), menuWidth - 16),
                     x + 8, y + 10 + index * CONTEXT_MENU_ROW_HEIGHT, 0xFFFFFFFF);
+            if (this.contextMenuContains(mouseX, mouseY)
+                    && (mouseY - y - 4) / CONTEXT_MENU_ROW_HEIGHT == index) {
+                graphics.setTooltipForNextFrame(label, mouseX, mouseY);
+            }
         }
     }
 
@@ -992,6 +1017,11 @@ public final class WorldMapScreen extends Screen {
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         this.middleHeld = false;
+        if (this.structures.contains(event.x(), event.y())) {
+            this.contextMenu = null;
+            this.dragging = false;
+            return super.mouseClicked(event, doubleClick) || this.structures.click(event);
+        }
         if (this.contextMenu != null) {
             if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
                     && this.contextMenuContains(event.x(), event.y())) {
@@ -1008,13 +1038,15 @@ public final class WorldMapScreen extends Screen {
             this.dragging = false;
             return true;
         }
-        if (this.craftingHeld == null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                && event.y() > 30 && this.hoveredStructure != null) {
-            this.structures.select(this.hoveredStructure);
-            return true;
-        }
         this.alignCameraToRenderedFrame();
         event = this.logicalMouseEvent(event);
+        if (this.craftingHeld == null && event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT && event.y() > 30) {
+            StructureRecord record = this.findStructureAt(event.x(), event.y());
+            if (record != null) {
+                this.structures.select(record);
+                return true;
+            }
+        }
         if (this.craftingHeld != null) {
             if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) { this.finishCartography(); return true; }
             if (event.button() == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
@@ -1094,17 +1126,19 @@ public final class WorldMapScreen extends Screen {
                     () -> this.deleteWaypoint(waypoint)));
         }
         int menuHeight = actions.size() * CONTEXT_MENU_ROW_HEIGHT + 4;
-        int menuX = (int) Math.max(4, Math.min(width - CONTEXT_MENU_WIDTH - 4,
+        int left = Math.max(4, this.structures.width() + 4);
+        int menuWidth = Math.min(CONTEXT_MENU_WIDTH, this.width - left - 4);
+        int menuX = (int) Math.max(left, Math.min(width - menuWidth - 4,
                 this.mapAnimationX(screenX)));
         int menuY = (int) Math.max(4, Math.min(height - menuHeight - 4,
                 this.mapAnimationY(screenY)));
         this.contextMenu = new ContextMenu(this.screenToWorldX(screenX),
-                this.screenToWorldZ(screenY), menuX, menuY, actions);
+                this.screenToWorldZ(screenY), menuX, menuY, menuWidth, actions);
     }
 
     private boolean contextMenuContains(double x, double y) {
         return this.contextMenu != null && x >= this.contextMenu.screenX()
-                && x < this.contextMenu.screenX() + CONTEXT_MENU_WIDTH
+                && x < this.contextMenu.screenX() + this.contextMenu.width()
                 && y >= this.contextMenu.screenY()
                 && y < this.contextMenu.screenY() + this.contextMenuHeight();
     }
@@ -1348,7 +1382,7 @@ public final class WorldMapScreen extends Screen {
         return false;
     }
 
-    private record ContextMenu(double worldX, double worldZ, int screenX, int screenY,
+    private record ContextMenu(double worldX, double worldZ, int screenX, int screenY, int width,
             List<ContextAction> actions) {
     }
 

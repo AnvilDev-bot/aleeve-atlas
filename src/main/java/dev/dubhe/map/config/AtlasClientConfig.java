@@ -11,6 +11,9 @@ import net.neoforged.fml.config.ModConfig;
 /// 专用服务端不会解析本类。
 @Config(name = "aleeve_atlas", type = ModConfig.Type.CLIENT)
 public class AtlasClientConfig {
+    @Comment("Show proximity notifications for favorite structures and followed structure types.")
+    public boolean structureNotifications = true;
+
     @CollapsibleObject
     @Comment("Minimap settings.")
     public Minimap minimap = new Minimap();

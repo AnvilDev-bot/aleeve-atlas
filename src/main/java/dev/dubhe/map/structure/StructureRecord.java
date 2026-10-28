@@ -11,7 +11,7 @@ import java.util.Objects;
 public record StructureRecord(String dimension, StructureKind kind, int chunkX, int chunkZ,
         BlockPos position, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, Source source) {
     public enum Source {
-        SEARCHED, SHARED, DISCOVERED
+        SHARED, SEARCHED, DISCOVERED
     }
 
     public StructureRecord {

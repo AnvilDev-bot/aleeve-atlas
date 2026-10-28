@@ -15,6 +15,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
 
     @Override
     protected void addTranslations() {
+        add("aleeve_atlas.structure.nearby", "Nearby: %s (%s, %s)");
         add("aleeve_atlas.structure.title", "Structures");
         add("aleeve_atlas.structure.all_types", "All structure types");
         add("aleeve_atlas.structure.all_records", "All known");

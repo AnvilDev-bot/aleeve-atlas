@@ -13,10 +13,12 @@ import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 /// 世界地图的结构侧栏，区域内输入只作用于侧栏。
 public final class StructurePanel {
     private final Consumer<StructureRecord> focus;
+    private final BooleanSupplier active;
     private final List<Button> buttons = new ArrayList<>();
     private List<StructureRecord> results = List.of();
     private @Nullable StructureKind kind;
@@ -35,8 +37,9 @@ public final class StructurePanel {
     private @Nullable Button locate;
     private @Nullable Button favorite;
 
-    public StructurePanel(Consumer<StructureRecord> focus) {
+    public StructurePanel(Consumer<StructureRecord> focus, BooleanSupplier active) {
         this.focus = focus;
+        this.active = active;
     }
 
     public void init(int screenWidth, int screenHeight, Consumer<Button> add) {
@@ -66,7 +69,7 @@ public final class StructurePanel {
             if (this.kind != null && ClientStructureSearch.search(this.kind, result -> {
                 this.message = ClientStructureSearch.status(result.status());
                 this.refresh();
-                if (result.record() != null && this.open) {
+                if (result.record() != null && this.open && this.active.getAsBoolean()) {
                     this.select(result.record());
                 }
             })) {

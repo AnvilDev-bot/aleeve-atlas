@@ -1,4 +1,7 @@
 {
+  "aleeve_atlas.structure.nearby": "附近有 %s（%s，%s）",
+  "aleeve_atlas.configuration.structure_notifications": "结构途经提醒",
+  "aleeve_atlas.configuration.structure_notifications.tooltip": "接近收藏的结构或关注的结构类型时，显示行动栏提醒。",
   "aleeve_atlas.structure.title": "结构",
   "aleeve_atlas.structure.all_types": "全部结构类型",
   "aleeve_atlas.structure.all_records": "全部已知",

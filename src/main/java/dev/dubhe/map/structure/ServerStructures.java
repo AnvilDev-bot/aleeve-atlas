@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -147,35 +148,10 @@ public final class ServerStructures {
         }
 
         private boolean scan(ServerPlayer player) {
-            var chunk = this.level.getChunkSource().getChunkNow(this.position.x, this.position.z);
-            if (chunk == null) {
-                return false;
-            }
-            var starts = new HashSet<>(chunk.getAllStarts().values());
-            boolean complete = true;
-            var registry = this.level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-            for (var entry : chunk.getAllReferences().entrySet()) {
-                var id = registry.getKey(entry.getKey());
-                if (id == null || StructureKind.fromId(id) == null) {
-                    continue;
-                }
-                for (long reference : entry.getValue()) {
-                    ChunkPos startPos = new ChunkPos(reference);
-                    var origin = this.level.getChunkSource().getChunkNow(startPos.x, startPos.z);
-                    if (origin == null) {
-                        complete = false;
-                    } else {
-                        var start = origin.getStartForStructure(entry.getKey());
-                        if (start != null) {
-                            starts.add(start);
-                        }
-                    }
-                }
-            }
+            Scan scan = scanLoaded(this.level, this.position);
             var records = new ArrayList<StructureRecord>();
-            for (StructureStart start : starts) {
-                StructureRecord record = describe(this.level, start, StructureRecord.Source.DISCOVERED);
-                if (record != null && record.intersectsChunk(this.position.x, this.position.z) && this.sent.add(record.key())) {
+            for (StructureRecord record : scan.records) {
+                if (this.sent.add(record.key())) {
                     records.add(record);
                     if (records.size() == StructurePayloads.MAX_RECORDS) {
                         PacketDistributor.sendToPlayer(player,
@@ -187,7 +163,46 @@ public final class ServerStructures {
             if (!records.isEmpty()) {
                 PacketDistributor.sendToPlayer(player, new StructurePayloads.Discovery(this.position.x, this.position.z, records));
             }
-            return complete;
+            return scan.complete;
         }
+    }
+
+    static Scan scanLoaded(ServerLevel level, ChunkPos position) {
+        var chunk = level.getChunkSource().getChunkNow(position.x, position.z);
+        if (chunk == null) {
+            return new Scan(false, List.of());
+        }
+        var starts = new HashSet<>(chunk.getAllStarts().values());
+        boolean complete = true;
+        var registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        for (var entry : chunk.getAllReferences().entrySet()) {
+            var id = registry.getKey(entry.getKey());
+            if (id == null || StructureKind.fromId(id) == null) {
+                continue;
+            }
+            for (long reference : entry.getValue()) {
+                ChunkPos startPos = new ChunkPos(reference);
+                var origin = level.getChunkSource().getChunkNow(startPos.x, startPos.z);
+                if (origin == null) {
+                    complete = false;
+                } else {
+                    var start = origin.getStartForStructure(entry.getKey());
+                    if (start != null) {
+                        starts.add(start);
+                    }
+                }
+            }
+        }
+        var records = new ArrayList<StructureRecord>();
+        for (StructureStart start : starts) {
+            StructureRecord record = describe(level, start, StructureRecord.Source.DISCOVERED);
+            if (record != null && record.intersectsChunk(position.x, position.z)) {
+                records.add(record);
+            }
+        }
+        return new Scan(complete, records);
+    }
+
+    record Scan(boolean complete, List<StructureRecord> records) {
     }
 }

@@ -58,6 +58,18 @@ class StructureStoreTest {
     }
 
     @Test
+    void teamRoundTripPreservesPersonalSearchOrigin() {
+        StructureStore store = new StructureStore(this.directory.resolve("structures.nbt"), "minecraft:overworld");
+        StructureRecord searched = record(0, StructureRecord.Source.SEARCHED);
+        store.put(searched.withSource(StructureRecord.Source.SHARED));
+        assertTrue(store.put(searched));
+        assertFalse(store.put(searched.withSource(StructureRecord.Source.SHARED)));
+        assertEquals(StructureRecord.Source.SEARCHED, store.all().getFirst().source());
+        assertTrue(store.put(searched.withSource(StructureRecord.Source.DISCOVERED)));
+        assertEquals(StructureRecord.Source.DISCOVERED, store.all().getFirst().source());
+    }
+
+    @Test
     void corruptEntryDoesNotHideValidRecords() throws Exception {
         Path file = this.directory.resolve("structures.nbt");
         CompoundTag root = new CompoundTag();
