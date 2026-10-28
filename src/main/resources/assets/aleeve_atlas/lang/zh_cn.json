@@ -84,6 +84,8 @@
   "aleeve_atlas.configuration.world_map.compass_position": "方向标位置",
   "aleeve_atlas.configuration.world_map.compass_position.tooltip": "世界地图方向标显示的角落。",
   "aleeve_atlas.configuration.world_map.compass_size": "方向标大小",
+  "aleeve_atlas.configuration.world_map.smooth_zoom": "缩放缓动",
+  "aleeve_atlas.configuration.world_map.smooth_zoom.tooltip": "平滑缩放世界地图。关闭后，每次滚轮输入立即完成缩放，停止滚动后不再继续缩放。",
   "aleeve_atlas.configuration.world_map.compass_size.tooltip": "世界地图方向标大小（GUI 缩放像素，32 ~ 192）。",
   "aleeve_atlas.configuration.world_map.show_chunk_grid": "显示区块网格",
   "aleeve_atlas.configuration.world_map.show_chunk_grid.tooltip": "在世界地图上显示区块边界。",

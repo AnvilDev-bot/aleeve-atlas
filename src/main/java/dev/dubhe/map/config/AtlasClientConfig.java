@@ -39,6 +39,9 @@ public class AtlasClientConfig {
     public Ping ping = new Ping();
 
     public static class WorldMap {
+        @Comment("Animate world map zoom. Disable to apply each wheel step immediately without continued zooming.")
+        public boolean smoothZoom = true;
+
         @Comment("Player indicator style on the world map. Changes apply immediately.")
         public PlayerIndicatorType playerIndicator = PlayerIndicatorType.ANTIALIASED_DROPLET;
 

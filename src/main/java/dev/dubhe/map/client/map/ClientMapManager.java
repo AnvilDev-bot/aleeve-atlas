@@ -19,7 +19,6 @@ import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -106,9 +105,6 @@ public final class ClientMapManager {
             return;
         }
         String serverKey = serverKey(minecraft);
-        if (!serverKey.equals(this.currentServerKey)) {
-            migrateCacheIfNeeded(minecraft, serverKey);
-        }
         MapColorScheme scheme = AtlasClientConfigs.CONFIG.minimap.colorScheme;
         boolean schemeChanged = scheme != this.colorScheme;
         this.colorScheme = scheme;
@@ -290,20 +286,6 @@ public final class ClientMapManager {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
         Path caveBase = base.resolveSibling(base.getFileName() + "_cave_" + layerTop);
         return new MapDimensionCache(caveBase);
-    }
-
-    private static void migrateCacheIfNeeded(Minecraft minecraft, String newKey) {
-        String oldKey = ServerKey.resolve(minecraft);
-        if (oldKey.equals(newKey)) {
-            return;
-        }
-        try {
-            if (AtlasPaths.migrateMapCache(gameDir(minecraft), oldKey, newKey)) {
-                LOGGER.info("Migrated map cache from {} to {}", oldKey, newKey);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("Failed to migrate map cache from {} to {}", oldKey, newKey, e);
-        }
     }
 
     private static Path gameDir(Minecraft minecraft) {

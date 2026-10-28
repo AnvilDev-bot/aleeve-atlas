@@ -11,6 +11,9 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import dev.dubhe.map.map.MapDimensionCache;
+import dev.dubhe.map.map.ChunkMapData;
+import net.minecraft.world.level.material.MapColor;
 
 /// 每维度独立保存快照；原子替换避免失败导入破坏旧快照。
 public final class ImportedMapStore {
@@ -64,6 +67,43 @@ public final class ImportedMapStore {
     }
 
     public long revision() { return this.revision; }
+
+    /// 在探索缓存落盘后清理已被真实地形完全替代的导入快照。
+    /// 原版地图的透明部分不提供地形；有颜色的粗像素必须覆盖到每一个方块才算替代。
+    public int pruneExplored(MapDimensionCache cache) {
+        int removed = 0;
+        var iterator = this.snapshots.iterator();
+        while (iterator.hasNext()) {
+            MapSnapshot map = iterator.next();
+            if (!fullyExplored(map, cache)) continue;
+            try {
+                Files.deleteIfExists(this.directory.resolve(map.mapId() + ".nbt"));
+                iterator.remove();
+                this.revision++;
+                removed++;
+            } catch (IOException e) {
+                LoggerFactory.getLogger(ImportedMapStore.class).warn("Cannot remove explored imported map {}", map.mapId(), e);
+            }
+        }
+        return removed;
+    }
+
+    private static boolean fullyExplored(MapSnapshot map, MapDimensionCache cache) {
+        int maxX = map.minX() + map.size(), maxZ = map.minZ() + map.size();
+        for (int cz = Math.floorDiv(map.minZ(), 16); cz <= Math.floorDiv(maxZ - 1, 16); cz++) {
+            for (int cx = Math.floorDiv(map.minX(), 16); cx <= Math.floorDiv(maxX - 1, 16); cx++) {
+                ChunkMapData data = null;
+                for (int z = Math.max(map.minZ(), cz * 16); z < Math.min(maxZ, cz * 16 + 16); z++) {
+                    for (int x = Math.max(map.minX(), cx * 16); x < Math.min(maxX, cx * 16 + 16); x++) {
+                        if ((Byte.toUnsignedInt(map.pixelAt(x, z)) >> 2) == 0) continue;
+                        if (data == null) data = cache.get(cx, cz).orElse(null);
+                        if (data == null || data.stateAt(x & 15, z & 15).mapColor() == MapColor.NONE) return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
     public List<MapSnapshot> intersecting(int minX, int minZ, int maxX, int maxZ) {
         return this.snapshots.stream().filter(s -> s.minX() <= maxX && s.minZ() <= maxZ

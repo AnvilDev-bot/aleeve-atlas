@@ -22,7 +22,7 @@ public final class AtlasRenderPipelines {
     public static final RenderPipeline MINIMAP_CIRCLE = RenderPipeline
             .builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
             .withLocation(AleeveAtlas.id("pipeline/minimap_circle"))
-            .withVertexShader(AleeveAtlas.id("core/minimap_overlay"))
+            .withVertexShader(AleeveAtlas.id("core/minimap_circle"))
             .withFragmentShader(AleeveAtlas.id("core/minimap_circle"))
             .withSampler("Sampler0")
             .withBlend(BlendFunction.TRANSLUCENT)

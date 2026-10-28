@@ -9,6 +9,36 @@ import static org.junit.jupiter.api.Assertions.*;
 class ImportedMapStoreTest {
     @TempDir Path temp;
 
+    @Test void removesOnlyFullyReplacedColoredAreaAndPersistsRemoval() throws Exception {
+        var store = new ImportedMapStore(temp.resolve("imports"), "minecraft:overworld");
+        byte[] colors = new byte[MapSnapshot.PIXELS];
+        colors[0] = 5;
+        // 4×4 个方块的粗像素，位于负坐标且跨区块边界。
+        store.put(new MapSnapshot(9, "minecraft:overworld", 255, 255, 2, 64, colors, java.util.List.of(), 0));
+        var cache = new dev.dubhe.map.map.MapDimensionCache(temp.resolve("terrain"));
+        assertEquals(0, store.pruneExplored(cache));
+        for (int cz = -1; cz <= 0; cz++) for (int cx = -1; cx <= 0; cx++) {
+            var chunk = new dev.dubhe.map.map.ChunkMapData(cx, cz);
+            for (int z = -1; z < 3; z++) for (int x = -1; x < 3; x++) {
+                if (Math.floorDiv(x, 16) != cx || Math.floorDiv(z, 16) != cz || (x == 2 && z == 2)) continue;
+                chunk.setPixel(x & 15, z & 15, dev.dubhe.map.map.ChunkMapData.PixelState.of(
+                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()), 70);
+            }
+            cache.put(chunk);
+        }
+        assertEquals(0, store.pruneExplored(cache), "部分探索的粗像素仍需保留");
+        var last = cache.get(0, 0).orElseThrow();
+        last.setPixel(2, 2, dev.dubhe.map.map.ChunkMapData.PixelState.of(
+                net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()), 70);
+        cache.put(last);
+        cache.flush();
+        assertEquals(1, store.pruneExplored(cache));
+        assertEquals(2, store.revision());
+        assertFalse(Files.exists(temp.resolve("imports/9.nbt")));
+        assertTrue(new ImportedMapStore(temp.resolve("imports"), "minecraft:overworld")
+                .intersecting(-1000, -1000, 1000, 1000).isEmpty());
+    }
+
     @Test void persistsReimportsAndSkipsCorruptFiles() throws Exception {
         var store = new ImportedMapStore(temp, "minecraft:overworld");
         byte[] colors = new byte[MapSnapshot.PIXELS]; colors[0] = 5;

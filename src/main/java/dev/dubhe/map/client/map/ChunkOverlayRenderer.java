@@ -1,6 +1,5 @@
 package dev.dubhe.map.client.map;
 
-import dev.dubhe.map.client.territory.CircleClip;
 import dev.dubhe.map.config.AtlasClientConfig;
 import dev.dubhe.map.map.ChunkMapData;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,17 +26,11 @@ public final class ChunkOverlayRenderer {
         int maxZ = chunkAt(centerZ + height / 2.0 / pixelsPerChunk);
         for (int chunkX = minX; chunkX <= maxX; chunkX++) {
             for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
-                int left = (int) Math.round(width / 2.0
-                        + (chunkX * 16.0 - centerX) * pixelsPerChunk);
-                int top = (int) Math.round(height / 2.0
-                        + (chunkZ * 16.0 - centerZ) * pixelsPerChunk);
-                int right = (int) Math.round(width / 2.0
-                        + ((chunkX + 1) * 16.0 - centerX) * pixelsPerChunk);
-                int bottom = (int) Math.round(height / 2.0
-                        + ((chunkZ + 1) * 16.0 - centerZ) * pixelsPerChunk);
+                double left = width / 2.0 + (chunkX * 16.0 - centerX) * pixelsPerChunk;
+                double top = height / 2.0 + (chunkZ * 16.0 - centerZ) * pixelsPerChunk;
                 drawCell(graphics, config.worldMap.showChunkGrid,
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
-                        left, top, Math.max(1, right - left), Math.max(1, bottom - top),
+                        left, top, 16.0 * pixelsPerChunk, 16.0 * pixelsPerChunk,
                         false, 0.0, 0.0, 0.0);
             }
         }
@@ -60,17 +53,11 @@ public final class ChunkOverlayRenderer {
         int centerChunkZ = chunkAt(layout.centerWorldZ());
         for (int chunkX = centerChunkX - range; chunkX <= centerChunkX + range; chunkX++) {
             for (int chunkZ = centerChunkZ - range; chunkZ <= centerChunkZ + range; chunkZ++) {
-                int left = (int) Math.round(centerX
-                        + (chunkX * 16.0 - layout.centerWorldX()) * blocksToPixels);
-                int top = (int) Math.round(centerZ
-                        + (chunkZ * 16.0 - layout.centerWorldZ()) * blocksToPixels);
-                int right = (int) Math.round(centerX
-                        + ((chunkX + 1) * 16.0 - layout.centerWorldX()) * blocksToPixels);
-                int bottom = (int) Math.round(centerZ
-                        + ((chunkZ + 1) * 16.0 - layout.centerWorldZ()) * blocksToPixels);
+                double left = centerX + (chunkX * 16.0 - layout.centerWorldX()) * blocksToPixels;
+                double top = centerZ + (chunkZ * 16.0 - layout.centerWorldZ()) * blocksToPixels;
                 drawCell(graphics, config.minimap.showChunkGrid,
                         seed != null && SlimeChunkTracker.isSlimeChunk(seed, chunkX, chunkZ),
-                        left, top, Math.max(1, right - left), Math.max(1, bottom - top), circular,
+                        left, top, 16.0 * blocksToPixels, 16.0 * blocksToPixels, circular,
                         layout.x() + layout.size() / 2.0, layout.y() + layout.size() / 2.0,
                         layout.size() / 2.0 - MinimapLayout.CLIP_INSET);
             }
@@ -78,7 +65,7 @@ public final class ChunkOverlayRenderer {
     }
 
     private static void drawCell(GuiGraphics graphics, boolean grid, boolean slime,
-            int x, int y, int width, int height, boolean circular,
+            double x, double y, double width, double height, boolean circular,
             double centerX, double centerZ, double radius) {
         if (slime) {
             fill(graphics, x, y, width, height, SLIME_COLOR, circular, centerX, centerZ, radius);
@@ -89,16 +76,36 @@ public final class ChunkOverlayRenderer {
         }
     }
 
-    private static void fill(GuiGraphics graphics, int x, int y, int width, int height,
+    private static void fill(GuiGraphics graphics, double x, double y, double width, double height,
             int color, boolean circular, double centerX, double centerZ, double radius) {
         if (!circular) {
-            graphics.fill(x, y, x + width, y + height, color);
+            fillRect(graphics, x, y, width, height, color);
             return;
         }
-        for (CircleClip.Band band : CircleClip.bands(x, y, width, height,
-                centerX, centerZ, radius)) {
-            graphics.fill(band.left(), band.top(), band.right(), band.bottom(), color);
+        double dx = Math.max(Math.abs(x - centerX), Math.abs(x + width - centerX));
+        double dz = Math.max(Math.abs(y - centerZ), Math.abs(y + height - centerZ));
+        if (dx * dx + dz * dz <= radius * radius) {
+            fillRect(graphics, x, y, width, height, color);
+            return;
         }
+        // 裁剪只改变边缘；内部网格保留与地形一致的亚像素位置。
+        for (double top = Math.max(y, centerZ - radius); top < Math.min(y + height, centerZ + radius);) {
+            double bottom = Math.min(top + 1.0, Math.min(y + height, centerZ + radius));
+            double dy = (top + bottom) * 0.5 - centerZ;
+            double span = Math.sqrt(Math.max(0.0, radius * radius - dy * dy));
+            double left = Math.max(x, centerX - span);
+            double right = Math.min(x + width, centerX + span);
+            if (right > left) fillRect(graphics, left, top, right - left, bottom - top, color);
+            top = bottom;
+        }
+    }
+
+    private static void fillRect(GuiGraphics graphics, double x, double y, double width, double height, int color) {
+        graphics.pose().pushMatrix();
+        graphics.pose().translate((float) x, (float) y);
+        graphics.pose().scale((float) width, (float) height);
+        graphics.fill(0, 0, 1, 1, color);
+        graphics.pose().popMatrix();
     }
 
     private static int chunkAt(double worldCoordinate) {

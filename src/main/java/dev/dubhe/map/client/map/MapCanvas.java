@@ -21,17 +21,19 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 /// 全屏世界地图的画布纹理。
 ///
-/// 固定覆盖 {@link #CHUNKS_PER_SIDE}² 个区块，纹理原点由视野中心决定；
-/// 视野变化时从维度缓存重绘整张画布并上传一次，避免逐帧重采样。
+/// 近景逐方块绘制，远景按视口降低采样密度，始终保持固定大小的纹理。
 public final class MapCanvas {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapcanvas");
     /// 画布覆盖的区块数（每边）。
     ///
-    /// 取 65：在最小区块像素尺寸（1 px/区块）下仍可覆盖 1040 像素的视口宽度，
-    /// 避免缩小地图时出现大片空白；内存占用约 1040² × 4 ≈ 4.3 MB。
+    /// 近景覆盖 1040 个方块；缩小时每个纹理像素覆盖更多方块。
     public static final int CHUNKS_PER_SIDE = 65;
     /// 画布边长（像素）。
     public static final int PIXELS = CHUNKS_PER_SIDE * ChunkMapData.SIZE;
@@ -58,6 +60,124 @@ public final class MapCanvas {
     private ImportedMapStore importedStore;
     private long importedRevision = -1;
     private List<MapSnapshot> importedMaps = List.of();
+    private boolean showUnexploredGrid = true;
+    private int blocksPerPixel = 1;
+    private static final ExecutorService OVERVIEW_READER = Executors.newSingleThreadExecutor(task -> {
+        Thread thread = new Thread(task, "atlas-map-overview");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private OverviewView requestedOverview;
+    private OverviewView pendingOverview;
+    private CompletableFuture<List<ChunkMapData>> overviewRead;
+    private long pendingRevision;
+    private long drawnOverviewRevision = -1;
+    private OverviewView drawnOverview;
+
+    private record OverviewView(MapDimensionCache cache, int x, int z, int stride,
+            MapColorScheme scheme, ImportedMapStore store, long importedRevision, boolean grid) { }
+
+    public int blocksPerPixel() { return this.blocksPerPixel; }
+
+    public int worldSize() { return PIXELS * this.blocksPerPixel; }
+
+    static int resolutionFor(int width, int height, float zoom) {
+        int stride = 1;
+        double required = Math.max(width, height) / (double) zoom;
+        while ((PIXELS - 64.0) * stride < required) stride *= 2;
+        return stride;
+    }
+
+    public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache,
+            MapColorScheme scheme, int width, int height, float zoom) {
+        boolean grid = zoom >= 0.8F;
+        if (grid != this.showUnexploredGrid) {
+            this.showUnexploredGrid = grid;
+            this.positioned = false;
+        }
+        int stride = resolutionFor(width, height, zoom);
+        if (stride == 1 || cache == null) {
+            this.requestedOverview = null;
+            if (this.blocksPerPixel != 1) {
+                this.blocksPerPixel = 1;
+                this.positioned = false;
+            }
+            this.drawnOverview = null;
+            this.setCenter(centerChunkX, centerChunkZ, cache, scheme);
+            return;
+        }
+        int x = Math.floorDiv(centerChunkX - CHUNKS_PER_SIDE * stride / 2, stride) * stride;
+        int z = Math.floorDiv(centerChunkZ - CHUNKS_PER_SIDE * stride / 2, stride) * stride;
+        ImportedMapStore store = ClientCartography.currentStore();
+        this.requestedOverview = new OverviewView(cache, x, z, stride, scheme, store,
+                store == null ? -1 : store.revision(), grid);
+        this.pollOverview();
+    }
+
+    /// 仅后台读取区域快照；纹理及其元数据始终一起在渲染线程替换。
+    public void pollOverview() {
+        if (this.overviewRead != null && this.overviewRead.isDone()) {
+            try {
+                List<ChunkMapData> chunks = this.overviewRead.join();
+                if (this.pendingOverview.equals(this.requestedOverview)) {
+                    this.drawOverview(this.pendingOverview, chunks);
+                    this.drawnOverview = this.pendingOverview;
+                    this.drawnOverviewRevision = this.pendingRevision;
+                }
+            } catch (CompletionException e) {
+                LOGGER.warn("Failed to read world map overview", e.getCause());
+            }
+            this.overviewRead = null;
+        }
+        OverviewView view = this.requestedOverview;
+        if (view == null || this.overviewRead != null
+                || (view.equals(this.drawnOverview) && view.cache.revision() == this.drawnOverviewRevision)) return;
+        this.pendingOverview = view;
+        this.pendingRevision = view.cache.revision();
+        var snapshot = view.cache.snapshotForSync();
+        this.overviewRead = CompletableFuture.supplyAsync(() -> {
+            try {
+                return snapshot.readBounds(view.x, view.z,
+                        view.x + CHUNKS_PER_SIDE * view.stride, view.z + CHUNKS_PER_SIDE * view.stride);
+            } catch (java.io.IOException e) {
+                throw new CompletionException(e);
+            }
+        }, OVERVIEW_READER);
+    }
+
+    private void drawOverview(OverviewView view, List<ChunkMapData> chunks) {
+        this.blocksPerPixel = view.stride;
+        this.originChunkX = view.x;
+        this.originChunkZ = view.z;
+        this.colorScheme = view.scheme;
+        this.positioned = false;
+        this.drawnVersions.clear();
+        this.importedMaps = view.store == null ? List.of() : view.store.intersecting(view.x * 16, view.z * 16,
+                view.x * 16 + this.worldSize(), view.z * 16 + this.worldSize());
+        for (int z = 0; z < PIXELS; z++) {
+            for (int x = 0; x < PIXELS; x++) {
+                int imported = this.importedColor(x * view.stride, z * view.stride);
+                boolean line = view.grid && (((x * view.stride) & 3) == 0 || ((z * view.stride) & 3) == 0);
+                this.setPixel(x, z, imported != 0 ? imported : line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
+            }
+        }
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int step = Math.min(16, view.stride);
+        for (ChunkMapData data : chunks) {
+            int[] lighting = ChunkColorizer.lighting(data, view.scheme);
+            for (int z = 0; z < 16; z += step) {
+                for (int x = 0; x < 16; x += step) {
+                    int sampleX = x + step / 2, sampleZ = z + step / 2;
+                    int shadow = lighting == null ? 0 : lighting[sampleZ * 16 + sampleX];
+                    int color = ChunkColorizer.colorAt(data, sampleX, sampleZ, view.scheme,
+                            Minecraft.getInstance().level, cursor, shadow);
+                    if (color != 0) this.setPixel(((data.chunkX() - view.x) * 16 + x) / view.stride,
+                            ((data.chunkZ() - view.z) * 16 + z) / view.stride, color);
+                }
+            }
+        }
+        if (this.initialized) this.texture.upload();
+    }
 
     public MapCanvas(Identifier textureId) {
         this.textureId = textureId;
@@ -74,6 +194,8 @@ public final class MapCanvas {
     ///
     /// 资源重载会清空纹理管理器，若继续认为纹理有效，画布会渲染为空白。
     public void onResourceReload() {
+        this.requestedOverview = null;
+        this.drawnOverview = null;
         this.initialized = false;
         this.positioned = false;
     }
@@ -291,7 +413,7 @@ public final class MapCanvas {
     private void drawUnexplored(int baseX, int baseZ) {
         for (int localZ = 0; localZ < ChunkMapData.SIZE; localZ++) {
             for (int localX = 0; localX < ChunkMapData.SIZE; localX++) {
-                boolean line = (localX & 3) == 0 || (localZ & 3) == 0;
+                boolean line = this.showUnexploredGrid && ((localX & 3) == 0 || (localZ & 3) == 0);
                 int imported = this.importedColor(baseX + localX, baseZ + localZ);
                 this.setPixel(baseX + localX, baseZ + localZ,
                         imported != 0 ? imported : line ? UNEXPLORED_GRID_COLOR : UNEXPLORED_BASE_COLOR);
@@ -336,6 +458,8 @@ public final class MapCanvas {
 
     /// 释放纹理：从纹理管理器注销并关闭，避免注册表残留已关闭对象。
     public void close() {
+        this.requestedOverview = null;
+        this.drawnOverview = null;
         if (!this.initialized) {
             return;
         }

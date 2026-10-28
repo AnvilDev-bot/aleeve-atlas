@@ -85,7 +85,7 @@ public final class MinimapRenderer {
         boolean scissored = !circular;
         int clipInset = MinimapLayout.CLIP_INSET;
         if (scissored) {
-            graphics.enableScissor(x, y, x + size, y + size);
+            graphics.enableScissor(x + clipInset, y + clipInset, x + size - clipInset, y + size - clipInset);
         }
         graphics.pose().pushMatrix();
         if (rotationDegrees != 0.0F) {
@@ -96,17 +96,20 @@ public final class MinimapRenderer {
 
         // 方形按对角线尺寸绘制后由内缩 scissor 裁剪，圆形由 shader 按同一内缩半径裁剪。
         int drawSize = circular ? size : MinimapLayout.squareDrawSize(size);
-        int drawX = circular ? x : Math.round(centerX - drawSize / 2.0F);
-        int drawY = circular ? y : Math.round(centerY - drawSize / 2.0F);
+        float drawX = centerX - drawSize / 2.0F;
+        float drawY = centerY - drawSize / 2.0F;
         int uvSize = circular ? (int) layout.coveredBlocks()
                 : MinimapLayout.squareDrawSize((int) layout.coveredBlocks());
-        float uvStartX = (float) texture.uvStart(player.getX(), uvSize);
-        float uvStartZ = (float) texture.uvStart(player.getZ(), uvSize);
+        float uvStartX = (float) texture.uvStartX(layout.centerWorldX(), uvSize);
+        float uvStartZ = (float) texture.uvStartZ(layout.centerWorldZ(), uvSize);
         float brightness = lightBrightness(minecraft, config);
-        int mapTint = circular ? encodeCircleTint(uvSize, brightness, 0, size)
+        int mapTint = circular ? encodeCircleTint(brightness, clipInset, size)
                 : brightnessColor(brightness);
-        graphics.blit(mapPipeline, texture.textureId(), drawX, drawY, uvStartX, uvStartZ,
+        graphics.pose().pushMatrix();
+        graphics.pose().translate(drawX, drawY);
+        graphics.blit(mapPipeline, texture.textureId(), 0, 0, uvStartX, uvStartZ,
                 drawSize, drawSize, uvSize, uvSize, MapTexture.PIXELS, MapTexture.PIXELS, mapTint);
+        graphics.pose().popMatrix();
         TerritoryRenderer.renderOnMinimap(graphics, layout, circular);
         ChunkOverlayRenderer.renderOnMinimap(graphics, config, layout, circular);
         graphics.pose().popMatrix();
@@ -156,14 +159,12 @@ public final class MinimapRenderer {
         return lockNorth ? 0.0F : 180.0F - playerYaw;
     }
 
-    /// 圆形遮罩使用顶点色 R 传递纹理裁剪比例的倒数，还原屏幕局部坐标。
-    private static int encodeCircleTint(int uvSize, float brightness, int clipInset,
+    /// 圆形遮罩由顶点局部坐标定位，顶点色只传亮度和内缩比例。
+    private static int encodeCircleTint(float brightness, int clipInset,
             int drawSize) {
-        float uvScale = MapTexture.PIXELS / (float) uvSize;
-        int red = Math.round(uvScale / 8.0F * 255.0F);
         int green = Math.round(brightness * 255.0F);
-        int blue = Math.round(2.0F * clipInset / drawSize * 255.0F);
-        return 0xFF000000 | (red << 16) | (green << 8) | blue;
+        int blue = (int) Math.ceil(2.0F * clipInset / drawSize * 255.0F);
+        return 0xFFFF0000 | (green << 8) | blue;
     }
 
     private static int brightnessColor(float brightness) {
@@ -185,7 +186,8 @@ public final class MinimapRenderer {
     private static int encodeOverlayTint(boolean circular, int mapSize, int borderExpansion) {
         int green = circular ? 255 : 0;
         int alpha = Math.round(borderExpansion * 2.0F / mapSize * 255.0F);
-        return (alpha << 24) | (green << 8);
+        int blue = (int) Math.ceil((MinimapLayout.CLIP_INSET + 1) * 2.0F / mapSize * 255.0F);
+        return (alpha << 24) | (green << 8) | blue;
     }
 
     /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。

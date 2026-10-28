@@ -15,6 +15,28 @@ class MapDimensionCacheTest {
     Path tempDir;
 
     @Test
+    void overviewReadsDistantSavedRegionsAndUnsavedChangesWithoutLoadingTheLru() throws IOException {
+        MapDimensionCache cache = new MapDimensionCache(this.tempDir);
+        cache.put(new ChunkMapData(-80, 64));
+        cache.put(new ChunkMapData(400, 400));
+        cache.flush();
+        MapDimensionCache reopened = new MapDimensionCache(this.tempDir);
+        ChunkMapData updated = new ChunkMapData(-80, 64);
+        updated.setVersion(123);
+        reopened.put(updated);
+        reopened.put(new ChunkMapData(-79, 65));
+        int regions = reopened.loadedRegionCount();
+        var chunks = reopened.snapshotForSync().readBounds(-90, 60, -79, 70);
+        Assertions.assertEquals(1, chunks.size());
+        Assertions.assertEquals(123, chunks.getFirst().version());
+        var distant = reopened.snapshotForSync().readBounds(399, 399, 401, 401);
+        Assertions.assertEquals(1, distant.size());
+        Assertions.assertEquals(400, distant.getFirst().chunkX());
+        Assertions.assertEquals(regions, reopened.loadedRegionCount());
+        Assertions.assertEquals(2, reopened.loadedChunks().size());
+    }
+
+    @Test
     void putThenGetReturnsSameData() {
         MapDimensionCache cache = new MapDimensionCache(this.tempDir);
         ChunkMapData data = new ChunkMapData(5, -3);

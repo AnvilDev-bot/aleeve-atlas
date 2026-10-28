@@ -96,8 +96,12 @@ public final class MapTexture {
         }
     }
 
-    public double uvStart(double worldCoordinate, int uvSize) {
-        return (PIXELS - uvSize) / 2.0 + worldCoordinate - Math.floor(worldCoordinate);
+    public double uvStartX(double worldX, int uvSize) {
+        return worldX - this.originPixelX - uvSize / 2.0;
+    }
+
+    public double uvStartZ(double worldZ, int uvSize) {
+        return worldZ - this.originPixelZ - uvSize / 2.0;
     }
 
     /// 配色变更后立即按现有色板重绘，无需重新采样。

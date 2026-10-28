@@ -21,7 +21,7 @@ void main() {
     bool circular = vertexColor.g > 0.5;
     float originalScale = 1.0 / (1.0 + vertexColor.a);
     float edge = circular ? length(centered) * 2.0 : max(abs(centered.x), abs(centered.y)) * 2.0;
-    float innerEdge = (circular ? 0.972 : 0.985) * originalScale;
+    float innerEdge = min(circular ? 0.972 : 0.985, 1.0 - vertexColor.b) * originalScale;
     if (edge > 1.0 || edge <= innerEdge) {
         discard;
     }

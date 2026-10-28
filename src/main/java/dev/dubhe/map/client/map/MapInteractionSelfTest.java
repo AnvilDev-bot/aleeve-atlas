@@ -219,8 +219,60 @@ public final class MapInteractionSelfTest {
                     + Integer.toHexString(vanilla) + "/" + Integer.toHexString(biome));
             canvas.setCenter(32, 32, cache, MapColorScheme.VANILLA);
             require(canvas.pixelAt(3, 0) == vanilla, "Switching back must restore vanilla colors");
+            verifyOverview(canvas, cache);
         } finally {
             canvas.close();
+        }
+        verifyImmediateZoom(minecraft);
+    }
+
+    private static void verifyOverview(MapCanvas canvas, MapDimensionCache cache) {
+        ChunkMapData distant = new ChunkMapData(-300, 300);
+        for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
+            distant.setPixel(x, z, ChunkMapData.PixelState.of(Blocks.SAND.defaultBlockState()), 64);
+        }
+        cache.put(distant);
+        canvas.setCenter(0, 0, cache, MapColorScheme.VANILLA, 3840, 2160, 0.05F);
+        long deadline = System.nanoTime() + 10_000_000_000L;
+        while (canvas.blocksPerPixel() == 1 && System.nanoTime() < deadline) {
+            canvas.pollOverview();
+            try { Thread.sleep(5); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+        }
+        require(canvas.worldSize() * 0.05 >= 3840, "Minimum zoom must cover the entire viewport");
+        int x = (distant.chunkX() - canvas.originChunkX()) * 16 / canvas.blocksPerPixel();
+        int z = (distant.chunkZ() - canvas.originChunkZ()) * 16 / canvas.blocksPerPixel();
+        require(canvas.pixelAt(x, z) == distant.colorAt(8, 8), "Distant explored terrain must survive zooming out");
+        canvas.setCenter(1000, 1000, cache, MapColorScheme.VANILLA, 640, 360, 0.79F);
+        require(canvas.blocksPerPixel() == 1, "Returning to near view must restore full resolution");
+        require(canvas.pixelAt(0, 0) == canvas.pixelAt(1, 1), "Background grid must disappear below 0.8");
+        canvas.setCenter(1000, 1000, cache, MapColorScheme.VANILLA, 640, 360, 0.8F);
+        require(canvas.pixelAt(0, 0) != canvas.pixelAt(1, 1), "Background grid must return at 0.8");
+        LOGGER.info("Overview coverage, distant pixels, near-view return and background grid checks PASSED");
+    }
+
+    private static void verifyImmediateZoom(Minecraft minecraft) {
+        boolean smooth = AtlasClientConfigs.CONFIG.worldMap.smoothZoom;
+        try {
+            AtlasClientConfigs.CONFIG.worldMap.smoothZoom = false;
+            AtlasWorldMap.open();
+            WorldMapScreen screen = (WorldMapScreen) minecraft.screen;
+            var field = WorldMapScreen.class.getDeclaredField("pixelsPerChunk");
+            field.setAccessible(true);
+            float before = field.getFloat(screen);
+            screen.mouseScrolled(screen.width / 2.0, screen.height / 2.0, 0, -1);
+            float after = field.getFloat(screen);
+            require(Math.abs(after - before * 0.8F) < 0.00001F, "Wheel step must apply immediately");
+            for (int tick = 0; tick < 10; tick++) screen.tick();
+            require(field.getFloat(screen) == after, "No zoom movement after wheel input stops");
+            screen.mouseScrolled(screen.width / 2.0, screen.height / 2.0, 0, -1);
+            require(Math.abs(field.getFloat(screen) - after * 0.8F) < 0.00001F,
+                    "Multiple wheel events without a render must preserve the current zoom");
+            LOGGER.info("Immediate wheel zoom and stop checks PASSED");
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        } finally {
+            AtlasClientConfigs.CONFIG.worldMap.smoothZoom = smooth;
+            minecraft.setScreen(null);
         }
     }
 

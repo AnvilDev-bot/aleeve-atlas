@@ -42,13 +42,12 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.Vec3;
@@ -420,8 +419,9 @@ public final class WorldMapScreen extends Screen {
             // 画布在世界坐标中的覆盖范围，与视口求交，避免采样越界导致画面拉伸。
             double canvasLeft = canvasOriginPixelX;
             double canvasTop = canvasOriginPixelZ;
-            double canvasRight = canvasOriginPixelX + MapCanvas.PIXELS;
-            double canvasBottom = canvasOriginPixelZ + MapCanvas.PIXELS;
+            int stride = this.canvas.blocksPerPixel();
+            double canvasRight = canvasOriginPixelX + this.canvas.worldSize();
+            double canvasBottom = canvasOriginPixelZ + this.canvas.worldSize();
             double visibleLeft = Math.max(topLeftWorldX, canvasLeft);
             double visibleTop = Math.max(topLeftWorldZ, canvasTop);
             double visibleRight = Math.min(topLeftWorldX + (double) viewWidth / this.pixelsPerChunk,
@@ -429,19 +429,19 @@ public final class WorldMapScreen extends Screen {
             double visibleBottom = Math.min(topLeftWorldZ + (double) viewHeight / this.pixelsPerChunk,
                     canvasBottom);
             if (visibleRight > visibleLeft && visibleBottom > visibleTop) {
-                int u = (int) Math.floor(visibleLeft - canvasLeft);
-                int v = (int) Math.floor(visibleTop - canvasTop);
-                int rightPixel = (int) Math.ceil(visibleRight - canvasLeft);
-                int bottomPixel = (int) Math.ceil(visibleBottom - canvasTop);
+                int u = (int) Math.floor((visibleLeft - canvasLeft) / stride);
+                int v = (int) Math.floor((visibleTop - canvasTop) / stride);
+                int rightPixel = (int) Math.ceil((visibleRight - canvasLeft) / stride);
+                int bottomPixel = (int) Math.ceil((visibleBottom - canvasTop) / stride);
                 int pixelWidth = rightPixel - u;
                 int pixelHeight = bottomPixel - v;
                 double screenX = viewWidth / 2.0
-                        + (canvasLeft + u - this.centerX) * this.pixelsPerChunk;
+                        + (canvasLeft + u * stride - this.centerX) * this.pixelsPerChunk;
                 double screenY = viewHeight / 2.0
-                        + (canvasTop + v - this.centerZ) * this.pixelsPerChunk;
+                        + (canvasTop + v * stride - this.centerZ) * this.pixelsPerChunk;
                 graphics.pose().pushMatrix();
                 graphics.pose().translate((float) screenX, (float) screenY);
-                graphics.pose().scale(this.pixelsPerChunk, this.pixelsPerChunk);
+                graphics.pose().scale(this.pixelsPerChunk * stride, this.pixelsPerChunk * stride);
                 graphics.blit(RenderPipelines.GUI_TEXTURED, this.canvas.textureId(), 0, 0,
                         u, v, pixelWidth, pixelHeight, pixelWidth, pixelHeight,
                         MapCanvas.PIXELS, MapCanvas.PIXELS);
@@ -492,7 +492,8 @@ public final class WorldMapScreen extends Screen {
         this.previousPixelsPerChunk = previous;
         this.previousCenterX = this.centerX;
         this.previousCenterZ = this.centerZ;
-        this.pixelsPerChunk += (this.targetPixelsPerChunk - this.pixelsPerChunk) * 0.25F;
+        this.pixelsPerChunk += (this.targetPixelsPerChunk - this.pixelsPerChunk)
+                * (AtlasClientConfigs.CONFIG.worldMap.smoothZoom ? 0.25F : 1.0F);
         if (Math.abs(this.targetPixelsPerChunk - this.pixelsPerChunk) < 0.005F) {
             this.pixelsPerChunk = this.targetPixelsPerChunk;
         }
@@ -506,6 +507,7 @@ public final class WorldMapScreen extends Screen {
         if (previous != this.pixelsPerChunk) {
             this.refreshCanvas();
         }
+        this.canvas.pollOverview();
         if (this.middleHeld && !this.wheelOpened
                 && ++this.middleHoldTicks >= MIDDLE_HOLD_TICKS) {
             this.contextMenu = null;
@@ -946,14 +948,18 @@ public final class WorldMapScreen extends Screen {
         double worldZ = this.screenToWorldZ(mouseY);
         BlockPos pos = new BlockPos((int) Math.floor(worldX), this.surfaceYAt(worldX, worldZ),
                 (int) Math.floor(worldZ));
-        BlockState state = minecraft.level.getBlockState(pos);
+        var cached = this.cache == null ? null : this.cache.get(pos.getX() >> 4, pos.getZ() >> 4).orElse(null);
+        var pixel = cached == null ? null : cached.stateAt(pos.getX() & 15, pos.getZ() & 15);
+        BlockState state = pixel == null ? minecraft.level.getBlockState(pos) : pixel.state();
         Component block = state.isAir()
                 ? Component.translatable("aleeve_atlas.screen.world_map.unknown")
                 : state.getBlock().getName();
-        Holder<Biome> biome = minecraft.level.getBiome(pos);
-        String biomeKey = biome.unwrapKey().map(key -> "biome." + key.identifier().getNamespace()
-                        + "." + key.identifier().getPath())
-                .orElse("aleeve_atlas.screen.world_map.unknown");
+        Identifier biomeId = pixel == null ? null : Identifier.tryParse(pixel.biomeId());
+        if (biomeId == null && minecraft.level.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+            biomeId = minecraft.level.getBiome(pos).unwrapKey().map(key -> key.identifier()).orElse(null);
+        }
+        String biomeKey = biomeId == null ? "aleeve_atlas.screen.world_map.unknown"
+                : "biome." + biomeId.getNamespace() + "." + biomeId.getPath();
         Component location = Component.translatable("aleeve_atlas.screen.world_map.location",
                 block, pos.getX(), pos.getY(), pos.getZ(), Component.translatable(biomeKey));
         List<TerritoryGroup> territories = AtlasTerritory.clientRegistry()
@@ -1334,11 +1340,20 @@ public final class WorldMapScreen extends Screen {
             this.zoomAnchorScreenX = mapMouseX;
             this.zoomAnchorScreenY = mapMouseY;
             this.zoomAnchored = true;
+            if (!AtlasClientConfigs.CONFIG.worldMap.smoothZoom) {
+                this.pixelsPerChunk = this.targetPixelsPerChunk;
+                this.zoomAnchored = false;
+            }
             this.centerX = anchorX - (mapMouseX - width / 2.0) / this.pixelsPerChunk;
             this.centerZ = anchorZ - (mapMouseY - height / 2.0) / this.pixelsPerChunk;
             this.previousPixelsPerChunk = this.pixelsPerChunk;
             this.previousCenterX = this.centerX;
             this.previousCenterZ = this.centerZ;
+            if (!AtlasClientConfigs.CONFIG.worldMap.smoothZoom) {
+                this.renderedPixelsPerChunk = this.pixelsPerChunk;
+                this.renderedCenterX = this.centerX;
+                this.renderedCenterZ = this.centerZ;
+            }
             this.refreshCanvas();
             return true;
         }
@@ -1396,6 +1411,7 @@ public final class WorldMapScreen extends Screen {
             this.cache = manager.currentCache();
         }
         this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache,
-                AtlasClientConfigs.CONFIG.minimap.colorScheme);
+                AtlasClientConfigs.CONFIG.minimap.colorScheme,
+                width, height, Math.min(this.pixelsPerChunk, this.previousPixelsPerChunk));
     }
 }

@@ -174,6 +174,8 @@
   "aleeve_atlas.configuration.world_map.show_chunk_grid.tooltip": "Show chunk boundaries on the world map.",
   "aleeve_atlas.configuration.world_map.show_slime_chunks": "Show Slime Chunks",
   "aleeve_atlas.configuration.world_map.show_slime_chunks.tooltip": "Highlight slime chunks on the world map.",
+  "aleeve_atlas.configuration.world_map.smooth_zoom": "Smooth Zoom",
+  "aleeve_atlas.configuration.world_map.smooth_zoom.tooltip": "Animate world map zoom. Disable to apply each wheel step immediately without continued zooming.",
   "aleeve_atlas.configuration.world_map.tooltip": "World map settings.",
   "aleeve_atlas.diagnostic.canvas": "World map canvas: avg %s ms, max %s ms, over-budget %s%%, samples %s",
   "aleeve_atlas.diagnostic.minimap": "Minimap: avg %s ms, max %s ms, over-budget %s%%, samples %s",

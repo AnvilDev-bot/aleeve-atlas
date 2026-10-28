@@ -33,6 +33,7 @@ public final class MapDimensionCache {
 
     private final Path dimensionDir;
     private final Map<Long, ChunkMapData> chunks = new HashMap<>();
+    private long revision;
     /// 访问顺序即 LRU 顺序。
     private final Map<Long, RegionFile> loadedRegions = new LinkedHashMap<>(16, 0.75F,
             true);
@@ -64,12 +65,14 @@ public final class MapDimensionCache {
     /// 从内存的区域条目中移除并标记脏，实际的磁盘写入交由 `flush` 批量完成。
     /// 单次方块变更即写盘会在爆炸等场景下反复重写整个区域文件。
     public void invalidate(int chunkX, int chunkZ) {
+        this.revision++;
         this.chunks.remove(ChunkPos.asLong(chunkX, chunkZ));
         this.regionFor(chunkX >> REGION_SHIFT, chunkZ >> REGION_SHIFT)
                 .remove(chunkX & (REGION_SIZE - 1), chunkZ & (REGION_SIZE - 1));
     }
 
     public void put(ChunkMapData data) {
+        this.revision++;
         long key = ChunkPos.asLong(data.chunkX(), data.chunkZ());
         this.chunks.put(key, data);
         RegionFile region = this.regionFor(data.chunkX() >> REGION_SHIFT, data.chunkZ() >> REGION_SHIFT);
@@ -80,6 +83,10 @@ public final class MapDimensionCache {
     /// 当前已访问的内存区块；同步全量地图应使用 snapshotForSync。
     public List<ChunkMapData> loadedChunks() {
         return List.copyOf(this.chunks.values());
+    }
+
+    public long revision() {
+        return this.revision;
     }
 
     /// 主线程捕获已加载区域的快照；磁盘遍历与解压由后台线程完成，不改变渲染缓存的 LRU。
@@ -93,6 +100,38 @@ public final class MapDimensionCache {
 
     /// 区块写入缓存后不再修改；快照保留对象引用，后台只读。
     public record SyncSnapshot(Path directory, Map<Path, List<ChunkMapData>> loaded) {
+        /// 远景只读取视口内已存在的区域，不遍历空区块，也不扰动渲染缓存的 LRU。
+        public List<ChunkMapData> readBounds(int minX, int minZ, int maxX, int maxZ) throws IOException {
+            List<ChunkMapData> result = new ArrayList<>();
+            for (var entry : loaded.entrySet()) {
+                if (intersects(entry.getKey(), minX, minZ, maxX, maxZ)) result.addAll(entry.getValue());
+            }
+            if (Files.isDirectory(directory)) {
+                try (var paths = Files.newDirectoryStream(directory, "r.*.*.nbt")) {
+                    for (Path path : paths) {
+                        if (!loaded.containsKey(path) && intersects(path, minX, minZ, maxX, maxZ)) {
+                            result.addAll(new RegionFile(path).entries.values());
+                        }
+                    }
+                }
+            }
+            result.removeIf(data -> data.chunkX() < minX || data.chunkX() >= maxX
+                    || data.chunkZ() < minZ || data.chunkZ() >= maxZ);
+            return result;
+        }
+
+        private static boolean intersects(Path path, int minX, int minZ, int maxX, int maxZ) {
+            String[] parts = path.getFileName().toString().split("\\.");
+            if (parts.length != 4) return false;
+            try {
+                long x = Long.parseLong(parts[1]) * REGION_SIZE;
+                long z = Long.parseLong(parts[2]) * REGION_SIZE;
+                return x < maxX && z < maxZ && x + REGION_SIZE > minX && z + REGION_SIZE > minZ;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
         public List<ChunkMapData> readAll() throws IOException {
             List<ChunkMapData> result = new ArrayList<>();
             loaded.values().forEach(result::addAll);

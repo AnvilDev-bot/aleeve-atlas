@@ -49,6 +49,10 @@ public final class AtlasClientMap {
         if (++ticksSinceFlush >= FLUSH_INTERVAL_TICKS) {
             ticksSinceFlush = 0;
             manager.flush();
+            var imports = dev.dubhe.map.client.cartography.ClientCartography.currentStore();
+            if (imports != null && imports.pruneExplored(manager.currentCache()) > 0) {
+                WorldMapScreen.onMapDataChanged();
+            }
         }
     }
 

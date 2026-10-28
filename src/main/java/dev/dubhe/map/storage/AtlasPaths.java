@@ -2,20 +2,12 @@ package dev.dubhe.map.storage;
 
 import net.minecraft.resources.Identifier;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.util.stream.Stream;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 
 /// 数据存储路径布局。
 ///
 /// `<游戏目录>/data/aleeve_atlas/mapdata/<服务器标识或存档名>/<维度ID>/`
-/// 服务器标识对 IP/端口做不可逆但稳定的规范化，避免泄露服务器地址原文。
+/// 保留存档名、UUID 和地址的可读性，只转义文件系统禁止的字符。
 public final class AtlasPaths {
     private static final String DATA = "data";
     private static final String ROOT = "aleeve_atlas";
@@ -36,54 +28,22 @@ public final class AtlasPaths {
 
     /// 某维度在小地图缓存中的目录；维度以 `Identifier` 标识。
     public static Path dimensionDir(Path gameDir, String serverKey, Identifier dimension) {
-        return serverRoot(gameDir, serverKey).resolve(sanitize(dimension.toString()));
+        return serverRoot(gameDir, serverKey).resolve(sanitize(dimension.toString().replace(':', '_')));
     }
 
-    /// 将旧地址键下的地图缓存复制到服务端下发的缓存键目录。
-    public static boolean migrateMapCache(Path gameDir, String oldKey, String newKey)
-            throws IOException {
-        if (oldKey.equals(newKey)) {
-            return false;
-        }
-        Path source = serverRoot(gameDir, oldKey);
-        Path target = serverRoot(gameDir, newKey);
-        if (!Files.isDirectory(source)) {
-            return false;
-        }
-        boolean copied = false;
-        try (Stream<Path> paths = Files.walk(source)) {
-            for (Path path : paths.toList()) {
-                Path relative = source.relativize(path);
-                if (relative.getNameCount() > 0
-                        && (relative.getName(0).toString().equals("waypoints")
-                                || relative.toString().equals("slime_seed.nbt"))) {
-                    continue;
-                }
-                Path destination = target.resolve(relative);
-                if (Files.isDirectory(path)) {
-                    Files.createDirectories(destination);
-                } else if (!Files.exists(destination)) {
-                    Files.createDirectories(destination.getParent());
-                    Files.copy(path, destination, StandardCopyOption.COPY_ATTRIBUTES);
-                    copied = true;
-                }
+    /// 使用可逆转义，避免中文名称或不同非法字符都被替换成下划线后发生目录碰撞。
+    private static String sanitize(String raw) {
+        StringBuilder result = new StringBuilder();
+        int trailing = raw.length();
+        while (trailing > 0 && (raw.charAt(trailing - 1) == '.' || raw.charAt(trailing - 1) == ' ')) trailing--;
+        for (int i = 0; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (c < 32 || "\\/:*?\"<>|%".indexOf(c) >= 0 || i >= trailing) {
+                result.append('%').append(String.format("%02X", (int) c));
+            } else {
+                result.append(c);
             }
         }
-        return copied;
-    }
-
-    /// 把服务器地址/存档名规范化为稳定的目录名：SHA-256 前 16 字节十六进制。
-    public static String hashServerKey(String serverAddress) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(serverAddress.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash, 0, 16);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 unavailable", e);
-        }
-    }
-
-    private static String sanitize(String raw) {
-        return raw.replaceAll("[^a-zA-Z0-9._-]", "_");
+        return result.isEmpty() ? "_" : result.toString();
     }
 }

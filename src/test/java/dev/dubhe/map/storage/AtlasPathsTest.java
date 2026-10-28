@@ -1,54 +1,37 @@
 package dev.dubhe.map.storage;
 
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 class AtlasPathsTest {
-    @TempDir
-    Path tempDir;
+    @TempDir Path tempDir;
 
-    @Test
-    void migrationCopiesMapDataButLeavesOtherServerDataInPlace() throws IOException {
-        Path source = AtlasPaths.serverRoot(tempDir, "address-key");
-        Path mapFile = source.resolve("minecraft_overworld/region.dat");
-        Path waypointFile = source.resolve("waypoints/minecraft_overworld.nbt");
-        Path seedFile = source.resolve("slime_seed.nbt");
-        Files.createDirectories(mapFile.getParent());
-        Files.createDirectories(waypointFile.getParent());
-        Files.writeString(mapFile, "map");
-        Files.writeString(waypointFile, "waypoints");
-        Files.writeString(seedFile, "seed");
-
-        AtlasPaths.migrateMapCache(tempDir, "address-key", "server-key");
-
-        Path target = AtlasPaths.serverRoot(tempDir, "server-key");
-        assertEquals("map", Files.readString(target.resolve("minecraft_overworld/region.dat")));
-        assertFalse(Files.exists(target.resolve("waypoints")));
-        assertFalse(Files.exists(target.resolve("slime_seed.nbt")));
-        assertEquals("waypoints", Files.readString(waypointFile));
-        assertEquals("seed", Files.readString(seedFile));
+    @Test void preservesChineseWorldNamesAndDimensionLayout() {
+        Path first = AtlasPaths.serverRoot(tempDir, "sp_新的世界_123");
+        Path second = AtlasPaths.serverRoot(tempDir, "sp_测试存档_123");
+        assertEquals("sp_新的世界_123", first.getFileName().toString());
+        assertNotEquals(first, second);
+        assertEquals(first.resolve("minecraft_overworld"), AtlasPaths.dimensionDir(
+                tempDir, "sp_新的世界_123", Identifier.parse("minecraft:overworld")));
     }
 
-    @Test
-    void migrationKeepsExistingDestinationData() throws IOException {
-        Path sourceFile = AtlasPaths.serverRoot(tempDir, "address-key")
-                .resolve("minecraft_overworld/region.dat");
-        Path targetFile = AtlasPaths.serverRoot(tempDir, "server-key")
-                .resolve("minecraft_overworld/region.dat");
-        Files.createDirectories(sourceFile.getParent());
-        Files.createDirectories(targetFile.getParent());
-        Files.writeString(sourceFile, "old");
-        Files.writeString(targetFile, "current");
+    @Test void escapesAddressPortsWithoutCollidingWithLiteralEscapeSequences() {
+        Path address = AtlasPaths.serverRoot(tempDir, "server_127.0.0.1:25565");
+        assertEquals("server_127.0.0.1%3A25565", address.getFileName().toString());
+        assertNotEquals(address, AtlasPaths.serverRoot(tempDir, "server_127.0.0.1%3A25565"));
+        assertNotEquals(address, AtlasPaths.serverRoot(tempDir, "server_127.0.0.1:25566"));
+    }
 
-        AtlasPaths.migrateMapCache(tempDir, "address-key", "server-key");
-
-        assertEquals("current", Files.readString(targetFile));
+    @Test void directoryKeysCannotEscapeMapdata() {
+        Path parent = AtlasPaths.root(tempDir).resolve("mapdata");
+        for (String key : new String[] {"..", "../outside", "server_[::1]:25565", "name. ", "a/b"}) {
+            Path result = AtlasPaths.serverRoot(tempDir, key).normalize();
+            assertEquals(parent, result.getParent());
+        }
     }
 }

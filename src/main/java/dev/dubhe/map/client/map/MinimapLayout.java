@@ -64,8 +64,9 @@ public record MinimapLayout(int x, int y, int size, double centerWorldX, double 
                         + (expanded[index] - normal[index]) * focusProgress);
             }
         }
+        var position = player.getPosition(minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         return new MinimapLayout(box[0], box[1], box[2],
-                player.getX(), player.getZ(), config.minimap.zoom);
+                position.x, position.z, config.minimap.zoom);
     }
 
     /// 计算小地图的尺寸与左上角坐标：`[x, y, size]`。

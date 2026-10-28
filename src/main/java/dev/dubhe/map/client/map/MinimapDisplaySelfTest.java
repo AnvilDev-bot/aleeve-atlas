@@ -30,6 +30,9 @@ public final class MinimapDisplaySelfTest {
     private static double previousMinimapScale;
     private static double previousCompassSize;
     private static CompassPosition previousCompassPosition;
+    private static boolean previousSmoothZoom;
+    private static boolean previousMinimapGrid;
+    private static boolean previousWorldMapGrid;
 
     private MinimapDisplaySelfTest() {
     }
@@ -65,10 +68,19 @@ public final class MinimapDisplaySelfTest {
             case 175 -> AtlasClientConfigs.CONFIG.worldMap.compassPosition = CompassPosition.BOTTOM_RIGHT;
             case 180 -> {
                 screenshot(minecraft, "atlas-world-compass.png");
-                minecraft.setScreen(null);
+                AtlasClientConfigs.CONFIG.worldMap.smoothZoom = false;
+                zoomOut(minecraft, 12);
             }
-            case 200 -> lookNorth(player);
-            case 220 -> finish(minecraft, player);
+            case 195 -> {
+                screenshot(minecraft, "atlas-world-zoomed-out.png");
+                zoomOut(minecraft, 20);
+            }
+            case 210 -> {
+                screenshot(minecraft, "atlas-world-minimum-zoom.png");
+                minecraft.setScreen(null);
+                lookNorth(player);
+            }
+            case 230 -> finish(minecraft, player);
             default -> {
             }
         }
@@ -80,6 +92,11 @@ public final class MinimapDisplaySelfTest {
         previousMinimapScale = AtlasClientConfigs.CONFIG.minimap.scale;
         previousCompassSize = AtlasClientConfigs.CONFIG.worldMap.compassSize;
         previousCompassPosition = AtlasClientConfigs.CONFIG.worldMap.compassPosition;
+        previousSmoothZoom = AtlasClientConfigs.CONFIG.worldMap.smoothZoom;
+        previousMinimapGrid = AtlasClientConfigs.CONFIG.minimap.showChunkGrid;
+        previousWorldMapGrid = AtlasClientConfigs.CONFIG.worldMap.showChunkGrid;
+        AtlasClientConfigs.CONFIG.minimap.showChunkGrid = true;
+        AtlasClientConfigs.CONFIG.worldMap.showChunkGrid = true;
         AtlasClientConfigs.CONFIG.minimap.scale = 1.25;
         setRotation(player, 65.0F, 0.0F);
         AtlasClientConfigs.CONFIG.minimap.lockNorth = false;
@@ -125,6 +142,9 @@ public final class MinimapDisplaySelfTest {
         AtlasClientConfigs.CONFIG.minimap.scale = previousMinimapScale;
         AtlasClientConfigs.CONFIG.worldMap.compassSize = previousCompassSize;
         AtlasClientConfigs.CONFIG.worldMap.compassPosition = previousCompassPosition;
+        AtlasClientConfigs.CONFIG.worldMap.smoothZoom = previousSmoothZoom;
+        AtlasClientConfigs.CONFIG.minimap.showChunkGrid = previousMinimapGrid;
+        AtlasClientConfigs.CONFIG.worldMap.showChunkGrid = previousWorldMapGrid;
         completed = true;
         LOGGER.info("Minimap display and world marker verification passed");
     }
@@ -134,6 +154,13 @@ public final class MinimapDisplaySelfTest {
         player.setXRot(pitch);
         player.yRotO = yaw;
         player.xRotO = pitch;
+    }
+
+    private static void zoomOut(Minecraft minecraft, int steps) {
+        WorldMapScreen screen = (WorldMapScreen) minecraft.screen;
+        for (int step = 0; step < steps; step++) {
+            screen.mouseScrolled(screen.width / 2.0, screen.height / 2.0, 0, -1);
+        }
     }
 
     private static void screenshot(Minecraft minecraft, String name) {
