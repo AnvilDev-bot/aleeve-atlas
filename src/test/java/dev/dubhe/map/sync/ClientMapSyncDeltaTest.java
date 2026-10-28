@@ -1,6 +1,9 @@
 package dev.dubhe.map.sync;
 
 import dev.dubhe.map.map.ChunkMapData;
+import dev.dubhe.map.map.MapDimensionCache;
+import org.junit.jupiter.api.io.TempDir;
+import java.nio.file.Path;
 import dev.dubhe.map.network.ChunkDeltaPayload;
 import dev.dubhe.map.network.ChunkDigestPayload;
 import org.junit.jupiter.api.Assertions;
@@ -12,6 +15,16 @@ import java.util.List;
 ///
 /// 摘要比对规则：对方缺失的区块需回传，对方版本更低的区块需回传，版本相同的跳过。
 class ClientMapSyncDeltaTest {
+    @Test
+    void receivedOlderOrDuplicateChunksNeverOverwriteNewerCache(@TempDir Path directory) {
+        var cache = new MapDimensionCache(directory);
+        Assertions.assertTrue(ClientMapSync.merge(cache, chunk(0, 0, 200)));
+        Assertions.assertFalse(ClientMapSync.merge(cache, chunk(0, 0, 100)));
+        Assertions.assertFalse(ClientMapSync.merge(cache, chunk(0, 0, 200)));
+        Assertions.assertEquals(200, cache.get(0, 0).orElseThrow().version());
+        Assertions.assertTrue(ClientMapSync.merge(cache, chunk(0, 0, 300)));
+        Assertions.assertEquals(300, cache.get(0, 0).orElseThrow().version());
+    }
     @Test
     void missingChunksAreIncluded() {
         List<ChunkMapData> local = List.of(chunk(0, 0, 100L), chunk(1, 0, 100L));

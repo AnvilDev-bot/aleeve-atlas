@@ -1,6 +1,7 @@
 package dev.dubhe.map.sync;
 
 import dev.dubhe.map.AleeveAtlas;
+import dev.dubhe.map.network.ChunkDeltaPayload;
 
 /// 地图增量同步的发送预算。
 ///
@@ -32,12 +33,15 @@ public final class SyncBudget {
             return false;
         }
         long now = System.currentTimeMillis();
-        if (now - this.windowStartMillis >= 1000L) {
-            this.windowStartMillis = now;
-            this.bytesSentInWindow = 0;
-        }
         int budget = AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond;
-        return this.bytesSentInWindow + bytes <= budget;
+        if (now - this.windowStartMillis >= 1000L) {
+            long windows = (now - this.windowStartMillis) / 1000L;
+            this.windowStartMillis += windows * 1000L;
+            this.bytesSentInWindow = Math.max(0, this.bytesSentInWindow - windows * budget);
+        }
+        // 单包可能大于最低每秒预算，允许独立发送并把欠额延续到后续窗口，避免永久卡队列。
+        return this.bytesSentInWindow + bytes <= budget
+                || (this.bytesSentInWindow == 0 && bytes <= ChunkDeltaPayload.MAX_UPLOAD_BYTES + 320);
     }
 
     /// 记录已发送的字节数。

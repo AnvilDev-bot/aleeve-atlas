@@ -4,6 +4,10 @@ import com.mojang.authlib.GameProfile;
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.AtlasSession;
 import dev.dubhe.map.network.PlayerPositionPayload;
+import dev.dubhe.map.network.TeamSightingsPayload;
+import dev.dubhe.map.client.radar.VisibilityGate;
+import dev.dubhe.map.team.TeamProviders;
+import dev.dubhe.map.config.NonTeamVisibility;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.RemotePlayer;
@@ -16,6 +20,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,8 +30,9 @@ import java.util.UUID;
 /// 远端对象只用于地图标记，实际加载的同名实体优先，避免重复绘制。
 @EventBusSubscriber(modid = AleeveAtlas.MOD_ID, value = Dist.CLIENT)
 public final class ClientPlayerPositions {
-    private static final int REPORT_INTERVAL_TICKS = 20;
+    private static final int REPORT_INTERVAL_TICKS = 10;
     private static final Map<UUID, RemotePlayer> REMOTE_PLAYERS = new HashMap<>();
+    private static final TeamSightingsCache SIGHTINGS = new TeamSightingsCache();
     private static String currentDimension;
     private static int ticks;
 
@@ -55,6 +61,28 @@ public final class ClientPlayerPositions {
         return List.copyOf(REMOTE_PLAYERS.values());
     }
 
+    /// 共享视野只接受当前队友的快照；即使目标不在本机视距内，也保留地图标记。
+    public static void handleSightings(TeamSightingsPayload payload, IPayloadContext context) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || !syncDimension(minecraft)
+                || !TeamProviders.active().sameTeam(minecraft.player.getUUID(), payload.observerId())) {
+            return;
+        }
+        SIGHTINGS.update(payload, currentDimension, System.currentTimeMillis());
+        for (PlayerPositionPayload sighting : payload.sightings()) {
+            handle(sighting, context);
+        }
+    }
+
+    public static boolean sharedVisible(UUID target) {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null && syncDimension(minecraft)
+                && AtlasSession.nonTeamVisibility() != NonTeamVisibility.NEVER
+                && SIGHTINGS.visible(target,
+                        observer -> TeamProviders.active().sameTeam(minecraft.player.getUUID(), observer),
+                        System.currentTimeMillis());
+    }
+
     /// 维度切换后丢弃旧维度位置，防止远端标记出现在新世界。
     private static boolean syncDimension(Minecraft minecraft) {
         if (minecraft.level == null) {
@@ -63,6 +91,7 @@ public final class ClientPlayerPositions {
         String dimension = minecraft.level.dimension().identifier().toString();
         if (!dimension.equals(currentDimension)) {
             REMOTE_PLAYERS.clear();
+            SIGHTINGS.clear();
             currentDimension = dimension;
         }
         return true;
@@ -81,15 +110,38 @@ public final class ClientPlayerPositions {
             return;
         }
         ticks = 0;
+        var connection = minecraft.getConnection();
+        if (connection == null || !connection.hasChannel(PlayerPositionPayload.TYPE)) {
+            return;
+        }
         ClientPacketDistributor.sendToServer(new PlayerPositionPayload(
                 minecraft.player.getUUID(), minecraft.player.getGameProfile().name(),
                 minecraft.level.dimension().identifier().toString(),
                 minecraft.player.getX(), minecraft.player.getY(), minecraft.player.getZ(), false));
+        if (connection.hasChannel(TeamSightingsPayload.TYPE)) {
+            List<PlayerPositionPayload> sightings = new ArrayList<>();
+            for (var target : minecraft.level.players()) {
+                if (target == minecraft.player || TeamProviders.active()
+                        .sameTeam(target.getUUID(), minecraft.player.getUUID())) {
+                    continue;
+                }
+                // 只上报本机实际观察结果，不能把队友共享的视野再次转发形成回路。
+                if (VisibilityGate.localOpacity(minecraft.level, minecraft.player, target) > 0.0F) {
+                    sightings.add(new PlayerPositionPayload(target.getUUID(), target.getGameProfile().name(),
+                            currentDimension, target.getX(), target.getY(), target.getZ(), false));
+                    if (sightings.size() == TeamSightingsPayload.MAX_SIGHTINGS) {
+                        break;
+                    }
+                }
+            }
+            ClientPacketDistributor.sendToServer(new TeamSightingsPayload(minecraft.player.getUUID(), sightings));
+        }
     }
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         REMOTE_PLAYERS.clear();
+        SIGHTINGS.clear();
         currentDimension = null;
         ticks = 0;
     }

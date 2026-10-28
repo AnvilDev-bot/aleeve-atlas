@@ -54,6 +54,8 @@ public final class AtlasPayloads {
         // 在线玩家位置：客户端周期上报，服务端转发快照与移除消息。
         registrar.playBidirectional(PlayerPositionPayload.TYPE, PlayerPositionPayload.STREAM_CODEC,
                 PlayerPositionHandler::handle, ClientPlayerPositions::handle);
+        registrar.playBidirectional(TeamSightingsPayload.TYPE, TeamSightingsPayload.STREAM_CODEC,
+                PlayerPositionHandler::handleSightings, ClientPlayerPositions::handleSightings);
 
         // 地图增量同步：摘要双向转发（服务端聚合后转发）。
         registrar.playBidirectional(ChunkDigestPayload.TYPE, ChunkDigestPayload.STREAM_CODEC,

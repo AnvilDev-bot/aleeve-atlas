@@ -8,6 +8,21 @@ import org.junit.jupiter.api.Test;
 /// 单 tick 分片数与每秒字节数共同限制发送速率，任一超限都必须拒绝发送。
 class SyncBudgetTest {
     @Test
+    void packetLargerThanOneSecondBudgetProgressesButCarriesDebt() {
+        int previous = dev.dubhe.map.AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond;
+        try {
+            dev.dubhe.map.AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond = 8192;
+            var budget = new SyncBudget();
+            budget.reset();
+            Assertions.assertTrue(budget.canSend(20_000));
+            budget.record(20_000);
+            budget.beginTick();
+            Assertions.assertFalse(budget.canSend(1));
+        } finally {
+            dev.dubhe.map.AleeveAtlas.CONFIG.sync.mapDeltaMaxBytesPerSecond = previous;
+        }
+    }
+    @Test
     void packetsPerTickAreCapped() {
         SyncBudget budget = new SyncBudget();
         budget.reset();

@@ -1,250 +1,273 @@
 package dev.dubhe.map.sync;
 
+import dev.dubhe.map.AtlasSession;
 import dev.dubhe.map.client.map.AtlasClientMap;
 import dev.dubhe.map.client.map.ClientMapManager;
 import dev.dubhe.map.client.map.WorldMapScreen;
+import dev.dubhe.map.client.structure.ClientStructures;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.ChunkPixelCodec;
 import dev.dubhe.map.map.MapDimensionCache;
 import dev.dubhe.map.network.ChunkDeltaPayload;
 import dev.dubhe.map.network.ChunkDigestPayload;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-/// 客户端地图增量同步。
-///
-/// 两条路径：
-/// 1. 上报本地摘要（新上线/入队追赶同步）；
-/// 2. 收到队友摘要后计算「自己有而对方缺失」的区块并回传差异分片。
+/// 地图同步：主线程捕获快照，后台读取旧区域与压缩差异，限速队列逐 tick 发送。
 public final class ClientMapSync {
-    /// 单 tick 写入的区块数上限，避免接收端帧率骤降。
     public static final int CHUNKS_PER_TICK = 8;
-
-    /// 待写队列：网络线程入队、主线程出队，需线程安全。
-    private static final Queue<PendingWrite> WRITE_QUEUE =
-            new ConcurrentLinkedQueue<>();
-    private static final Map<String, BatchRecord> RECEIVED_BATCHES = new HashMap<>();
-    /// 批次记录的过期窗口（毫秒）：超过该窗口的未收齐记录视为陈旧并清理。
-    private static final long BATCH_WINDOW_MILLIS = 30_000L;
-    /// 发送预算：按服务端配置限制带宽。
+    private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/mapsync");
     private static final SyncBudget BUDGET = new SyncBudget();
+    private static volatile Session session = new Session();
 
-    private ClientMapSync() {
+    private ClientMapSync() { }
+
+    /// 会话对象隔离异步任务；旧服务器的后台结果不会进入新服务器队列。
+    private static final class Session {
+        final ExecutorService worker = Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "Atlas map sync");
+            thread.setDaemon(true);
+            return thread;
+        });
+        final ArrayBlockingQueue<Outgoing> outgoing = new ArrayBlockingQueue<>(32);
+        final Queue<PendingWrite> writes = new ConcurrentLinkedQueue<>();
+        final Map<Key, DigestAssembly> digests = new HashMap<>();
+        final Set<Key> working = new HashSet<>();
     }
 
-    /// 上报本地已探索区块摘要。
+    private record Key(UUID player, String dimension) { }
+    private record Outgoing(CustomPacketPayload packet, Key completed) { }
+    private record PendingWrite(String dimension, ChunkMapData data) { }
+
+    /// 摘要包含内存和磁盘中的全部地表缓存，空地图同样发送以触发追赶同步。
     public static void reportLocalDigest() {
-        dev.dubhe.map.client.structure.ClientStructures.shareNext();
+        if (!AtlasSession.synchronizedMode()) {
+            return;
+        }
+        ClientStructures.shareNext();
+        Minecraft minecraft = Minecraft.getInstance();
         ClientMapManager manager = AtlasClientMap.manager();
-        if (manager == null) {
+        if (manager == null || minecraft.player == null || minecraft.level == null) {
             return;
         }
-        MapDimensionCache cache = manager.currentCache();
-        if (cache == null) {
+        String dimension = minecraft.level.dimension().identifier().toString();
+        Key key = new Key(minecraft.player.getUUID(), dimension);
+        Session current = session;
+        if (!current.working.add(key)) {
             return;
         }
-        List<ChunkDigestPayload.Entry> entries = new ArrayList<>();
-        for (ChunkMapData data : cache.loadedChunks()) {
-            entries.add(new ChunkDigestPayload.Entry(data.chunkX(), data.chunkZ(),
-                    data.version()));
-        }
-        String dimension = currentDimensionId();
-        var minecraft = Minecraft.getInstance();
-        UUID selfId = minecraft.player == null ? null : minecraft.player.getUUID();
-        for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries, selfId)) {
-            ClientPacketDistributor.sendToServer(packet);
-        }
-    }
-
-    /// 收到队友摘要：计算对方缺失的区块并回传差异分片。
-    public static void handleDigest(ChunkDigestPayload payload, IPayloadContext context) {
-        ClientMapManager manager = AtlasClientMap.manager();
-        if (manager == null) {
-            return;
-        }
-        MapDimensionCache cache = manager.currentCache();
-        if (cache == null) {
-            return;
-        }
-        List<ChunkDeltaPayload.ChunkData> deltas = computeDeltas(payload.entries(),
-                cache.loadedChunks());
-        if (deltas.isEmpty()) {
-            return;
-        }
-        // 按服务端配置的带宽上限与间隔限流，避免堵塞实时包。
-        // 单 tick 计数由 `tick` 统一重置，此处不再重复重置，否则同 tick 内多批差异各自计数。
-        // 差异回传给摘要发送者（由服务端按 targetPlayer 精确路由）。
-        UUID target = payload.senderId();
-        for (ChunkDeltaPayload packet : ChunkDeltaPayload.splitForUpload(
-                payload.dimensionId(), deltas, target)) {
-            int estimated = estimate(packet);
-            if (!BUDGET.canSend(estimated)) {
-                // 配额用尽：剩余分片留待下一轮同步，不做无界排队。
-                break;
+        MapDimensionCache.SyncSnapshot snapshot = manager.currentCache().snapshotForSync();
+        current.worker.execute(() -> {
+            try {
+                List<ChunkDigestPayload.Entry> entries = snapshot.readAll().stream()
+                        .map(data -> new ChunkDigestPayload.Entry(data.chunkX(), data.chunkZ(), data.version()))
+                        .toList();
+                for (ChunkDigestPayload packet : ChunkDigestPayload.split(dimension, entries, key.player())) {
+                    current.outgoing.put(new Outgoing(packet, null));
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                LOGGER.warn("Failed to read map digest for {}", dimension, e);
+            } finally {
+                finish(current, key);
             }
-            ClientPacketDistributor.sendToServer(packet);
-            BUDGET.record(estimated);
+        });
+    }
+
+    /// 摘要分片必须完整聚合；同一队友的传输未完成时合并重复请求，避免重复压缩。
+    public static void handleDigest(ChunkDigestPayload payload, IPayloadContext context) {
+        if (!AtlasSession.synchronizedMode() || payload.senderId() == null) {
+            return;
+        }
+        Session current = session;
+        long now = System.currentTimeMillis();
+        current.digests.values().removeIf(value -> value.expired(now));
+        Key key = new Key(payload.senderId(), payload.dimensionId());
+        List<ChunkDigestPayload.Entry> entries = current.digests
+                .computeIfAbsent(key, ignored -> new DigestAssembly()).add(payload, now);
+        if (entries == null) {
+            return;
+        }
+        current.digests.remove(key);
+        ClientMapManager manager = AtlasClientMap.manager();
+        MapDimensionCache cache = manager == null ? null : manager.syncCache(payload.dimensionId());
+        if (cache == null || !current.working.add(key)) {
+            return;
+        }
+        MapDimensionCache.SyncSnapshot snapshot = cache.snapshotForSync();
+        current.worker.execute(() -> {
+            try {
+                Map<Long, Long> versions = versions(entries);
+                List<ChunkMapData> batch = new ArrayList<>(CHUNKS_PER_TICK);
+                for (ChunkMapData data : snapshot.readAll()) {
+                    if (Thread.currentThread().isInterrupted()) {
+                        return;
+                    }
+                    Long version = versions.get(chunkKey(data.chunkX(), data.chunkZ()));
+                    if (version == null || version < data.version()) {
+                        batch.add(data);
+                        if (batch.size() == CHUNKS_PER_TICK) {
+                            queueBatch(current, key, batch);
+                            batch.clear();
+                        }
+                    }
+                }
+                if (!batch.isEmpty()) {
+                    queueBatch(current, key, batch);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                LOGGER.warn("Failed to prepare map transfer to {}", key, e);
+            } finally {
+                finish(current, key);
+            }
+        });
+    }
+
+    /// 有界队列施加背压；发送预算耗尽时保留分片，后续 tick 继续发送。
+    private static void queueBatch(Session current, Key key, List<ChunkMapData> batch)
+            throws InterruptedException {
+        for (ChunkDeltaPayload packet : ChunkDeltaPayload.splitForUpload(key.dimension(),
+                computeDeltas(List.of(), batch), key.player())) {
+            current.outgoing.put(new Outgoing(packet, null));
         }
     }
 
-    /// 计算「本地有而对方缺失或过期」的区块差异。
-    ///
-    /// 对方摘要中不存在的区块视为缺失，版本更低的视为过期，两者都需回传。
-    /// 抽为纯函数便于验证版本比对规则。
+    private static void finish(Session current, Key key) {
+        try {
+            current.outgoing.put(new Outgoing(null, key));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     static List<ChunkDeltaPayload.ChunkData> computeDeltas(
             List<ChunkDigestPayload.Entry> theirEntries, List<ChunkMapData> localChunks) {
-        Map<Long, Long> theirVersions = new HashMap<>();
-        for (ChunkDigestPayload.Entry entry : theirEntries) {
-            theirVersions.put(chunkKey(entry.chunkX(), entry.chunkZ()), entry.version());
-        }
+        Map<Long, Long> theirVersions = versions(theirEntries);
         List<ChunkDeltaPayload.ChunkData> deltas = new ArrayList<>();
         for (ChunkMapData data : localChunks) {
-            Long theirVersion = theirVersions.get(chunkKey(data.chunkX(), data.chunkZ()));
-            if (theirVersion == null || theirVersion < data.version()) {
+            Long version = theirVersions.get(chunkKey(data.chunkX(), data.chunkZ()));
+            if (version == null || version < data.version()) {
                 deltas.add(new ChunkDeltaPayload.ChunkData(data.chunkX(), data.chunkZ(),
-                        data.version(),
-                        ChunkPixelCodec.compressChunk(data)));
+                        data.version(), ChunkPixelCodec.compressChunk(data)));
             }
         }
         return deltas;
     }
 
-    /// 以区块坐标构造摘要比对用的键，负坐标同样可区分。
+    private static Map<Long, Long> versions(List<ChunkDigestPayload.Entry> entries) {
+        Map<Long, Long> versions = new HashMap<>();
+        for (ChunkDigestPayload.Entry entry : entries) {
+            versions.merge(chunkKey(entry.chunkX(), entry.chunkZ()), entry.version(), Math::max);
+        }
+        return versions;
+    }
+
     static long chunkKey(int chunkX, int chunkZ) {
         return ((long) chunkX << 32) | (chunkZ & 0xFFFFFFFFL);
     }
 
-    /// 收到差异分片：在网络线程完成解压，主线程只做缓存写入。
-    ///
-    /// 本负载注册为 `HandlerThread.NETWORK`，处理时已在网络线程；
-    /// 解压结果通过线程安全队列交给 `tick` 在逻辑线程写入缓存。
+    /// 网络线程解压；主线程按版本合并，迟到的旧分片不能覆盖刚探索的新数据。
     public static void handleDelta(ChunkDeltaPayload payload, IPayloadContext context) {
-        enqueueDecoded(payload);
-    }
-
-    /// 清理超过窗口仍未收齐的批次记录，避免分片丢失时记录永久残留。
-    private static void pruneStaleBatches() {
-        long cutoff = System.currentTimeMillis() - BATCH_WINDOW_MILLIS;
-        synchronized (RECEIVED_BATCHES) {
-            RECEIVED_BATCHES.values().removeIf(record -> record.firstSeenMillis < cutoff);
-        }
-    }
-
-    /// 解压分片并放入待写队列（网络线程执行）。
-    ///
-    /// 按 `batchIndex/batchCount` 记录分片到达情况，用于确认一次差异传输是否完整。
-    /// 批次键不含时间桶：一次拆分跨过窗口边界时，前后分片仍应归入同一批次。
-    private static void enqueueDecoded(ChunkDeltaPayload payload) {
-        String batchKey = payload.dimensionId() + '#' + payload.targetPlayer() + '#'
-                + payload.batchCount();
-        synchronized (RECEIVED_BATCHES) {
-            BatchRecord record = RECEIVED_BATCHES.computeIfAbsent(batchKey,
-                    key -> new BatchRecord(System.currentTimeMillis()));
-            if (payload.batchIndex() < 64) {
-                record.mask |= 1L << payload.batchIndex();
-            }
-            int expected = payload.batchCount();
-            // 位图只能表示 64 个分片：超出时无法在此判定收齐，交由超时清理。
-            if (expected <= 64) {
-                long mask = (1L << expected) - 1L;
-                if ((record.mask & mask) == mask) {
-                    RECEIVED_BATCHES.remove(batchKey);
-                }
-            }
-        }
-        for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
-            ChunkMapData decoded = ChunkPixelCodec.decompressChunk(chunk.chunkX(), chunk.chunkZ(),
-                    chunk.pixels(), chunk.version());
-            WRITE_QUEUE.add(new PendingWrite(payload.dimensionId(), chunk, decoded));
-        }
-    }
-
-    /// 未收齐批次的到达位图与首次到达时刻。
-    private static final class BatchRecord {
-        private long mask;
-        private final long firstSeenMillis;
-
-        private BatchRecord(long firstSeenMillis) {
-            this.firstSeenMillis = firstSeenMillis;
-        }
-    }
-
-    /// 每个客户端 tick 调用：重置发送预算并限速写入缓存。
-    public static void tick() {
-        // 每 tick 重置单 tick 发包计数，避免同一 tick 内多批差异各自计数。
-        BUDGET.beginTick();
-        pruneStaleBatches();
-        if (WRITE_QUEUE.isEmpty()) {
+        if (!AtlasSession.synchronizedMode()) {
             return;
+        }
+        Session current = session;
+        for (ChunkDeltaPayload.ChunkData chunk : payload.chunks()) {
+            ChunkMapData data = ChunkPixelCodec.decompressChunk(chunk.chunkX(), chunk.chunkZ(),
+                    chunk.pixels(), chunk.version());
+            current.writes.add(new PendingWrite(payload.dimensionId(), data));
+        }
+    }
+
+    public static void tick() {
+        if (!AtlasSession.synchronizedMode()) {
+            return;
+        }
+        Session current = session;
+        BUDGET.beginTick();
+        Outgoing next;
+        while ((next = current.outgoing.peek()) != null) {
+            if (next.completed() != null) {
+                current.working.remove(next.completed());
+                current.outgoing.poll();
+                continue;
+            }
+            int bytes = estimate(next.packet());
+            if (!BUDGET.canSend(bytes)) {
+                break;
+            }
+            ClientPacketDistributor.sendToServer(next.packet());
+            current.outgoing.poll();
+            BUDGET.record(bytes);
         }
         ClientMapManager manager = AtlasClientMap.manager();
         if (manager == null) {
             return;
         }
-        MapDimensionCache cache = manager.currentCache();
-        if (cache == null) {
-            return;
-        }
-        int written = 0;
-        while (!WRITE_QUEUE.isEmpty() && written < CHUNKS_PER_TICK) {
-            PendingWrite pending = WRITE_QUEUE.poll();
+        boolean changed = false;
+        for (int i = 0; i < CHUNKS_PER_TICK; i++) {
+            PendingWrite pending = current.writes.poll();
             if (pending == null) {
                 break;
             }
-            // 分片所属维度与当前缓存不一致时丢弃：写入会让另一维度的地形覆盖本维度。
-            String cacheDimension = currentDimensionId();
-            if (cacheDimension != null && !cacheDimension.equals(pending.dimensionId())) {
-                continue;
+            MapDimensionCache cache = manager.syncCache(pending.dimension());
+            if (cache != null && merge(cache, pending.data())) {
+                changed = true;
             }
-            cache.put(pending.data());
-            written++;
         }
-        if (written > 0) {
-            // 队友同步来的区块写入后刷新已打开的世界地图。
+        if (changed) {
             WorldMapScreen.onMapDataChanged();
         }
     }
 
-    /// 清理断线状态。
-    public static void clear() {
-        WRITE_QUEUE.clear();
-        // 与网络线程的写入共用同一把锁，避免登出时并发破坏哈希表。
-        synchronized (RECEIVED_BATCHES) {
-            RECEIVED_BATCHES.clear();
+    /// 只接受缺失或更新的区块，避免重传反复触发纹理重绘和区域写盘。
+    static boolean merge(MapDimensionCache cache, ChunkMapData incoming) {
+        var existing = cache.get(incoming.chunkX(), incoming.chunkZ());
+        if (existing.isPresent() && existing.get().version() >= incoming.version()) {
+            return false;
         }
-        // 带宽预算属会话级状态，切换服务器后从零开始。
+        cache.put(incoming);
+        return true;
+    }
+
+    public static void clear() {
+        Session previous = session;
+        session = new Session();
+        previous.worker.shutdownNow();
+        previous.outgoing.clear();
+        previous.writes.clear();
         BUDGET.reset();
     }
 
-    /// 估算一个分片的传输字节数（坐标 + 版本 + 像素串 + 包头）。
-    private static int estimate(ChunkDeltaPayload packet) {
-        int total = 0;
-        for (ChunkDeltaPayload.ChunkData chunk : packet.chunks()) {
+    private static int estimate(CustomPacketPayload packet) {
+        if (packet instanceof ChunkDigestPayload digest) {
+            return 320 + digest.entries().size() * 18;
+        }
+        ChunkDeltaPayload delta = (ChunkDeltaPayload) packet;
+        int total = 320;
+        for (ChunkDeltaPayload.ChunkData chunk : delta.chunks()) {
             total += chunk.pixels().length + 24;
         }
-        return total + 32;
-    }
-
-    private static String currentDimensionId() {
-        var minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
-            return "minecraft:overworld";
-        }
-        return minecraft.level.dimension().identifier().toString();
-    }
-
-    /// 待写入的区块：色板数据已在网络线程解压完成。
-    private record PendingWrite(String dimensionId, ChunkDeltaPayload.ChunkData chunk,
-            ChunkMapData data) {
+        return total;
     }
 }

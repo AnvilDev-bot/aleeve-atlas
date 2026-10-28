@@ -5,6 +5,7 @@ import dev.dubhe.map.AtlasSession;
 import dev.dubhe.map.api.team.TeamMembershipChangedEvent;
 import dev.dubhe.map.client.radar.VisibilityFade;
 import dev.dubhe.map.ping.ClientPings;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -24,6 +25,7 @@ public final class ClientMapSyncScheduler {
     private static int ticksSinceLogin;
     private static int ticksSinceReport;
     private static boolean reportedOnce;
+    private static String dimension;
 
     private ClientMapSyncScheduler() {
     }
@@ -32,6 +34,16 @@ public final class ClientMapSyncScheduler {
     public static void onClientTick(ClientTickEvent.Post event) {
         if (!AtlasSession.synchronizedMode()) {
             return;
+        }
+        var level = Minecraft.getInstance().level;
+        if (level == null) {
+            return;
+        }
+        String current = level.dimension().identifier().toString();
+        if (!current.equals(dimension)) {
+            dimension = current;
+            reportedOnce = false;
+            ticksSinceLogin = 0;
         }
         ticksSinceLogin++;
         if (!reportedOnce) {
@@ -78,6 +90,7 @@ public final class ClientMapSyncScheduler {
         ticksSinceLogin = 0;
         ticksSinceReport = 0;
         reportedOnce = false;
+        dimension = null;
         ClientMapSync.clear();
         // 清理跨会话残留的雷达渐隐与标点状态。
         VisibilityFade.clear();

@@ -57,7 +57,8 @@ public final class ServerMapSync {
 
         // 转发完整摘要给同队其他在线成员，由他们回传差异。
         for (ServerPlayer teammate : sender.level().getServer().getPlayerList().getPlayers()) {
-            if (teammate == sender || !TeamProviders.active()
+            if (teammate == sender || !teammate.connection.hasChannel(ChunkDigestPayload.TYPE)
+                    || !TeamProviders.active()
                     .sameTeam(sender.getUUID(), teammate.getUUID())) {
                 continue;
             }
@@ -90,7 +91,7 @@ public final class ServerMapSync {
             return;
         }
         ServerPlayer target = sender.level().getServer().getPlayerList().getPlayer(targetId);
-        if (target != null && target != sender
+        if (target != null && target != sender && target.connection.hasChannel(ChunkDeltaPayload.TYPE)
                 && TeamProviders.active().sameTeam(sender.getUUID(), target.getUUID())) {
             PacketDistributor.sendToPlayer(target, payload);
         }

@@ -4,6 +4,7 @@ import dev.dubhe.map.AtlasSession;
 import dev.dubhe.map.client.visibility.RaycastVisibilityResolver;
 import dev.dubhe.map.client.visibility.VisibilityResolver;
 import dev.dubhe.map.config.NonTeamVisibility;
+import dev.dubhe.map.sync.ClientPlayerPositions;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -38,12 +39,23 @@ public final class VisibilityGate {
     ///
     /// 从未取得可见结果的目标返回 0；GPU 查询未完成时沿用上一有效结果。
     public static float opacity(Level level, Player observer, Entity target) {
+        if (ClientPlayerPositions.sharedVisible(target.getUUID())) {
+            return 1.0F;
+        }
+        return localOpacity(level, observer, target);
+    }
+
+    /// 本地视野用于上报；远端占位实体不能参与本机遮挡判定。
+    public static float localOpacity(Level level, Player observer, Entity target) {
         NonTeamVisibility policy = AtlasSession.nonTeamVisibility();
         if (policy == NonTeamVisibility.NEVER) {
             return 0.0F;
         }
         if (policy == NonTeamVisibility.ALWAYS) {
             return 1.0F;
+        }
+        if (level.getPlayerByUUID(target.getUUID()) == null) {
+            return 0.0F;
         }
         if (VisibilityPreFilter.isHiddenByInvisibility(target)) {
             return 0.0F;

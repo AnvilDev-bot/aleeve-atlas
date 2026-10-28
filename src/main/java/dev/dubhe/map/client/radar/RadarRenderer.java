@@ -33,7 +33,7 @@ import java.util.UUID;
 /// 玩家标记切换为皮肤头像和实体图标。四种模式共用分类、距离、可见性与渐隐规则。
 public final class RadarRenderer {
     /// 玩家头像尺寸（GUI 像素）。
-    private static final int HEAD_SIZE = 3;
+    private static final int HEAD_SIZE = 6;
     private static final int ICON_SIZE = 8;
     private static final float ICON_SCALE = 0.5F;
     /// 掉落物合并粒度（像素），同格内只绘制一个圆点。
@@ -140,8 +140,10 @@ public final class RadarRenderer {
         }
 
         for (Entity entity : targets) {
+            boolean sharedPlayer = entity instanceof Player
+                    && (RadarStyle.isTeammate(entity) || ClientPlayerPositions.sharedVisible(entity.getUUID()));
             if (entity == player || entity.isRemoved()
-                    || entity.distanceToSqr(player) > maxDistanceSq) {
+                    || (!sharedPlayer && entity.distanceToSqr(player) > maxDistanceSq)) {
                 continue;
             }
             RadarCategory category = RadarCategory.classify(entity);

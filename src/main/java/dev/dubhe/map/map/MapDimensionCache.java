@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,12 +77,36 @@ public final class MapDimensionCache {
         region.dirty = true;
     }
 
-    /// 全部已缓存区块的摘要（坐标 + 版本号），供地图增量同步比对。
-    ///
-    /// 仅返回内存中已加载的区块；精确全量摘要需要遍历区域文件，代价较高，
-    /// 因此同步按「当前会话已探索」范围进行，符合规格「仅限在线成员」的语义。
+    /// 当前已访问的内存区块；同步全量地图应使用 snapshotForSync。
     public List<ChunkMapData> loadedChunks() {
         return List.copyOf(this.chunks.values());
+    }
+
+    /// 主线程捕获已加载区域的快照；磁盘遍历与解压由后台线程完成，不改变渲染缓存的 LRU。
+    public SyncSnapshot snapshotForSync() {
+        Map<Path, List<ChunkMapData>> regions = new HashMap<>();
+        for (RegionFile region : this.loadedRegions.values()) {
+            regions.put(region.path, List.copyOf(region.entries.values()));
+        }
+        return new SyncSnapshot(this.dimensionDir, Map.copyOf(regions));
+    }
+
+    /// 区块写入缓存后不再修改；快照保留对象引用，后台只读。
+    public record SyncSnapshot(Path directory, Map<Path, List<ChunkMapData>> loaded) {
+        public List<ChunkMapData> readAll() throws IOException {
+            List<ChunkMapData> result = new ArrayList<>();
+            loaded.values().forEach(result::addAll);
+            if (Files.isDirectory(directory)) {
+                try (var paths = Files.newDirectoryStream(directory, "r.*.*.nbt")) {
+                    for (Path path : paths) {
+                        if (!loaded.containsKey(path)) {
+                            result.addAll(new RegionFile(path).entries.values());
+                        }
+                    }
+                }
+            }
+            return result;
+        }
     }
 
     /// 该缓存对应的维度目录（诊断用）。

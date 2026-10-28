@@ -3,6 +3,7 @@ package dev.dubhe.map.sync;
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.config.NonTeamVisibility;
 import dev.dubhe.map.network.PlayerPositionPayload;
+import dev.dubhe.map.network.TeamSightingsPayload;
 import dev.dubhe.map.team.TeamProviders;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -12,6 +13,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,14 +36,44 @@ public final class PlayerPositionHandler {
                 || !(context.player() instanceof ServerPlayer sender)) {
             return;
         }
-        PlayerPositionPayload verified = new PlayerPositionPayload(sender.getUUID(),
-                sender.getGameProfile().name(), payload.dimensionId(), payload.x(), payload.y(),
-                payload.z(), false);
+        PlayerPositionPayload verified = positionOf(sender);
         PlayerPositionPayload previous = POSITIONS.put(sender.getUUID(), verified);
         if (previous != null && !previous.dimensionId().equals(verified.dimensionId())) {
             broadcastRemoval(sender, previous);
         }
         broadcast(sender, verified);
+    }
+
+    private static PlayerPositionPayload positionOf(ServerPlayer player) {
+        return new PlayerPositionPayload(player.getUUID(), player.getGameProfile().name(),
+                player.level().dimension().identifier().toString(),
+                player.getX(), player.getY(), player.getZ(), false);
+    }
+
+    /// 观察者身份与目标坐标均由服务端重建；只发给同队成员，不按接收者视距过滤。
+    public static void handleSightings(TeamSightingsPayload payload, IPayloadContext context) {
+        if (!AleeveAtlas.CONFIG.sync.enabled || !(context.player() instanceof ServerPlayer sender)) {
+            return;
+        }
+        List<PlayerPositionPayload> verified = new ArrayList<>();
+        var server = sender.level().getServer();
+        var seen = new HashSet<UUID>();
+        if (AleeveAtlas.CONFIG.radar.nonTeamPlayerVisibility != NonTeamVisibility.NEVER) {
+            for (PlayerPositionPayload sighting : payload.sightings()) {
+                ServerPlayer target = server.getPlayerList().getPlayer(sighting.playerId());
+                if (target != null && target != sender && target.level() == sender.level()
+                        && seen.add(target.getUUID())) {
+                    verified.add(positionOf(target));
+                }
+            }
+        }
+        TeamSightingsPayload snapshot = new TeamSightingsPayload(sender.getUUID(), verified);
+        for (ServerPlayer recipient : server.getPlayerList().getPlayers()) {
+            if (recipient != sender && TeamProviders.active().sameTeam(sender.getUUID(), recipient.getUUID())
+                    && recipient.connection.hasChannel(TeamSightingsPayload.TYPE)) {
+                PacketDistributor.sendToPlayer(recipient, snapshot);
+            }
+        }
     }
 
     /// 玩家登录后发送当前维度的在线玩家快照。
@@ -48,7 +82,8 @@ public final class PlayerPositionHandler {
             return;
         }
         for (PlayerPositionPayload payload : POSITIONS.values()) {
-            if (canReceive(payload.playerId(), recipient)) {
+            if (recipient.connection.hasChannel(PlayerPositionPayload.TYPE)
+                    && canReceive(payload.playerId(), recipient)) {
                 PacketDistributor.sendToPlayer(recipient, payload);
             }
         }
@@ -71,7 +106,8 @@ public final class PlayerPositionHandler {
 
     private static void broadcast(ServerPlayer sender, PlayerPositionPayload payload) {
         for (ServerPlayer recipient : sender.level().getServer().getPlayerList().getPlayers()) {
-            if (recipient != sender && canReceive(payload.playerId(), recipient)) {
+            if (recipient != sender && recipient.connection.hasChannel(PlayerPositionPayload.TYPE)
+                    && canReceive(payload.playerId(), recipient)) {
                 PacketDistributor.sendToPlayer(recipient, payload);
             }
         }

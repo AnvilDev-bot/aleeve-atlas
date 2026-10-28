@@ -12,6 +12,8 @@ import dev.dubhe.map.storage.ServerKey;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
@@ -229,6 +231,16 @@ public final class ClientMapManager {
             return null;
         }
         return this.cacheFor(minecraft, serverKey(minecraft), minecraft.level.dimension());
+    }
+
+    /// 同步可访问其他维度的地表缓存，不能把远端维度写入当前地图。
+    public MapDimensionCache syncCache(String dimensionId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        Identifier id = Identifier.tryParse(dimensionId);
+        if (minecraft.level == null || id == null) {
+            return null;
+        }
+        return this.cacheFor(minecraft, serverKey(minecraft), ResourceKey.create(Registries.DIMENSION, id));
     }
 
     public boolean hasSampledChunk(int chunkX, int chunkZ) {

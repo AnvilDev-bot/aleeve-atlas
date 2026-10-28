@@ -4,7 +4,6 @@ import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.api.team.TeamMembershipChangedEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -46,10 +45,15 @@ public final class TeamMembershipWatcher {
         }
         TeamProvider provider = TeamProviders.active();
         Map<UUID, String> current = new HashMap<>();
-        for (AbstractClientPlayer player : level.players()) {
-            String teamId = provider.teamIdOf(player.getUUID());
+        var connection = minecraft.getConnection();
+        if (connection == null) {
+            return;
+        }
+        for (var info : connection.getOnlinePlayers()) {
+            UUID playerId = info.getProfile().id();
+            String teamId = provider.teamIdOf(playerId);
             if (teamId != null) {
-                current.put(player.getUUID(), teamId);
+                current.put(playerId, teamId);
             }
         }
         // 退队或换队：旧表中有、且队伍 ID 与当前不同。

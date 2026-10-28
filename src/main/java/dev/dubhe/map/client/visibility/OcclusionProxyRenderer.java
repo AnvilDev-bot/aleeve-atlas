@@ -23,6 +23,9 @@ import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
+import org.lwjgl.opengl.GL33C;
+import org.lwjgl.opengl.GL44C;
+import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +43,6 @@ public final class OcclusionProxyRenderer {
     private static final Logger LOGGER = LoggerFactory.getLogger("aleeve_atlas/occlusion");
     /// 查询总数上限，规格要求每帧不超过 64 个。
     public static final int MAX_QUERIES = 64;
-    /// 判定可见的最小样本数，排除仅通过一个采样点的结果。
-    public static final int MIN_VISIBLE_SAMPLES = 2;
 
     private static final int WHITE = 0xFFFFFFFF;
 
@@ -88,13 +89,11 @@ public final class OcclusionProxyRenderer {
         if (backend == null || !backend.toLowerCase(Locale.ROOT).contains("opengl")) {
             return this.disable("backend is " + backend);
         }
-        if (!GL.getCapabilities().OpenGL15) {
-            return this.disable("OpenGL 1.5 occlusion queries unsupported");
+        if (!GL.getCapabilities().OpenGL33) {
+            return this.disable("boolean occlusion queries unsupported");
         }
-        int counterBits = GL15C.glGetQueryi(GL15C.GL_SAMPLES_PASSED,
-                GL15C.GL_QUERY_COUNTER_BITS);
-        if (counterBits <= 0) {
-            return this.disable("GL_SAMPLES_PASSED has no counter bits");
+        if (!GL.getCapabilities().OpenGL44 && !GL.getCapabilities().GL_ARB_query_buffer_object) {
+            return this.disable("non-blocking query result retrieval unsupported");
         }
         int error = GL11C.glGetError();
         if (error != GL11C.GL_NO_ERROR) {
@@ -111,8 +110,7 @@ public final class OcclusionProxyRenderer {
             return this.disable("GL error while creating queries: 0x"
                     + Integer.toHexString(error));
         }
-        LOGGER.info("Occlusion queries enabled: GL_SAMPLES_PASSED with {} counter bits, "
-                + "{} query slots", counterBits, MAX_QUERIES);
+        LOGGER.info("Occlusion queries enabled: GL_ANY_SAMPLES_PASSED, {} query slots", MAX_QUERIES);
         return true;
     }
 
@@ -138,9 +136,6 @@ public final class OcclusionProxyRenderer {
         if (!this.available() || slot < 0 || slot >= this.queries.length) {
             return false;
         }
-        if (GL15C.glGetQueryi(GL15C.GL_SAMPLES_PASSED, GL15C.GL_CURRENT_QUERY) != 0) {
-            return false;
-        }
         double minX = box.minX - cameraPos.x;
         double minY = box.minY - cameraPos.y;
         double minZ = box.minZ - cameraPos.z;
@@ -148,26 +143,25 @@ public final class OcclusionProxyRenderer {
         double maxY = box.maxY - cameraPos.y;
         double maxZ = box.maxZ - cameraPos.z;
 
-        GL15C.glBeginQuery(GL15C.GL_SAMPLES_PASSED, this.queries[slot]);
+        GL15C.glBeginQuery(GL33C.GL_ANY_SAMPLES_PASSED, this.queries[slot]);
         try {
             drawBox(minX, minY, minZ, maxX, maxY, maxZ);
         } finally {
-            GL15C.glEndQuery(GL15C.GL_SAMPLES_PASSED);
+            GL15C.glEndQuery(GL33C.GL_ANY_SAMPLES_PASSED);
         }
         return true;
     }
 
-    /// 读取已就绪的样本数；结果不可用时返回 -1。
+    /// 一次调用读取布尔结果；未就绪时保持 -1，不轮询可用性，也不等待 GPU。
     public int poll(int slot) {
         if (!this.available() || slot < 0 || slot >= this.queries.length) {
             return -1;
         }
-        int available = GL15C.glGetQueryObjectui(this.queries[slot],
-                GL15C.GL_QUERY_RESULT_AVAILABLE);
-        if (available == 0) {
-            return -1;
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            var result = stack.ints(-1);
+            GL15C.glGetQueryObjectuiv(this.queries[slot], GL44C.GL_QUERY_RESULT_NO_WAIT, result);
+            return result.get(0);
         }
-        return GL15C.glGetQueryObjectui(this.queries[slot], GL15C.GL_QUERY_RESULT);
     }
 
     /// 读取并清除最近一次 GL 错误，供调用方决定是否降级。
@@ -175,9 +169,9 @@ public final class OcclusionProxyRenderer {
         return this.available() ? GL11C.glGetError() : GL11C.GL_NO_ERROR;
     }
 
-    /// 样本数是否达到可见阈值。
+    /// 布尔查询只要有任意样本通过即为可见。
     public static boolean passesThreshold(int samples) {
-        return samples >= MIN_VISIBLE_SAMPLES;
+        return samples > 0;
     }
 
     /// 释放全部查询对象。

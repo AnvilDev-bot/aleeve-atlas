@@ -96,8 +96,6 @@ public final class VisibilityPreFilter {
             return List.of();
         }
         Vec3 cameraPos = renderState.cameraRenderState.pos;
-        int maxDistance = AtlasSession.maxRadarDistance();
-        double maxDistanceSq = (double) maxDistance * maxDistance;
         Frustum frustum = currentFrustum();
         List<Target> targets = new ArrayList<>();
         Set<UUID> accepted = new HashSet<>();
@@ -110,9 +108,6 @@ public final class VisibilityPreFilter {
                 continue;
             }
             if (RadarStyle.isTeammate(player) || isHiddenByInvisibility(player)) {
-                continue;
-            }
-            if (player.distanceToSqr(observer) > maxDistanceSq) {
                 continue;
             }
             AABB box = new AABB(
