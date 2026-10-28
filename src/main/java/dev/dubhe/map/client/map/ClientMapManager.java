@@ -167,12 +167,14 @@ public final class ClientMapManager {
                     if (!caveMode) {
                         Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
                         if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
+                            dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
                             this.texture.putChunk(existing.get());
                             continue;
                         }
                     } else {
                         Optional<ChunkMapData> existing = this.caveCache.get(chunkX, chunkZ);
                         if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
+                            dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
                             this.texture.putChunk(existing.get());
                             continue;
                         }
@@ -193,6 +195,7 @@ public final class ClientMapManager {
                         cache.put(sampledData);
                     }
                     this.texture.putChunk(sampledData);
+                    dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
                     sampled++;
                 }
             }
@@ -226,6 +229,12 @@ public final class ClientMapManager {
             return null;
         }
         return this.cacheFor(minecraft, serverKey(minecraft), minecraft.level.dimension());
+    }
+
+    public boolean hasSampledChunk(int chunkX, int chunkZ) {
+        MapDimensionCache surface = this.currentCache();
+        return (surface != null && surface.get(chunkX, chunkZ).isPresent())
+                || (this.caveCache != null && this.caveCache.get(chunkX, chunkZ).isPresent());
     }
 
     public void flush() {

@@ -320,6 +320,7 @@ public final class WorldMapScreen extends Screen {
 
     /// 分享当前视野内的全部路径点。
     private void shareVisibleWaypoints() {
+        dev.dubhe.map.client.structure.ClientStructures.shareAll();
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             return;

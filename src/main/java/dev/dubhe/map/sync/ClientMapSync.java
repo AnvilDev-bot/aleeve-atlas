@@ -44,6 +44,7 @@ public final class ClientMapSync {
 
     /// 上报本地已探索区块摘要。
     public static void reportLocalDigest() {
+        dev.dubhe.map.client.structure.ClientStructures.shareNext();
         ClientMapManager manager = AtlasClientMap.manager();
         if (manager == null) {
             return;
