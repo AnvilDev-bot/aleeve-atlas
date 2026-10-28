@@ -30,13 +30,8 @@ public final class StructurePayloads {
         registrar.playToClient(Policy.TYPE, Policy.CODEC, ClientStructureSearch::policy);
         registrar.playToServer(Search.TYPE, Search.CODEC, ServerStructureSearch::request);
         registrar.playToClient(SearchResult.TYPE, SearchResult.CODEC, ClientStructureSearch::result);
-        registrar.playBidirectional(Share.TYPE, Share.CODEC, (payload, context) -> {
-            if (context.flow().isServerbound()) {
-                ServerStructures.share(payload, context);
-            } else {
-                ClientStructures.receiveShare(payload, context);
-            }
-        });
+        registrar.playBidirectional(Share.TYPE, Share.CODEC,
+                ServerStructures::share, ClientStructures::receiveShare);
     }
 
     private static List<StructureRecord> readRecords(FriendlyByteBuf buffer) {
