@@ -7,6 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
 
 /// 区块边界和史莱姆区块覆盖层。
 public final class ChunkOverlayRenderer {
+    private static final float WORLD_MAP_MIN_OVERLAY_PIXELS_PER_CHUNK = 0.8F;
     private static final int GRID_COLOR = 0x50000000;
     private static final int SLIME_COLOR = 0x5044DD44;
 
@@ -15,7 +16,8 @@ public final class ChunkOverlayRenderer {
 
     public static void renderOnWorldMap(GuiGraphics graphics, AtlasClientConfig config,
             double centerX, double centerZ, float pixelsPerChunk, int width, int height) {
-        if (!config.worldMap.showChunkGrid && !config.worldMap.showSlimeChunks) {
+        if (pixelsPerChunk < WORLD_MAP_MIN_OVERLAY_PIXELS_PER_CHUNK
+                || (!config.worldMap.showChunkGrid && !config.worldMap.showSlimeChunks)) {
             return;
         }
         Long seed = config.worldMap.showSlimeChunks ? SlimeChunkTracker.currentSeed() : null;
