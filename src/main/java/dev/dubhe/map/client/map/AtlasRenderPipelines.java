@@ -30,7 +30,7 @@ public final class AtlasRenderPipelines {
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .build();
 
-    /// 叠加层管线：边框与水滴形玩家指示器，由片元着色器解析式绘制。
+    /// 小地图边框独立绘制，避免玩家指示器样式影响边框。
     public static final RenderPipeline MINIMAP_OVERLAY = RenderPipeline
             .builder(RenderPipelines.MATRICES_PROJECTION_SNIPPET)
             .withLocation(AleeveAtlas.id("pipeline/minimap_overlay"))
@@ -45,6 +45,10 @@ public final class AtlasRenderPipelines {
     /// 世界地图光滑四角方向标，逆时针半臂使用空心轮廓。
     public static final RenderPipeline WORLD_COMPASS = markerPipeline(
             "world_compass", "core/world_compass");
+
+    /// 玩家水滴指示器以距离场绘制抗锯齿轮廓和黑色描边。
+    public static final RenderPipeline PLAYER_DROPLET = markerPipeline(
+            "player_droplet", "core/player_droplet");
 
     /// 实体圆点标记管线。
     public static final RenderPipeline MAP_MARKER_DOT = markerPipeline(
@@ -86,6 +90,7 @@ public final class AtlasRenderPipelines {
         event.registerPipeline(MINIMAP_CIRCLE);
         event.registerPipeline(MINIMAP_OVERLAY);
         event.registerPipeline(WORLD_COMPASS);
+        event.registerPipeline(PLAYER_DROPLET);
         event.registerPipeline(MAP_MARKER_DOT);
         event.registerPipeline(MAP_MARKER_DIAMOND);
         event.registerPipeline(MAP_MARKER_CROSS);

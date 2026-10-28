@@ -127,15 +127,18 @@ public final class MinimapRenderer {
             graphics.disableScissor();
         }
 
-        float arrowYaw = arrowYawDegrees(player.getYRot(), config.minimap.lockNorth);
         int overlaySize = size + BORDER_EXPANSION_PIXELS * 2;
         int overlayX = x - BORDER_EXPANSION_PIXELS;
         int overlayY = y - BORDER_EXPANSION_PIXELS;
-        int tint = encodeOverlayTint(arrowYaw, circular, config.minimap.lockNorth, size,
+        int tint = encodeOverlayTint(circular, size,
                 BORDER_EXPANSION_PIXELS);
         graphics.blit(AtlasRenderPipelines.MINIMAP_OVERLAY, OVERLAY_TEXTURE,
                 overlayX, overlayY, 0.0F, 0.0F, overlaySize, overlaySize,
                 2, 2, 2, 2, tint);
+
+        PlayerIndicatorRenderer.draw(graphics, config.minimap.playerIndicator,
+                x + size / 2d, y + size / 2d, player.getYRot(), rotationDegrees,
+                PlayerIndicatorRenderer.minimapScale(layout));
 
         CompassRenderer.renderOnMinimap(graphics, layout, rotationDegrees);
         TerritoryRenderer.renderLabelsOnMinimap(graphics, layout, circular, rotationDegrees);
@@ -151,11 +154,6 @@ public final class MinimapRenderer {
     /// Minecraft yaw=0 朝南，因此需要包含 180° 的南北基准。
     static float mapRotationDegrees(float playerYaw, boolean lockNorth) {
         return lockNorth ? 0.0F : 180.0F - playerYaw;
-    }
-
-    /// 玩家指示器旋转角：固定地图方向时随玩家朝向旋转，视角随动时固定朝上。
-    static float arrowYawDegrees(float playerYaw, boolean lockNorth) {
-        return lockNorth ? playerYaw : 0.0F;
     }
 
     /// 圆形遮罩使用顶点色 R 传递纹理裁剪比例的倒数，还原屏幕局部坐标。
@@ -183,15 +181,11 @@ public final class MinimapRenderer {
         return 0.35F + 0.65F * normalized;
     }
 
-    /// 把朝向角与显示模式编码进顶点色：R 为 yaw/(2π)，G 为圆形开关，B 为固定北向。
-    private static int encodeOverlayTint(float yaw, boolean circular, boolean lockNorth,
-            int mapSize, int borderExpansion) {
-        float normalized = (yaw % 360.0F + 360.0F) % 360.0F / 360.0F;
-        int red = Math.round(normalized * 255.0F);
+    /// 边框使用 G 通道传递圆形开关，A 通道传递向外扩展的比例。
+    private static int encodeOverlayTint(boolean circular, int mapSize, int borderExpansion) {
         int green = circular ? 255 : 0;
-        int blue = lockNorth ? 255 : 0;
         int alpha = Math.round(borderExpansion * 2.0F / mapSize * 255.0F);
-        return (alpha << 24) | (red << 16) | (green << 8) | blue;
+        return (alpha << 24) | (green << 8);
     }
 
     /// 小地图是否贴屏幕底部：此时信息覆层改画在其上方。

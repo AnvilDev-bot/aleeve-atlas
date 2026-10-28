@@ -25,6 +25,7 @@ This mod depends on **AnvilLib 2.x** (`2.0.0` or later), but this dependency is 
 
 * **Customizable Minimap**: Toggle between round or square frames, rotating or north-locked views, and custom zoom levels. Displays coordinates, biome, light level, and in-game time underneath.
 * **Fullscreen World Map**: Pan and zoom smoothly, manage waypoints directly on the canvas, and access client settings straight from the map UI.
+* **Player Indicator**: Choose an antialiased droplet or the vanilla player icon independently for each map, both with a black outline. Both default to the droplet. The minimap indicator scales with its panel; the world map indicator stays at a fixed screen size. The vanilla style supports resource packs.
 * **Isolated Map Cache**: Automatically saves explored terrain. Map data is neatly separated by world, server, and dimension so caches never collide.
 * **Entity & Player Radar**: Displays nearby mobs and player heads on the map, with configurable visibility rules per entity category.
 * **Waypoints & Death Markers**: Supports in-world markers/beacons, automatic death waypoints, and chat commands for importing and exporting waypoint data.

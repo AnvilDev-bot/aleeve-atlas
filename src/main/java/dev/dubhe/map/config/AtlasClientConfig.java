@@ -39,6 +39,9 @@ public class AtlasClientConfig {
     public Ping ping = new Ping();
 
     public static class WorldMap {
+        @Comment("Player indicator style on the world map. Changes apply immediately.")
+        public PlayerIndicatorType playerIndicator = PlayerIndicatorType.ANTIALIASED_DROPLET;
+
         @Comment("Corner used by the world map compass.")
         public CompassPosition compassPosition = CompassPosition.BOTTOM_RIGHT;
 
@@ -53,6 +56,9 @@ public class AtlasClientConfig {
     }
 
     public static class Minimap {
+        @Comment("Player indicator style on the minimap. Changes apply immediately.")
+        public PlayerIndicatorType playerIndicator = PlayerIndicatorType.ANTIALIASED_DROPLET;
+
         @Comment("Whether the minimap HUD is enabled.")
         public boolean enabled = true;
 

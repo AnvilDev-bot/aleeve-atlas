@@ -72,7 +72,6 @@ public final class WorldMapScreen extends Screen {
     private static final float MIN_PIXELS_PER_CHUNK = 0.05F;
     private static final float MAX_PIXELS_PER_CHUNK = 12.0F;
     private static final int BACKGROUND_COLOR = 0xF0101010;
-    private static final int PLAYER_COLOR = 0xFFFFFFFF;
     /// 低于该区块像素尺寸时隐藏领地名称标签。
     private static final float MIN_PIXELS_FOR_LABEL = 3.0F;
     /// 虚线边框的节距（像素）。
@@ -896,7 +895,7 @@ public final class WorldMapScreen extends Screen {
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
     }
 
-    /// 玩家在小地图上的位置标记。
+    /// 玩家指示器固定使用界面尺寸，避免地形缩放改变其大小。
     private void drawPlayerMarker(GuiGraphics graphics) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -907,9 +906,8 @@ public final class WorldMapScreen extends Screen {
         if (screenX < 0 || screenX > width || screenY < 0 || screenY > height) {
             return;
         }
-        int x = (int) Math.round(screenX);
-        int y = (int) Math.round(screenY);
-        MapMarkerRenderer.drawDot(graphics, x, y, 6, PLAYER_COLOR);
+        PlayerIndicatorRenderer.draw(graphics, AtlasClientConfigs.CONFIG.worldMap.playerIndicator,
+                screenX, screenY, minecraft.player.getYRot(), 0f, 1f);
     }
 
     private void drawContextMenu(GuiGraphics graphics, int mouseX, int mouseY) {
