@@ -20,6 +20,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -127,21 +128,25 @@ public final class ClientWaypoints {
     /// 按维度写入路径点：自动选择或创建对应维度的存储。
     public static void upsertInDimension(Waypoint waypoint) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null) {
+        if (minecraft.player == null || minecraft.level == null) {
             return;
         }
-        if (minecraft.level != null && waypoint.dimension().equals(minecraft.level.dimension())) {
-            // 当前维度直接写入活动存储。
-            WaypointStore current = store();
+        WaypointStore current = store();
+        if (waypoint.dimension().equals(minecraft.level.dimension())) {
             if (current != null) {
                 current.upsert(waypoint);
             }
             return;
         }
-        // 非当前维度：打开对应维度的存储写入并立即写入磁盘。
-        String key = serverKey(minecraft);
-        WaypointStore other = WaypointStore.open(minecraft.gameDirectory.toPath(), key,
-                waypoint.dimension());
+        upsertStoredDimension(minecraft.gameDirectory.toPath(), serverKey(minecraft), STORES, waypoint);
+    }
+
+    static void upsertStoredDimension(Path gameDir, String serverKey, Map<String, WaypointStore> stores, Waypoint waypoint) {
+        // 已访问维度必须更新同一缓存实例，否则之后切回或保存时会丢失导入点。
+        WaypointStore other = stores.get(waypoint.dimension().identifier().toString());
+        if (other == null) {
+            other = WaypointStore.open(gameDir, serverKey, waypoint.dimension());
+        }
         other.upsert(waypoint);
         other.flush();
     }

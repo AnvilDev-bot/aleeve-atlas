@@ -1,6 +1,7 @@
 package dev.dubhe.map.client.cartography;
 
 import dev.dubhe.map.AleeveAtlas;
+import dev.dubhe.map.cartography.BannerMarker;
 import dev.dubhe.map.cartography.Cartography;
 import dev.dubhe.map.cartography.CartographyPayloads;
 import dev.dubhe.map.cartography.ImportedMapStore;
@@ -122,8 +123,11 @@ public final class ClientCartography {
                 try {
                     MapSnapshot snapshot = result.snapshot();
                     store(snapshot.dimension()).put(snapshot);
-                    addTargets(snapshot);
+                    int addedBanners = addTargets(snapshot, result.banners());
                     screen.onMapImported(snapshot);
+                    if (!result.banners().isEmpty()) {
+                        message("banners_imported", addedBanners);
+                    }
                 } catch (IOException | RuntimeException e) {
                     org.slf4j.LoggerFactory.getLogger(ClientCartography.class).warn("Map import failed", e);
                     message("save_failed");
@@ -159,7 +163,7 @@ public final class ClientCartography {
         });
     }
 
-    private static void addTargets(MapSnapshot snapshot) {
+    private static int addTargets(MapSnapshot snapshot, List<BannerMarker> banners) {
         var mc = Minecraft.getInstance();
         var dimension = ResourceKey.create(Registries.DIMENSION, Identifier.parse(snapshot.dimension()));
         ClientWaypoints.flushAllDimensions();
@@ -167,20 +171,28 @@ public final class ClientCartography {
         for (var target : snapshot.targets()) {
             UUID id = UUID.nameUUIDFromBytes(("atlas-map/" + snapshot.dimension() + "/" + target.type()
                     + "/" + target.x() + "/" + target.z()).getBytes(StandardCharsets.UTF_8));
-            if (existing.get(id).isPresent()) continue;
+            if (existing.get(id).isPresent()) {
+                continue;
+            }
             int y = snapshot.referenceHeight();
             var manager = AtlasClientMap.manager();
             if (dimension.equals(mc.level.dimension()) && manager != null && manager.currentCache() != null) {
                 var data = manager.currentCache().get(Math.floorDiv(target.x(), 16), Math.floorDiv(target.z(), 16)).orElse(null);
-                if (data != null && Cartography.terrainPixel(data, target.x() & 15, target.z() & 15) != 0)
+                if (data != null && Cartography.terrainPixel(data, target.x() & 15, target.z() & 15) != 0) {
                     y = data.heightAt(target.x() & 15, target.z() & 15);
+                }
             }
             String type = Identifier.parse(target.type()).getPath();
             String name = text("target." + type).getString() + " " + text("reference_height").getString();
             ClientWaypoints.upsertInDimension(new Waypoint(id, name, new BlockPos(target.x(), y, target.z()),
                     dimension, 0xFFFFCC55, "treasure", true, -1, false, "", false));
         }
+        List<Waypoint> newBanners = BannerWaypoints.missing(banners, existing);
+        for (Waypoint waypoint : newBanners) {
+            ClientWaypoints.upsertInDimension(waypoint);
+        }
         ClientWaypoints.flushAllDimensions();
+        return newBanners.size();
     }
 
     public static byte[] preview(int centerX, int centerZ) {

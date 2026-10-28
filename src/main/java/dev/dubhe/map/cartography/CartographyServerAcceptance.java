@@ -1,18 +1,30 @@
 package dev.dubhe.map.cartography;
 
 import dev.dubhe.map.AleeveAtlas;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.maps.MapBanner;
+import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import org.slf4j.LoggerFactory;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /// 使用真实服务端存档、背包和地图数据测试材料事务；仅在隔离验收进程启用。
@@ -72,6 +84,7 @@ public final class CartographyServerAcceptance {
             player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.MAP, 2));
             require(ServerCartography.executeCraft(player, request(pixels, false, 0)).status().equals("crafted"), "full inventory succeeds via drop");
             require(player.getMainHandItem().getCount() == 1, "full inventory consumes once");
+            verifyBannerImport(player);
             LoggerFactory.getLogger(CartographyServerAcceptance.class).info("Cartography dedicated transaction acceptance PASSED");
         } catch (Exception e) {
             LoggerFactory.getLogger(CartographyServerAcceptance.class).error("Cartography dedicated transaction acceptance FAILED", e);
@@ -83,6 +96,47 @@ public final class CartographyServerAcceptance {
         return new CartographyPayloads.CraftRequest(UUID.randomUUID(), InteractionHand.MAIN_HAND, slot,
                 "minecraft:overworld", -128, 256, locked, pixels);
     }
+
+    private static void verifyBannerImport(ServerPlayer player) {
+        AleeveAtlas.CONFIG.sync.enabled = false;
+        var level = player.level();
+        var data = MapItemSavedData.createFresh(-1_000_000, 1_000_000, (byte) 4, true, false, Level.NETHER);
+        BlockPos position = new BlockPos(-1_000_003, 90, 1_000_005);
+        var banner = new MapBanner(position, DyeColor.CYAN, Optional.of(Component.literal("example")));
+        CompoundTag saved = (CompoundTag) MapItemSavedData.CODEC.encodeStart(NbtOps.INSTANCE, data).getOrThrow();
+        ListTag banners = new ListTag();
+        banners.add(MapBanner.CODEC.encodeStart(NbtOps.INSTANCE, banner).getOrThrow());
+        saved.put("banners", banners);
+        data = MapItemSavedData.CODEC.parse(NbtOps.INSTANCE, saved).getOrThrow().locked();
+        var mapId = level.getFreeMapId();
+        level.setMapData(mapId, data);
+        ItemStack map = new ItemStack(Items.FILLED_MAP);
+        map.set(DataComponents.MAP_ID, mapId);
+        player.getInventory().clearContent();
+        player.getInventory().setSelectedSlot(0);
+        int loadedChunks = level.getChunkSource().getLoadedChunksCount();
+        for (InteractionHand hand : InteractionHand.values()) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+            player.setItemInHand(InteractionHand.OFF_HAND, ItemStack.EMPTY);
+            player.setItemInHand(hand, map.copy());
+            var request = new CartographyPayloads.ImportRequest(UUID.randomUUID(), hand, 0, mapId.id());
+            var result = ServerCartography.executeImport(player, request);
+            require(result.status().equals("imported") && result.snapshot() != null, "flag map imported from either hand");
+            require(result.snapshot().dimension().equals("minecraft:the_nether"), "flag uses map dimension");
+            require(result.banners().equals(List.of(new BannerMarker(position, DyeColor.CYAN, "example"))),
+                    "flag keeps saved name, color and height");
+            require(player.getItemInHand(hand).getCount() == 1, "import keeps held map");
+            player.getInventory().setSelectedSlot(1);
+            require(ServerCartography.executeImport(player, request).status().equals("changed"), "changed slot rejected");
+            player.getInventory().setSelectedSlot(0);
+            var wrongMap = new CartographyPayloads.ImportRequest(UUID.randomUUID(), hand, 0, mapId.id() + 1);
+            require(ServerCartography.executeImport(player, wrongMap).status().equals("changed"), "changed map id rejected");
+        }
+        require(level.getChunkSource().getLoadedChunksCount() == loadedChunks, "banner import does not load chunks");
+        LoggerFactory.getLogger(CartographyServerAcceptance.class).info(
+                "Banner import dedicated acceptance PASSED: both hands, locked map, cross-dimension, sync disabled, loaded-only");
+    }
+
     private static void require(boolean value, String message) {
         if (!value) throw new IllegalStateException(message);
     }

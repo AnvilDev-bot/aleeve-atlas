@@ -51,6 +51,7 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         add("aleeve_atlas.structure.type.swamp_hut", "Swamp Hut");
         add("aleeve_atlas.structure.type.trial_chambers", "Trial Chambers");
         add("aleeve_atlas.cartography.import", "Import map");
+        add("aleeve_atlas.cartography.banners_imported", "Added %s banner waypoint(s). Existing waypoints were kept.");
         add("aleeve_atlas.cartography.craft", "Create map");
         add("aleeve_atlas.cartography.cancel_selection", "Cancel selection");
         add("aleeve_atlas.cartography.confirm_title", "Create vanilla map");

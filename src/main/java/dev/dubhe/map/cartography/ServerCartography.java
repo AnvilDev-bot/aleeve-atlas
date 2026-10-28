@@ -35,7 +35,10 @@ public final class ServerCartography {
 
     private static boolean begin(ServerPlayer player, UUID id) {
         var previous = RESULTS.getOrDefault(player.getUUID(), new LinkedHashMap<>()).get(id);
-        if (previous != null) { PacketDistributor.sendToPlayer(player, previous); return false; }
+        if (previous != null) {
+            sendResult(player, previous);
+            return false;
+        }
         long now = System.currentTimeMillis();
         Long last = LAST_REQUEST.put(player.getUUID(), now);
         if (last != null && now - last < 250) {
@@ -47,7 +50,12 @@ public final class ServerCartography {
 
     private static void finish(ServerPlayer player, CartographyPayloads.Result result) {
         remember(player, result);
-        PacketDistributor.sendToPlayer(player, result);
+        sendResult(player, result);
+    }
+
+    private static void sendResult(ServerPlayer player, CartographyPayloads.Result result) {
+        PacketDistributor.sendToPlayer(player,
+                result.response(player.connection.hasChannel(CartographyPayloads.BannerResult.TYPE)));
     }
 
     private static CartographyPayloads.Result remember(ServerPlayer player, CartographyPayloads.Result result) {
@@ -63,17 +71,25 @@ public final class ServerCartography {
 
     public static void importMap(CartographyPayloads.ImportRequest request, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayer player) || !begin(player, request.requestId())) return;
-            ItemStack held = player.getItemInHand(request.hand());
-            var mapId = held.get(DataComponents.MAP_ID);
-            if (!validHand(player, request.hand(), request.slot()) || !held.is(Items.FILLED_MAP)
-                    || mapId == null || mapId.id() != request.mapId()) {
-                finish(player, new CartographyPayloads.Result(request.requestId(), "changed", -1, null)); return;
+            if (!(context.player() instanceof ServerPlayer player) || !begin(player, request.requestId())) {
+                return;
             }
-            var data = MapItem.getSavedData(mapId, player.level());
-            if (data == null) {
-                finish(player, new CartographyPayloads.Result(request.requestId(), "missing", -1, null)); return;
-            }
+            finish(player, executeImport(player, request));
+        });
+    }
+
+    static CartographyPayloads.Result executeImport(ServerPlayer player, CartographyPayloads.ImportRequest request) {
+        ItemStack held = player.getItemInHand(request.hand());
+        var mapId = held.get(DataComponents.MAP_ID);
+        if (!validHand(player, request.hand(), request.slot()) || !held.is(Items.FILLED_MAP)
+                || mapId == null || mapId.id() != request.mapId()) {
+            return new CartographyPayloads.Result(request.requestId(), "changed", -1, null);
+        }
+        var data = MapItem.getSavedData(mapId, player.level());
+        if (data == null) {
+            return new CartographyPayloads.Result(request.requestId(), "missing", -1, null);
+        }
+        try {
             var targets = new ArrayList<MapSnapshot.Target>();
             for (var target : held.getOrDefault(DataComponents.MAP_DECORATIONS, MapDecorations.EMPTY).decorations().values()) {
                 var key = target.type().unwrapKey().orElse(null);
@@ -87,8 +103,13 @@ public final class ServerCartography {
             var mapLevel = player.level().getServer().getLevel(data.dimension);
             var snapshot = new MapSnapshot(mapId.id(), data.dimension.identifier().toString(), data.centerX,
                     data.centerZ, data.scale, mapLevel == null ? 63 : mapLevel.getSeaLevel(), data.colors, targets, 0);
-            finish(player, new CartographyPayloads.Result(request.requestId(), "imported", mapId.id(), snapshot));
-        });
+            return new CartographyPayloads.Result(request.requestId(), "imported", mapId.id(), snapshot,
+                    BannerMarker.fromMap(data));
+        } catch (IllegalArgumentException e) {
+            org.slf4j.LoggerFactory.getLogger(ServerCartography.class).warn(
+                    "Cannot import map {} for player {} in dimension {}", mapId.id(), player.getUUID(), data.dimension, e);
+            return new CartographyPayloads.Result(request.requestId(), "invalid", -1, null);
+        }
     }
 
     public static void craftMap(CartographyPayloads.CraftRequest request, IPayloadContext context) {

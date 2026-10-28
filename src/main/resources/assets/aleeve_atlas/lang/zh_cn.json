@@ -295,6 +295,7 @@
   "key.aleeve_atlas.world_ping": "世界内标点",
   "key.category.aleeve_atlas.main": "袖里舆图",
   "aleeve_atlas.cartography.import": "导入地图",
+  "aleeve_atlas.cartography.banners_imported": "已新增 %s 个旗帜路径点，已有路径点保持原样。",
   "aleeve_atlas.cartography.craft": "制图",
   "aleeve_atlas.cartography.cancel_selection": "取消选区",
   "aleeve_atlas.cartography.confirm_title": "制作原版地图",
