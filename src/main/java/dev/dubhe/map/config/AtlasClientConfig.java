@@ -37,10 +37,10 @@ public class AtlasClientConfig {
 
     public static class WorldMap {
         @Comment("Corner used by the world map compass.")
-        public CompassPosition compassPosition = CompassPosition.TOP_LEFT;
+        public CompassPosition compassPosition = CompassPosition.BOTTOM_RIGHT;
 
         @Comment("World map compass size in GUI-scaled pixels (32 ~ 192).")
-        public double compassSize = 72.0;
+        public double compassSize = 48.0;
 
         @Comment("Show chunk boundaries on the world map.")
         public boolean showChunkGrid = false;
