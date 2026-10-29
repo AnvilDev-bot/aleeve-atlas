@@ -8,53 +8,53 @@ import net.neoforged.fml.config.ModConfig;
 
 @Config(name = AleeveAtlas.MOD_ID, type = ModConfig.Type.CLIENT)
 public class AleeveAtlasClientConfig {
-    @Comment("Minimap's Shape")
+    @Comment("Minimap shape.")
     public MapShape mapShape = MapShape.SQUARE;
 
-    @Comment("Should the minimap rotate with the player's perspective")
+    @Comment("Rotate the minimap with the player's perspective.")
     public boolean rotation = false;
 
-    @Comment("The scale level of the small map (1=closest, 5=farthest)")
+    @Comment("Minimap zoom level (1 = closest, 5 = farthest).")
     @BoundedDiscrete(min = 1, max = 5)
     public int zoom = 2;
 
-    @Comment("Show the minimap or not")
+    @Comment("Whether to display the minimap.")
     public boolean display = true;
 
-    @Comment("Apply world light level shading to the minimap")
+    @Comment("Apply world light level shading to the minimap.")
     public boolean dynamicLighting = true;
 
-    @Comment("Render nearby cave surfaces when underground")
+    @Comment("Render nearby cave surfaces when underground.")
     public boolean caveMapping = true;
 
-    @Comment("Show the player's coordinate line under the minimap")
+    @Comment("Show the player's coordinates under the minimap.")
     public boolean showCoordinates = true;
 
-    @Comment("Show biome, dimension, time and light information under the minimap")
+    @Comment("Show biome, dimension, time, and light information under the minimap.")
     public boolean showEnvironment = false;
 
-    @Comment("Minimap anchor position on the screen")
+    @Comment("Minimap anchor position on the screen.")
     public MinimapAnchor minimapAnchor = MinimapAnchor.TOP_RIGHT;
 
-    @Comment("Minimap size preset")
+    @Comment("Minimap size preset.")
     public MinimapSize minimapSize = MinimapSize.MEDIUM;
 
-    @Comment("Enable the entity radar overlay")
+    @Comment("Enable the entity radar overlay.")
     public boolean radar = true;
 
-    @Comment("Radar scan range preset")
+    @Comment("Radar scan range preset.")
     public RadarRange radarRange = RadarRange.R128;
 
-    @Comment("Show hostile mobs on radar")
+    @Comment("Show hostile mobs on the radar.")
     public boolean radarHostile = true;
 
-    @Comment("Show friendly mobs on radar")
+    @Comment("Show friendly mobs on the radar.")
     public boolean radarFriendly = true;
 
-    @Comment("Show dropped items on radar")
+    @Comment("Show dropped items on the radar.")
     public boolean radarItems = true;
 
-    @Comment("Show players on radar")
+    @Comment("Show players on the radar.")
     public boolean radarPlayers = true;
 
     public enum MapShape {

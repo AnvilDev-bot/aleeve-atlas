@@ -16,9 +16,9 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         ConfigData.readConfigClass(this, AleeveAtlasClientConfig.class);
 
         add("key.categories.aleeve_atlas", "Aleeve Atlas");
-        add("key.aleeve_atlas.open_settings", "Open minimap settings");
-        add("key.aleeve_atlas.open_waypoints", "Open waypoint manager");
-        add("key.aleeve_atlas.open_quick_waypoint", "Quick create waypoint at camera");
+        add("key.aleeve_atlas.open_settings", "Open Minimap Settings");
+        add("key.aleeve_atlas.open_waypoints", "Open Waypoint Manager");
+        add("key.aleeve_atlas.open_quick_waypoint", "Quick Create Waypoint at Camera");
 
         add("screen.aleeve_atlas.settings", "Aleeve Atlas Settings");
         add("screen.aleeve_atlas.settings.hint", "Press M to reopen this screen. Zoom is only configurable from this settings screen.");
