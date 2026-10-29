@@ -9,11 +9,13 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 
 /// 客户端标点收集与生命周期管理。
 ///
@@ -63,9 +65,11 @@ public final class ClientPings {
 
     /// 外部模组注入或服务端广播标点。
     public static void upsert(MapPingData ping) {
-        ACTIVE.removeIf(existing -> existing.pingId().equals(ping.pingId()));
+        boolean replaced = ACTIVE.removeIf(existing -> existing.pingId().equals(ping.pingId()));
         ACTIVE.add(ping);
-        NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, false));
+        if (!replaced) {
+            NeoForge.EVENT_BUS.post(new MapPingCreatedEvent(ping, false));
+        }
     }
 
     /// 外部模组注入标点，并在接管模式下由本模组统一转发。
@@ -91,25 +95,33 @@ public final class ClientPings {
         if (ACTIVE.isEmpty()) {
             return;
         }
-        long now = System.currentTimeMillis();
         Minecraft minecraft = Minecraft.getInstance();
         ClientLevel level = minecraft.level;
+        tick(System.currentTimeMillis(), level == null ? null : MapPingData.dimensionId(level.dimension()),
+                targetId -> {
+                    Entity target = level == null ? null : level.getEntity(targetId);
+                    return target == null ? null : target.position();
+                });
+    }
+
+    static void tick(long now, @Nullable String dimensionId,
+            Function<UUID, @Nullable Vec3> entityPosition) {
         List<MapPingData> expired = new ArrayList<>();
         for (MapPingData ping : ACTIVE) {
             if (ping.expired(now)) {
                 expired.add(ping);
                 continue;
             }
-            if (!ping.followsEntity() || level == null) {
+            if (!ping.followsEntity() || !ping.dimensionId().equals(dimensionId)) {
                 continue;
             }
-            Entity target = level.getEntity(ping.targetEntityId());
-            if (target == null) {
+            Vec3 position = entityPosition.apply(ping.targetEntityId());
+            if (position == null) {
                 continue;
             }
             int index = ACTIVE.indexOf(ping);
             if (index >= 0) {
-                ACTIVE.set(index, ping.withPosition(target.position()));
+                ACTIVE.set(index, ping.withPosition(position));
             }
         }
         ACTIVE.removeAll(expired);

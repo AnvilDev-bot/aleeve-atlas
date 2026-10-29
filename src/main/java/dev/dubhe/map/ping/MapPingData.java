@@ -4,6 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.UUID;
@@ -13,12 +14,12 @@ import java.util.UUID;
 /// 包含唯一 ID、发起者信息、精确三维坐标、可选跟随实体、图标类型、高亮颜色与生命周期元数据。
 public record MapPingData(
         UUID pingId,
-        UUID senderId,
+        @Nullable UUID senderId,
         String senderName,
         int teamColorArgb,
         String dimensionId,
         Vec3 position,
-        UUID targetEntityId,
+        @Nullable UUID targetEntityId,
         PingIcon icon,
         long createdAtMillis,
         long lifetimeMillis) {

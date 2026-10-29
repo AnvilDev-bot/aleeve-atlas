@@ -3,7 +3,7 @@ package dev.dubhe.map.api.ping;
 import dev.dubhe.map.ping.MapPingData;
 import net.neoforged.bus.api.Event;
 
-/// 本模组发起标点时触发的事件。
+/// 客户端首次加入标点时触发的事件，按标点 ID 去重，更新坐标与生命周期不会再次触发。
 ///
 /// `Ping Wheel` 等外部模组监听此事件，即可在游戏 3D 世界中同步生成光柱或悬浮 3D 图标。
 /// 事件不可取消，仅作通知用途。

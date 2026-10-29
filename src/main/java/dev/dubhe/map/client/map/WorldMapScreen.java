@@ -2,6 +2,8 @@ package dev.dubhe.map.client.map;
 
 import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.AtlasSession;
+import dev.dubhe.map.api.ping.MapPingInput;
+import dev.dubhe.map.api.ping.MinimapPingAPI;
 import dev.dubhe.map.cartography.Cartography;
 import dev.dubhe.map.cartography.MapSnapshot;
 import dev.dubhe.map.client.cartography.ClientCartography;
@@ -514,7 +516,13 @@ public final class WorldMapScreen extends Screen {
             this.contextMenu = null;
             this.wheelOpened = true;
             this.rememberCursorAndCenter();
-            PingWheelMenu.open(this);
+            MapPingInput input = MinimapPingAPI.mapInput();
+            if (input == null) {
+                PingWheelMenu.open(this);
+            } else {
+                int y = this.surfaceYAt(this.middleWorldX, this.middleWorldZ);
+                input.openWheel(this, new Vec3(this.middleWorldX, y, this.middleWorldZ), this::finishWheel);
+            }
         }
     }
 
@@ -1278,7 +1286,13 @@ public final class WorldMapScreen extends Screen {
             this.alignCameraToRenderedFrame();
             this.middleHeld = false;
             if (!this.wheelOpened && this.middleHoldTicks < MIDDLE_HOLD_TICKS) {
-                this.createPing(this.middleWorldX, this.middleWorldZ, MapPingData.PingIcon.GENERAL);
+                MapPingInput input = MinimapPingAPI.mapInput();
+                if (input == null) {
+                    this.createPing(this.middleWorldX, this.middleWorldZ, MapPingData.PingIcon.GENERAL);
+                } else {
+                    int y = this.surfaceYAt(this.middleWorldX, this.middleWorldZ);
+                    input.ping(new Vec3(this.middleWorldX, y, this.middleWorldZ));
+                }
             }
             return true;
         }

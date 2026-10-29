@@ -59,6 +59,14 @@ boolean isEnabled = MinimapPingAPI.isWorldPingsEnabled();
 
 ```
 
+所有标点 API 必须在客户端主线程调用。`registerLocalPing(MapPingData)` 更新本地显示，不发送网络包；相同 `pingId` 保留一个标点，仅首次加入时触发 `MapPingCreatedEvent`。`activePings()` 返回只读快照，供外部世界内渲染使用；`removePing(UUID)` 撤回本地标点。
+
+外部模组可通过 `setWorldInputEnabled(false)` 关闭内置世界内按键，通过 `setMapInput(MapPingInput)` 提供地图短按与长按操作。`MapPingInput.ping(Vec3)` 接收鼠标对应的地图世界坐标，`openWheel(Screen, Vec3, Runnable)` 接收原地图、目标坐标和关闭回调。轮盘正常关闭时必须返回原地图，每次关闭或切换界面时必须调用关闭回调，以清理按键状态并恢复鼠标位置。传入 `null` 恢复内置地图操作。
+
+`registerEntityPing(UUID, Vec3, String, PingIcon, UUID, String, int)` 允许指定初始坐标；原有重载继续可用。实体跟随只在标点所属维度更新，目标未加载时保留最后坐标。`MapPingData.senderId` 允许仅本地显示的外部标点缺少发送者 UUID；通过网络注册的标点必须提供发送者 UUID。
+
+MiddleKeyPing 2.0.1 使用这些接口负责世界内及地图的操作、轮盘和广播，将已收到的标点经 `registerLocalPing` 写入 Atlas，并按 MiddleKeyPing 的数量上限与游戏刻有效期同步删除和更新。Atlas 同时关闭内置世界内输入与临时标点覆层。
+
 ### 2. 领地覆盖层 API（如 FTB Chunks / OPAC 等）
 
 领地或区块认领类模组可通过 `AtlasTerritory` 注册领地数据。本模组会自动计算连通分量、加权极点锚点（用于放置领地名称）、交界描边以及按 `zOrder` 叠加渲染：

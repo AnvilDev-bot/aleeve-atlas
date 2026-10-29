@@ -1,6 +1,7 @@
 package dev.dubhe.map.client.map;
 
 import dev.dubhe.map.AleeveAtlas;
+import dev.dubhe.map.api.ping.MinimapPingAPI;
 import dev.dubhe.map.client.AtlasKeyMappings;
 import dev.dubhe.map.ping.ClientPings;
 import dev.dubhe.map.ping.MapPingData;
@@ -35,6 +36,10 @@ public final class WorldPingController {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        if (!MinimapPingAPI.isWorldInputEnabled()) {
+            reset();
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
             reset();
@@ -55,6 +60,9 @@ public final class WorldPingController {
     /// 在输入事件中直接处理中键，并阻止它触发原版选取方块。
     @SubscribeEvent
     public static void onMouseInput(InputEvent.MouseButton.Pre event) {
+        if (!MinimapPingAPI.isWorldInputEnabled()) {
+            return;
+        }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
@@ -71,6 +79,9 @@ public final class WorldPingController {
 
     @SubscribeEvent
     public static void onKeyInput(InputEvent.Key event) {
+        if (!MinimapPingAPI.isWorldInputEnabled()) {
+            return;
+        }
         if (!AtlasKeyMappings.WORLD_PING.matches(event.getKeyEvent())) {
             return;
         }
