@@ -1,47 +1,55 @@
 package dev.dubhe.map.client.waypoint;
 
 import org.joml.Matrix4f;
-import org.joml.Vector4f;
+import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-/// 世界坐标投影的数学验证（不依赖游戏运行时）。
-///
-/// `WorldProjection.project` 依赖客户端相机实例，无法在单元测试中构造；
-/// 此处验证其依赖的 JOML 透视投影性质，确保朝向与偏移方向符合预期。
 class WorldProjectionMathTest {
-    private static final float FOV_RADIANS = (float) Math.toRadians(70.0);
-    private static final float ASPECT = 16.0F / 9.0F;
-
     @Test
     void targetAheadOfCameraProjectsNearCenter() {
-        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
-        // 目标位于相机正前方 10 格（视空间 -Z）。
-        Vector4f clip = new Vector4f(0.0F, 0.0F, -10.0F, 1.0F);
-        projection.transform(clip);
-
-        float ndcX = clip.x / clip.w;
-        float ndcY = clip.y / clip.w;
-        Assertions.assertTrue(Math.abs(ndcX) < 0.01F, "正前方目标应位于屏幕水平中心，实际 " + ndcX);
-        Assertions.assertTrue(Math.abs(ndcY) < 0.01F, "正前方目标应位于屏幕垂直中心，实际 " + ndcY);
+        Vec3 camera = new Vec3(1000000, 80, -1000000);
+        var projected = WorldProjection.project(camera.add(0, 0, -10), camera,
+                perspective(70), 1920, 1080).orElseThrow();
+        Assertions.assertEquals(960, projected.screenX(), 0.00001);
+        Assertions.assertEquals(540, projected.screenY(), 0.00001);
+        Assertions.assertEquals(10, projected.distance(), 0.00001);
     }
 
     @Test
-    void offAxisTargetMovesAwayFromCenter() {
-        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
-        Vector4f clip = new Vector4f(5.0F, 0.0F, -10.0F, 1.0F);
-        projection.transform(clip);
-        float ndcX = clip.x / clip.w;
-        Assertions.assertTrue(ndcX > 0.3F, "偏右目标应明显偏离中心，实际 " + ndcX);
+    void followsWorldBobbingAndDynamicFieldOfView() {
+        var bobbed = WorldProjection.project(new Vec3(0, 0, -10), Vec3.ZERO,
+                perspective(70).translate(0.2f, -0.1f, 0).rotateZ(0.05f), 1920, 1080).orElseThrow();
+        Assertions.assertTrue(bobbed.screenX() > 960);
+        Assertions.assertTrue(bobbed.screenY() > 540);
+        Vec3 target = new Vec3(2, 0, -10);
+        var normal = WorldProjection.project(target, Vec3.ZERO, perspective(70), 1920, 1080).orElseThrow();
+        var wide = WorldProjection.project(target, Vec3.ZERO, perspective(100), 1920, 1080).orElseThrow();
+        Assertions.assertTrue(wide.screenX() < normal.screenX());
     }
 
     @Test
-    void targetBehindCameraHasNonPositiveClipW() {
-        Matrix4f projection = new Matrix4f().perspective(FOV_RADIANS, ASPECT, 0.05F, 1000.0F);
-        Vector4f behind = new Vector4f(0.0F, 0.0F, 5.0F, 1.0F);
-        projection.transform(behind);
-        // 透视投影的 w 分量为 -z_view，故视空间 z 为正（相机后方）时 w 为负；
-        // `project` 据此判定目标不在视野前方并返回空结果。
-        Assertions.assertTrue(behind.w < 0.0F, "后方目标变换后裁剪 w 应为负，实际 " + behind.w);
+    void appliesCameraRotationBeforeProjectionAndPreservesSubpixels() {
+        var centered = WorldProjection.project(new Vec3(10, 0, 0), Vec3.ZERO,
+                perspective(70).rotateY((float) Math.PI / 2), 1920, 1080).orElseThrow();
+        Assertions.assertEquals(960, centered.screenX(), 0.0001);
+        var moved = WorldProjection.project(new Vec3(0.001, 0, -10), Vec3.ZERO,
+                perspective(70), 1920, 1080).orElseThrow();
+        Assertions.assertTrue(moved.screenX() > 960 && moved.screenX() < 961);
+    }
+
+    @Test
+    void hidesPointsBehindCameraOutsideViewAndAtCamera() {
+        Matrix4f projection = perspective(70);
+        Assertions.assertTrue(WorldProjection.project(new Vec3(0, 0, 10), Vec3.ZERO,
+                projection, 1920, 1080).isEmpty());
+        Assertions.assertTrue(WorldProjection.project(new Vec3(100, 0, -10), Vec3.ZERO,
+                projection, 1920, 1080).isEmpty());
+        Assertions.assertTrue(WorldProjection.project(Vec3.ZERO, Vec3.ZERO,
+                projection, 1920, 1080).isEmpty());
+    }
+
+    private static Matrix4f perspective(float degrees) {
+        return new Matrix4f().perspective((float) Math.toRadians(degrees), 16f / 9, 0.05f, 1000);
     }
 }

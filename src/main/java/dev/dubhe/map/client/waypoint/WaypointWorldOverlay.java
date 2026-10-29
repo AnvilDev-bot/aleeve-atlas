@@ -55,8 +55,10 @@ public final class WaypointWorldOverlay {
 
     private static void drawMarker(GuiGraphics graphics, Minecraft minecraft, Waypoint waypoint,
             WorldProjection.Projected projected, boolean showDistance) {
-        int x = (int) Math.round(projected.screenX());
-        int y = (int) Math.round(projected.screenY());
+        graphics.pose().pushMatrix();
+        graphics.pose().translate((float) projected.screenX(), (float) projected.screenY());
+        int x = 0;
+        int y = 0;
         int markerColor = applyOpacity(waypoint.colorArgb(), MARKER_OPACITY);
         MapMarkerRenderer.drawDiamond(graphics, x, y, 10, markerColor);
 
@@ -69,6 +71,7 @@ public final class WaypointWorldOverlay {
             drawDistance(graphics, minecraft, projected.distance(), x,
                     nameY + minecraft.font.lineHeight + 2);
         }
+        graphics.pose().popMatrix();
     }
 
     private static void drawDistance(GuiGraphics graphics, Minecraft minecraft, double distance,

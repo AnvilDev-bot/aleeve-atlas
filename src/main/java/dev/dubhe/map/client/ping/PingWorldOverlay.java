@@ -55,8 +55,10 @@ public final class PingWorldOverlay {
 
     private static void drawMarker(GuiGraphics graphics, Minecraft minecraft, MapPingData ping,
             WorldProjection.Projected projected, float opacity) {
-        int x = (int) Math.round(projected.screenX());
-        int y = (int) Math.round(projected.screenY());
+        graphics.pose().pushMatrix();
+        graphics.pose().translate((float) projected.screenX(), (float) projected.screenY());
+        int x = 0;
+        int y = 0;
         MapMarkerRenderer.drawDot(graphics, x, y, 12,
                 applyOpacity(ping.icon().colorArgb(), opacity));
         MapMarkerRenderer.drawDot(graphics, x, y, 6,
@@ -70,6 +72,7 @@ public final class PingWorldOverlay {
         graphics.fill(textX - 2, textY - 1, textX + textWidth + 2,
                 textY + minecraft.font.lineHeight + 1, DISTANCE_BACKGROUND);
         graphics.drawString(minecraft.font, distance, textX, textY, TEXT_COLOR, true);
+        graphics.pose().popMatrix();
     }
 
     private static int applyOpacity(int argb, float opacity) {
