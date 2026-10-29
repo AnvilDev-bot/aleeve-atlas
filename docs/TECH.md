@@ -65,7 +65,7 @@ boolean isEnabled = MinimapPingAPI.isWorldPingsEnabled();
 
 `registerEntityPing(UUID, Vec3, String, PingIcon, UUID, String, int)` 允许指定初始坐标；原有重载继续可用。实体跟随只在标点所属维度更新，目标未加载时保留最后坐标。`MapPingData.senderId` 允许仅本地显示的外部标点缺少发送者 UUID；通过网络注册的标点必须提供发送者 UUID。
 
-MiddleKeyPing 2.0.1 使用这些接口负责世界内及地图的操作、轮盘和广播，将已收到的标点经 `registerLocalPing` 写入 Atlas，并按 MiddleKeyPing 的数量上限与游戏刻有效期同步删除和更新。Atlas 同时关闭内置世界内输入与临时标点覆层。
+支持 Atlas 联动的 MiddleKeyPing 使用这些接口负责世界内及地图的操作、轮盘和广播，将已收到的标点经 `registerLocalPing` 写入 Atlas，并按 MiddleKeyPing 的数量上限与游戏刻有效期同步删除和更新。Atlas 同时关闭内置世界内输入与临时标点覆层。
 
 ### 2. 领地覆盖层 API（如 FTB Chunks / OPAC 等）
 
