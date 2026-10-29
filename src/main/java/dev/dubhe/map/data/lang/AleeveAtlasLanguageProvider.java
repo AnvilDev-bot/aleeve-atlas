@@ -16,9 +16,9 @@ public class AleeveAtlasLanguageProvider extends LanguageProvider {
         ConfigData.readConfigClass(this, AleeveAtlasClientConfig.class);
 
         this.add(AleeveAtlas.of("main").toLanguageKey("key.category"), "Aleeve Atlas");
-        this.add("key.aleeve_atlas.open_settings", "Open minimap settings");
-        this.add("key.aleeve_atlas.open_waypoints", "Open waypoint manager");
-        this.add("key.aleeve_atlas.open_quick_waypoint", "Quick create waypoint at camera");
+        this.add("key.aleeve_atlas.open_settings", "Open Minimap Settings");
+        this.add("key.aleeve_atlas.open_waypoints", "Open Waypoint Manager");
+        this.add("key.aleeve_atlas.open_quick_waypoint", "Quick Create Waypoint at Camera");
 
         this.add("screen.aleeve_atlas.settings", "Aleeve Atlas Settings");
         this.add(
