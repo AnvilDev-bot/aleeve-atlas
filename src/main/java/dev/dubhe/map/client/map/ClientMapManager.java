@@ -4,6 +4,7 @@ import dev.dubhe.map.AleeveAtlas;
 import dev.dubhe.map.config.AtlasClientConfigs;
 import dev.dubhe.map.config.MapColorScheme;
 import dev.dubhe.map.map.CaveMode;
+import dev.dubhe.map.map.MapSlice;
 import dev.dubhe.map.map.ChunkMapData;
 import dev.dubhe.map.map.ChunkMapSampler;
 import dev.dubhe.map.map.MapDimensionCache;
@@ -36,10 +37,6 @@ public final class ClientMapManager {
     private static final int SAMPLES_PER_TICK = 6;
     /// 小地图采样半径，额外覆盖方形旋转所需的对角线范围。
     public static final int VIEW_CHUNK_RADIUS = 6;
-    /// 洞穴模式下触发重新采样的层高变化阈值（方块）。
-    ///
-    /// 缓存不区分层高，若层高变化后继续命中旧缓存，地图会停留在旧层级的结构上。
-    private static final int CAVE_LAYER_RESCAN_THRESHOLD = 8;
     /// 待重新采样的区块：方块变更时由 {@code ClientLevelMixin} 标记。
     ///
     /// 以 {@link ChunkPos#asLong} 编码为键。标记与消费都在客户端主线程：
@@ -56,8 +53,17 @@ public final class ClientMapManager {
     private MapColorScheme colorScheme = MapColorScheme.VANILLA;
     private boolean textureRegistered;
     private boolean loggedFirstSample;
-    /// 洞穴缓存的采样层高；玩家层高变化超过阈值时清空缓存重新采样。
-    private Integer caveLayerTop;
+    private MapSlice displaySlice = MapSlice.SURFACE;
+    private final CaveMode.Tracker caveTracker = new CaveMode.Tracker();
+    private long mappingTicks;
+    private boolean depthShading = true;
+
+    public MapSlice displaySlice() { return this.displaySlice; }
+
+    /// 显示层与同步地表缓存分离，洞穴数据不能通过现有地表协议覆盖队友的地表图。
+    public MapDimensionCache displayCache() {
+        return this.displaySlice.cave() && this.caveCache != null ? this.caveCache : this.currentCache();
+    }
 
     /// 注册纹理；资源重载后需重新注册。
     public void ensureRegistered() {
@@ -70,17 +76,6 @@ public final class ClientMapManager {
     /// 资源重载后重置注册标志，使下次 tick 重新注册动态纹理。
     public void onResourceReload() {
         this.textureRegistered = false;
-    }
-
-    /// 洞穴模式是否需要在本次 tick 重建分层缓存。
-    ///
-    /// 缓存不区分层高，玩家上下移动超过阈值后继续命中旧缓存会让地图停留在旧层级。
-    /// 非洞穴模式或首次进入洞穴时不重建。
-    static boolean needsCaveRescan(boolean caveMode, Integer previousTop, int currentTop) {
-        if (!caveMode || previousTop == null) {
-            return false;
-        }
-        return Math.abs(currentTop - previousTop) >= CAVE_LAYER_RESCAN_THRESHOLD;
     }
 
     /// 标记某区块需要重新采样。
@@ -106,11 +101,14 @@ public final class ClientMapManager {
         }
         String serverKey = serverKey(minecraft);
         MapColorScheme scheme = AtlasClientConfigs.CONFIG.minimap.colorScheme;
-        boolean schemeChanged = scheme != this.colorScheme;
+        boolean paletteChanged = scheme != this.colorScheme;
+        boolean schemeChanged = paletteChanged || this.depthShading != AtlasClientConfigs.CONFIG.caves.depthShading;
+        this.depthShading = AtlasClientConfigs.CONFIG.caves.depthShading;
         this.colorScheme = scheme;
         if (schemeChanged) {
             LOGGER.info("Map color scheme changed to {}", scheme);
-            this.texture.setColorScheme(scheme);
+            if (paletteChanged) this.texture.setColorScheme(scheme);
+            else this.texture.recolor();
         }
         final MapDimensionCache cache = this.cacheFor(minecraft, serverKey, level.dimension());
         if (!serverKey.equals(this.currentServerKey) || !level.dimension().equals(this.currentDimension)) {
@@ -123,24 +121,36 @@ public final class ClientMapManager {
             DIRTY_SURFACE_CHUNKS.clear();
             DIRTY_CAVE_CHUNKS.clear();
             this.caveCache = null;
+            this.displaySlice = MapSlice.SURFACE;
+            this.caveTracker.reset();
             this.texture.clearAll();
         }
 
         final ChunkPos center = minecraft.player.chunkPosition();
-        boolean caveMode = CaveMode.isUnderground(level, minecraft.player.blockPosition());
+        MapSlice nextSlice = this.caveTracker.update(CaveMode.detect(level,
+                minecraft.player.blockPosition(), AtlasClientConfigs.CONFIG.caves), ++this.mappingTicks);
+        boolean sliceChanged = !nextSlice.equals(this.displaySlice);
+        boolean layerChanged = !nextSlice.cacheLayer().equals(this.displaySlice.cacheLayer());
+        if (layerChanged || nextSlice.cave() && this.caveCache == null) {
+            if (this.caveCache != null) this.caveCache.flush();
+            this.caveCache = nextSlice.cave()
+                    ? this.caveCacheFor(minecraft, serverKey, level.dimension(), nextSlice) : null;
+            this.texture.clearAll();
+        }
+        this.displaySlice = nextSlice;
+        boolean caveMode = nextSlice.cave();
+        if (layerChanged && caveMode) {
+            // 重新进入旧层时刷新当前视距内的数据，避免复用在其它层活动期间已改变的地形。
+            for (int dx = -VIEW_CHUNK_RADIUS; dx <= VIEW_CHUNK_RADIUS; dx++) {
+                for (int dz = -VIEW_CHUNK_RADIUS; dz <= VIEW_CHUNK_RADIUS; dz++) {
+                    DIRTY_CAVE_CHUNKS.add(ChunkPos.asLong(center.x + dx, center.z + dz));
+                }
+            }
+        }
         this.texture.setCaveMode(caveMode);
         this.texture.setImportedStore(dev.dubhe.map.client.cartography.ClientCartography.currentStore());
         this.texture.centerOn(minecraft.player.getX(), minecraft.player.getZ());
-        int caveTop = minecraft.player.blockPosition().getY() + 8;
-        if (caveMode && (this.caveCache == null || this.caveLayerTop == null
-                || needsCaveRescan(true, this.caveLayerTop, caveTop))) {
-            if (this.caveCache != null) {
-                this.caveCache.flush();
-            }
-            this.caveCache = this.caveCacheFor(minecraft, this.currentServerKey,
-                    level.dimension(), caveTop);
-        }
-        this.caveLayerTop = caveMode ? caveTop : null;
+        MapDimensionCache activeCache = caveMode ? this.caveCache : cache;
 
         // 方块变更后保留受影响区块的旧图像，直到新的采样成功完成。
         Set<Long> activeDirtyChunks = caveMode ? DIRTY_CAVE_CHUNKS : DIRTY_SURFACE_CHUNKS;
@@ -157,28 +167,15 @@ public final class ClientMapManager {
                     }
                     int chunkX = center.x + dx;
                     int chunkZ = center.z + dz;
-                    // 洞穴模式使用独立的分层缓存，避免覆盖地表数据。
-                    Integer layerTop = caveMode
-                            ? minecraft.player.blockPosition().getY() + 8
-                            : null;
                     long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
-                    if (!caveMode) {
-                        Optional<ChunkMapData> existing = cache.get(chunkX, chunkZ);
-                        if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
-                            dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
-                            this.texture.putChunk(existing.get());
-                            continue;
-                        }
-                    } else {
-                        Optional<ChunkMapData> existing = this.caveCache.get(chunkX, chunkZ);
-                        if (existing.isPresent() && !dirtyChunks.contains(chunkKey)) {
-                            dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
-                            this.texture.putChunk(existing.get());
-                            continue;
-                        }
+                    Optional<ChunkMapData> existing = activeCache.get(chunkX, chunkZ);
+                    if (existing.isPresent() && existing.get().slice().equals(nextSlice) && !dirtyChunks.contains(chunkKey)) {
+                        dev.dubhe.map.client.structure.ClientStructures.sampled(chunkX, chunkZ);
+                        this.texture.putChunk(existing.get());
+                        continue;
                     }
                     ChunkMapData sampledData = ChunkMapSampler.sample(level,
-                            new ChunkPos(chunkX, chunkZ), layerTop);
+                            new ChunkPos(chunkX, chunkZ), nextSlice);
                     if (sampledData == null) {
                         continue;
                     }
@@ -201,7 +198,7 @@ public final class ClientMapManager {
         activeDirtyChunks.removeAll(refreshedDirtyChunks);
         // 合并本 tick 的像素改动，只上传一次纹理。
         this.texture.flushDirty();
-        if (sampled > 0 || schemeChanged) {
+        if (sampled > 0 || schemeChanged || sliceChanged) {
             WorldMapScreen.onMapDataChanged();
         }
         if (sampled > 0 && !this.loggedFirstSample) {
@@ -264,6 +261,8 @@ public final class ClientMapManager {
             this.caveCache = null;
         }
         this.caches.clear();
+        this.caveTracker.reset();
+        this.displaySlice = MapSlice.SURFACE;
         this.currentServerKey = null;
         this.currentDimension = null;
         // 脏标记属会话级状态：切换服务器后旧坐标不应触发新会话的缓存失效。
@@ -280,11 +279,11 @@ public final class ClientMapManager {
         });
     }
 
-    /// 洞穴分层缓存目录：在地表层目录名后附加 `_cave_<layerTop>`。
+    /// 地表、完整洞穴和 16 格分层独立持久化。
     private MapDimensionCache caveCacheFor(Minecraft minecraft, String serverKey,
-            ResourceKey<Level> dimension, int layerTop) {
+            ResourceKey<Level> dimension, MapSlice slice) {
         Path base = AtlasPaths.dimensionDir(gameDir(minecraft), serverKey, dimension.identifier());
-        Path caveBase = base.resolveSibling(base.getFileName() + "_cave_" + layerTop);
+        Path caveBase = base.resolve("caves").resolve(slice.cacheLayer());
         return new MapDimensionCache(caveBase);
     }
 

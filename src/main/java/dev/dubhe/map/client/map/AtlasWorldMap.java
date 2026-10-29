@@ -26,7 +26,7 @@ public final class AtlasWorldMap {
         if (manager == null) {
             return;
         }
-        MapDimensionCache cache = manager.currentCache();
+        MapDimensionCache cache = manager.displayCache();
         MapCanvas mapCanvas = canvas();
         minecraft.setScreen(new WorldMapScreen(mapCanvas, cache, player.getX(), player.getZ()));
     }

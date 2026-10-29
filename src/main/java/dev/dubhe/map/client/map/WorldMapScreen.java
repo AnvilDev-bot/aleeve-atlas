@@ -86,6 +86,7 @@ public final class WorldMapScreen extends Screen {
     private static WorldMapScreen active;
 
     private final MapCanvas canvas;
+    private boolean caveView;
     private MapDimensionCache cache;
     /// 视野中心（世界方块坐标）。
     private double centerX;
@@ -407,7 +408,7 @@ public final class WorldMapScreen extends Screen {
             graphics.pose().translate(-viewWidth / 2.0F, -viewHeight / 2.0F);
         }
 
-        dev.dubhe.map.client.cartography.ImportedMapRenderer.draw(graphics,
+        if (!this.caveView) dev.dubhe.map.client.cartography.ImportedMapRenderer.draw(graphics,
                 this.centerX, this.centerZ, this.pixelsPerChunk, viewWidth, viewHeight);
         if (this.canvas.ready()) {
             int canvasOriginPixelX = this.canvas.originChunkX() * ChunkMapData.SIZE;
@@ -1408,8 +1409,10 @@ public final class WorldMapScreen extends Screen {
         int centerChunkZ = (int) Math.floor(this.centerZ / ChunkMapData.SIZE);
         ClientMapManager manager = AtlasClientMap.manager();
         if (manager != null) {
-            this.cache = manager.currentCache();
+            this.cache = manager.displayCache();
+            this.caveView = manager.displaySlice().cave();
         }
+        this.canvas.setCaveView(this.caveView, AtlasClientConfigs.CONFIG.caves.depthShading);
         this.canvas.setCenter(centerChunkX, centerChunkZ, this.cache,
                 AtlasClientConfigs.CONFIG.minimap.colorScheme,
                 width, height, Math.min(this.pixelsPerChunk, this.previousPixelsPerChunk));

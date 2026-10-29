@@ -23,6 +23,24 @@ public class AtlasClientConfig {
     public WorldMap worldMap = new WorldMap();
 
     @CollapsibleObject
+    @Comment("Shared cave mapping settings for the minimap and world map.")
+    public Caves caves = new Caves();
+
+    public static class Caves {
+        @Comment("Cave mapping in ordinary dimensions: OFF, LAYERED or FULL.")
+        public CaveMapMode mode = CaveMapMode.LAYERED;
+
+        @Comment("Cave mapping in ceiling dimensions such as the Nether: OFF, LAYERED or FULL.")
+        public CaveMapMode ceilingDimensionMode = CaveMapMode.FULL;
+
+        @Comment("Maximum depth below the selected top Y in layered cave mode (1 ~ 64 blocks).")
+        public int depth = 30;
+
+        @Comment("Darken deeper floors in layered cave maps to make height differences legible.")
+        public boolean depthShading = true;
+    }
+
+    @CollapsibleObject
     @Comment("Entity radar settings.")
     public Radar radar = new Radar();
 

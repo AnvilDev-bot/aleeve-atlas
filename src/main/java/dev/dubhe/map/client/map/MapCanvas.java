@@ -73,6 +73,19 @@ public final class MapCanvas {
     private long pendingRevision;
     private long drawnOverviewRevision = -1;
     private OverviewView drawnOverview;
+    private MapDimensionCache displayedCache;
+    private boolean caveView;
+    private boolean depthShading;
+
+    public void setCaveView(boolean caveView, boolean depthShading) {
+        if (this.caveView == caveView && this.depthShading == depthShading) return;
+        this.caveView = caveView;
+        this.depthShading = depthShading;
+        this.positioned = false;
+        this.drawnOverview = null;
+        this.pendingOverview = null;
+        this.overviewRead = null;
+    }
 
     private record OverviewView(MapDimensionCache cache, int x, int z, int stride,
             MapColorScheme scheme, ImportedMapStore store, long importedRevision, boolean grid) { }
@@ -108,7 +121,7 @@ public final class MapCanvas {
         }
         int x = Math.floorDiv(centerChunkX - CHUNKS_PER_SIDE * stride / 2, stride) * stride;
         int z = Math.floorDiv(centerChunkZ - CHUNKS_PER_SIDE * stride / 2, stride) * stride;
-        ImportedMapStore store = ClientCartography.currentStore();
+        ImportedMapStore store = this.caveView ? null : ClientCartography.currentStore();
         this.requestedOverview = new OverviewView(cache, x, z, stride, scheme, store,
                 store == null ? -1 : store.revision(), grid);
         this.pollOverview();
@@ -230,9 +243,13 @@ public final class MapCanvas {
     /// 避免拖拽过程中每次都遍历全部区块。
     public void setCenter(int centerChunkX, int centerChunkZ, MapDimensionCache cache,
             MapColorScheme scheme) {
+        if (this.displayedCache != cache) {
+            this.displayedCache = cache;
+            this.positioned = false;
+        }
         int targetX = centerChunkX - CHUNKS_PER_SIDE / 2;
         int targetZ = centerChunkZ - CHUNKS_PER_SIDE / 2;
-        ImportedMapStore nextStore = ClientCartography.currentStore();
+        ImportedMapStore nextStore = this.caveView ? null : ClientCartography.currentStore();
         if (nextStore != this.importedStore || (nextStore != null && nextStore.revision() != this.importedRevision)) {
             this.importedStore = nextStore;
             this.importedRevision = nextStore == null ? -1 : nextStore.revision();

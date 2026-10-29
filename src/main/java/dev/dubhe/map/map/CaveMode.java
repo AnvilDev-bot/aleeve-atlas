@@ -1,51 +1,71 @@
 package dev.dubhe.map.map;
 
+import dev.dubhe.map.config.AtlasClientConfig;
+import dev.dubhe.map.config.CaveMapMode;
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
-/// 洞穴分层模式判定。
-///
-/// 判定顺序：
-/// 1. 玩家位于海平面以下且头顶被遮挡 → 洞穴模式；
-/// 2. 玩家处于水下 → 洞穴模式；
-/// 3. 否则为地表模式。
+/// 检测 3×3 顶棚，不依赖海平面；每列的顶棚可以处在不同高度。
 public final class CaveMode {
-    /// 判断顶棚遮挡时向上搜索的最大高度。
-    private static final int CEILING_SCAN_HEIGHT = 48;
-    private static final int SEA_LEVEL = 63;
+    private CaveMode() { }
 
-    private CaveMode() {
+    public static MapSlice detect(Level level, BlockPos player, AtlasClientConfig.Caves config) {
+        CaveMapMode mode = level.dimensionType().hasCeiling() ? config.ceilingDimensionMode : config.mode;
+        if (mode == CaveMapMode.OFF || player.getY() < level.getMinY() || player.getY() >= level.getMaxY()) {
+            return MapSlice.SURFACE;
+        }
+        int ceiling = ceilingAbove(level, player);
+        if (ceiling == Integer.MAX_VALUE) return MapSlice.SURFACE;
+        return mode == CaveMapMode.FULL ? MapSlice.FULL_CAVE
+                : MapSlice.layered(Math.min(player.getY() + 4, ceiling), config.depth);
     }
 
-    /// 玩家当前是否处于洞穴/地下环境。
-    public static boolean isUnderground(Level level, BlockPos playerPos) {
-        if (level == null) {
-            return false;
-        }
-        // 水下直接视为洞穴模式。
-        if (!level.getFluidState(playerPos).isEmpty()) {
-            return true;
-        }
-        // 海平面以上不判定为地下，避免高山地形被误判。
-        if (playerPos.getY() > SEA_LEVEL) {
-            return false;
-        }
-        return hasCeiling(level, playerPos);
-    }
-
-    /// 玩家上方是否存在遮蔽顶棚（连续不透明方块构成）。
-    public static boolean hasCeiling(Level level, BlockPos playerPos) {
-        int maxY = Math.min(level.getMaxY() - 1, playerPos.getY() + CEILING_SCAN_HEIGHT);
+    private static int ceilingAbove(Level level, BlockPos player) {
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int y = playerPos.getY() + 2; y <= maxY; y++) {
-            cursor.set(playerPos.getX(), y, playerPos.getZ());
-            BlockState state = level.getBlockState(cursor);
-            // 忽略流体与空气，只有能遮挡视线的实心方块才算顶棚。
-            if (!state.isAir() && state.getFluidState().isEmpty() && state.canOcclude()) {
-                return true;
+        int centerCeiling = Integer.MAX_VALUE;
+        for (int dz = -1; dz <= 1; dz++) for (int dx = -1; dx <= 1; dx++) {
+            int x = player.getX() + dx, z = player.getZ() + dz;
+            var chunk = level.getChunkSource().getChunkNow(x >> 4, z >> 4);
+            if (chunk == null) return Integer.MAX_VALUE;
+            int top = Math.min(level.getMaxY() - 1, chunk.getHeight(Heightmap.Types.WORLD_SURFACE, x & 15, z & 15));
+            boolean covered = false;
+            for (int y = player.getY() + 1; y <= top; y++) {
+                cursor.set(x, y, z);
+                if (!isRoof(chunk.getBlockState(cursor))) continue;
+                covered = true;
+                if (dx == 0 && dz == 0) centerCeiling = y;
+                break;
             }
+            if (!covered) return Integer.MAX_VALUE;
         }
-        return false;
+        return centerCeiling;
+    }
+
+    /// 树叶、流体和可替换植物不能把露天区域误判成洞穴。
+    public static boolean isRoof(BlockState state) {
+        return !state.isAir() && state.getFluidState().isEmpty() && !state.is(BlockTags.LEAVES)
+                && !state.is(Blocks.BARRIER) && !state.canBeReplaced() && state.canOcclude();
+    }
+
+    /// 地表/洞穴切换至少间隔一秒，避免在洞口反复闪烁；洞内高度变化立即更新。
+    public static final class Tracker {
+        private MapSlice current;
+        private long lastToggle;
+
+        public MapSlice update(MapSlice detected, long tick) {
+            if (this.current == null || this.current.cave() != detected.cave() && tick - this.lastToggle >= 20) {
+                this.current = detected;
+                this.lastToggle = tick;
+            } else if (this.current.cave() == detected.cave()) {
+                this.current = detected;
+            }
+            return this.current;
+        }
+
+        public void reset() { this.current = null; }
     }
 }

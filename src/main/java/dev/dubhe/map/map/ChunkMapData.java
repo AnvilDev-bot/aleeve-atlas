@@ -30,6 +30,10 @@ public final class ChunkMapData {
     private final int[] stateIndices;
     private final int[] heights;
     private long version;
+    private MapSlice slice = MapSlice.SURFACE;
+
+    public MapSlice slice() { return this.slice; }
+    public void setSlice(MapSlice slice) { this.slice = slice; }
 
     public ChunkMapData(int chunkX, int chunkZ) {
         this(chunkX, chunkZ, new ArrayList<>(), new int[PIXELS], new int[PIXELS], 0L);
@@ -115,6 +119,10 @@ public final class ChunkMapData {
         tag.putInt("x", this.chunkX);
         tag.putInt("z", this.chunkZ);
         tag.putLong("v", this.version);
+        if (this.slice.cave()) {
+            tag.putInt("slice_top", this.slice.topY());
+            tag.putInt("slice_depth", this.slice.depth());
+        }
         ListTag paletteTag = new ListTag();
         for (PixelState state : this.palette) {
             paletteTag.add(state.save());
@@ -146,8 +154,12 @@ public final class ChunkMapData {
                 throw new IllegalArgumentException("Chunk map palette index out of range");
             }
         }
-        return new ChunkMapData(tag.getInt("x").orElse(0), tag.getInt("z").orElse(0),
+        ChunkMapData data = new ChunkMapData(tag.getInt("x").orElse(0), tag.getInt("z").orElse(0),
                 palette, indices, heights, tag.getLongOr("v", 0L));
+        int top = tag.getIntOr("slice_top", Integer.MAX_VALUE);
+        data.slice = top == Integer.MAX_VALUE ? MapSlice.SURFACE : top == Integer.MIN_VALUE ? MapSlice.FULL_CAVE
+                : MapSlice.layered(top, tag.getIntOr("slice_depth", 30));
+        return data;
     }
 
     private static int[] checkedPixels(int[] values) {

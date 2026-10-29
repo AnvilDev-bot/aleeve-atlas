@@ -1,38 +1,51 @@
 package dev.dubhe.map.client.map;
 
-import org.junit.jupiter.api.Assertions;
+import dev.dubhe.map.map.CaveMode;
+import dev.dubhe.map.map.ChunkMapData;
+import dev.dubhe.map.map.MapSlice;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-/// 洞穴分层缓存重建判定测试。
-///
-/// 缓存按区块索引、不区分层高；玩家上下移动超过阈值后必须重建，
-/// 否则地图会一直显示旧层级的结构。
 class CaveRescanTest {
-    @Test
-    void firstCaveEntryDoesNotRescan() {
-        // 首次进入洞穴时没有历史层高，无需重建；缓存尚未建立。
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(true, null, 50));
+    @Test void slowVerticalMovementChangesExactSamplingHeightAndEventuallyChangesLayer() {
+        var tracker = new CaveMode.Tracker();
+        var cached = new ChunkMapData(0, 0);
+        cached.setSlice(MapSlice.layered(40, 30));
+        for (int y = 41; y <= 49; y++) {
+            MapSlice view = tracker.update(MapSlice.layered(y, 30), y);
+            assertNotEquals(cached.slice(), view);
+            assertEquals(y < 48 ? "layer_2" : "layer_3", view.cacheLayer());
+        }
     }
 
-    @Test
-    void smallHeightChangeDoesNotRescan() {
-        // 阈值下方的小幅移动不应触发重建，否则玩家每走一步都会重采样。
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(true, 100, 100));
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(true, 100, 105));
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(true, 100, 93));
+    @Test void caveEntranceDoesNotFlickerAndWorldSwitchResetsDelay() {
+        var tracker = new CaveMode.Tracker();
+        assertEquals(MapSlice.SURFACE, tracker.update(MapSlice.SURFACE, 0));
+        assertEquals(MapSlice.SURFACE, tracker.update(MapSlice.layered(50, 30), 1));
+        assertTrue(tracker.update(MapSlice.layered(50, 30), 20).cave());
+        assertTrue(tracker.update(MapSlice.SURFACE, 21).cave());
+        assertEquals(MapSlice.SURFACE, tracker.update(MapSlice.SURFACE, 40));
+        tracker.reset();
+        assertEquals(MapSlice.FULL_CAVE, tracker.update(MapSlice.FULL_CAVE, 41));
     }
 
-    @Test
-    void largeHeightChangeTriggersRescan() {
-        Assertions.assertTrue(ClientMapManager.needsCaveRescan(true, 100, 108), "上升达到阈值应重建");
-        Assertions.assertTrue(ClientMapManager.needsCaveRescan(true, 100, 92), "下降达到阈值应重建");
-        Assertions.assertTrue(ClientMapManager.needsCaveRescan(true, 100, 160), "大幅移动应重建");
+    @Test void negativeHeightLayersAndDepthRemainBounded() {
+        assertEquals("layer_-1", MapSlice.layered(-1, 30).cacheLayer());
+        assertEquals("layer_-2", MapSlice.layered(-17, 30).cacheLayer());
+        assertEquals(-64, MapSlice.layered(-50, 30).scanBottom(-64));
+        assertEquals(71, MapSlice.layered(100, 30).scanBottom(-64));
+        assertEquals(319, MapSlice.FULL_CAVE.scanTop(320));
+        assertEquals(-64, MapSlice.FULL_CAVE.scanBottom(-64));
+        assertEquals(1, MapSlice.layered(0, -10).depth());
+        assertEquals(64, MapSlice.layered(0, 100).depth());
     }
 
-    @Test
-    void surfaceModeNeverRescans() {
-        // 回到地表时不重建洞穴缓存：地表使用独立缓存，洞穴数据保留待下次进入。
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(false, 100, 200));
-        Assertions.assertFalse(ClientMapManager.needsCaveRescan(false, null, 200));
+    @Test void preciseSliceSurvivesDiskCodecAndSurfaceRemainsSeparate() {
+        var data = new ChunkMapData(3, -4);
+        data.setSlice(MapSlice.layered(-12, 30));
+        assertEquals(data.slice(), ChunkMapData.load(data.save()).slice());
+        data.setSlice(MapSlice.FULL_CAVE);
+        assertEquals(MapSlice.FULL_CAVE, ChunkMapData.load(data.save()).slice());
+        assertEquals(MapSlice.SURFACE, ChunkMapData.load(new ChunkMapData(0, 0).save()).slice());
     }
 }

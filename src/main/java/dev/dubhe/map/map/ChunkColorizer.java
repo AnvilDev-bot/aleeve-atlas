@@ -1,6 +1,7 @@
 package dev.dubhe.map.map;
 
 import dev.dubhe.map.config.MapColorScheme;
+import dev.dubhe.map.config.AtlasClientConfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -36,13 +37,22 @@ public final class ChunkColorizer {
             if (level == null || cursor == null) {
                 throw new IllegalArgumentException("Biome shading requires a level and cursor");
             }
-            return biomeColor(pixel, height, worldX, worldZ, level, cursor, shadow);
+            return caveShade(data, pixel, height, biomeColor(pixel, height, worldX, worldZ, level, cursor, shadow));
         }
         int referenceHeight = localZ == 0 ? height : data.heightAt(localX, localZ - 1);
         MapColor.Brightness brightness = pixel.vanillaMapColor() == MapColor.WATER
                 ? MapPalette.brightnessForWater(pixel.fluidDepth(), worldX, worldZ)
                 : MapPalette.brightnessForTerrain(height, referenceHeight, worldX, worldZ);
-        return MapPalette.colorOf(pixel.vanillaMapColor(), brightness);
+        return caveShade(data, pixel, height, MapPalette.colorOf(pixel.vanillaMapColor(), brightness));
+    }
+
+    private static int caveShade(ChunkMapData data, ChunkMapData.PixelState pixel, int height, int color) {
+        MapSlice slice = data.slice();
+        if (!slice.cave() || slice.fullCave() || !AtlasClientConfigs.CONFIG.caves.depthShading
+                || pixel.state().getLightEmission() > 0) return color;
+        float light = 1.0F - 0.65F * Math.clamp((slice.topY() - height) / (float) slice.depth(), 0.0F, 1.0F);
+        return (color & 0xFF000000) | ((int) (((color >> 16) & 255) * light) << 16)
+                | ((int) (((color >> 8) & 255) * light) << 8) | (int) ((color & 255) * light);
     }
 
     private static int biomeColor(ChunkMapData.PixelState pixel,

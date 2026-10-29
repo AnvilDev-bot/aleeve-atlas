@@ -7,6 +7,9 @@
 # Gradle build folder
 build
 
+# Local research and verification files
+.temp/
+
 # IntelliJ
 out/
 .idea

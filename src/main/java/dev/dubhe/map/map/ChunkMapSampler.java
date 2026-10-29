@@ -21,23 +21,21 @@ public final class ChunkMapSampler {
 
     /// 采样一个已加载区块；区块未加载时返回 {@code null}。
     public static ChunkMapData sample(Level level, ChunkPos pos) {
-        return sample(level, pos, null);
+        return sample(level, pos, MapSlice.SURFACE);
     }
 
     /// 按指定起始高度采样。
     ///
-    /// `layerTopY` 为 {@code null} 时从世界顶部向下扫描（地表模式）；
-    /// 指定高度时仅扫描该高度以下（洞穴模式），使地图反映玩家所在层级的结构。
-    public static ChunkMapData sample(Level level, ChunkPos pos, Integer layerTopY) {
+    /// 分层洞穴限制扫描深度；完整洞穴跳过每一列最外层的顶棚，适用于下界。
+    public static ChunkMapData sample(Level level, ChunkPos pos, MapSlice slice) {
         LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
         if (chunk == null) {
             return null;
         }
         ChunkMapData data = new ChunkMapData(pos.x, pos.z);
-        int minY = level.getMinY();
-        int topY = layerTopY == null
-                ? level.getMaxY() - 1
-                : Math.min(layerTopY, level.getMaxY() - 1);
+        data.setSlice(slice);
+        int minY = slice.scanBottom(level.getMinY());
+        int topY = slice.scanTop(level.getMaxY());
         int baseX = pos.getMinBlockX();
         int baseZ = pos.getMinBlockZ();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
@@ -48,21 +46,12 @@ public final class ChunkMapSampler {
                 int worldZ = baseZ + localZ;
                 int surfaceY = minY;
                 ChunkMapData.PixelState pixel = ChunkMapData.PixelState.EMPTY;
-                boolean foundCaveAir = layerTopY == null;
+                CaveColumn column = new CaveColumn(slice);
                 for (int y = topY; y >= minY; y--) {
                     cursor.set(worldX, y, worldZ);
                     BlockState state = chunk.getBlockState(cursor);
                     FluidState fluid = state.getFluidState();
-                    if (state.isAir()) {
-                        foundCaveAir = true;
-                        continue;
-                    }
-                    // 水下玩家所在列可能从扫描上限到世界底部都没有空气，
-                    // 首个流体方块本身就是该列可见的洞穴截面。
-                    if (!foundCaveAir && !fluid.isEmpty()) {
-                        foundCaveAir = true;
-                    }
-                    if (!foundCaveAir || (fluid.isEmpty()
+                    if (!column.visible(state) || (fluid.isEmpty()
                             && state.getMapColor(level, cursor) == MapColor.NONE)) {
                         continue;
                     }
@@ -75,7 +64,7 @@ public final class ChunkMapSampler {
                     BlockState vanillaState = fluid.isEmpty()
                             ? state : correctStateForFluidBlock(level, state, cursor);
                     MapColor vanillaMapColor = vanillaState.getMapColor(level, cursor);
-                    int depth = fluid.isEmpty() ? 0 : countFluidDepth(chunk, cursor, y, minY);
+                    int depth = fluid.isEmpty() ? 0 : countFluidDepth(chunk, cursor, y, level.getMinY());
                     BlockState groundState = Blocks.AIR.defaultBlockState();
                     MapColor groundMapColor = MapColor.NONE;
                     if (!fluid.isEmpty()) {

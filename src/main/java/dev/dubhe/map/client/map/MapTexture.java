@@ -104,6 +104,8 @@ public final class MapTexture {
         return worldZ - this.originPixelZ - uvSize / 2.0;
     }
 
+    public void recolor() { this.redrawAll(); }
+
     /// 配色变更后立即按现有色板重绘，无需重新采样。
     public void setColorScheme(MapColorScheme scheme) {
         if (this.colorScheme == scheme) {
