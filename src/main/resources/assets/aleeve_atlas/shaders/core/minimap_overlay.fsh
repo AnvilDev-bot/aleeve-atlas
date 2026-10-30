@@ -22,7 +22,8 @@ void main() {
     float originalScale = 1.0 / (1.0 + vertexColor.a);
     float edge = circular ? length(centered) * 2.0 : max(abs(centered.x), abs(centered.y)) * 2.0;
     float innerEdge = min(circular ? 0.972 : 0.985, 1.0 - vertexColor.b) * originalScale;
-    if (edge > 1.0 || edge <= innerEdge) {
+    float outerEdge = (innerEdge + 1.0) * 0.5;
+    if (edge > outerEdge || edge <= innerEdge) {
         discard;
     }
     fragColor = BORDER_COLOR * strength;
