@@ -19,48 +19,55 @@ jobs:
     env:
       CI_BUILD: true
       PR_BUILD: false
-      VERSION_TYPE: release
+      VERSION_TYPE: ${{ startsWith(github.ref, 'refs/heads/releases/') && 'release' || 'alpha' }}
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Read Properties
-        id: 'properties'
+      - name: Read properties
+        id: properties
         uses: christian-draeger/read-properties@1.1.1
         with:
           path: gradle.properties
-          properties: 'mod_id mod_name java_version modrinth_id curseforge_id upload publish'
+          properties: 'mod_id mod_name java_version minecraft_version modrinth_id curseforge_id upload publish'
 
       - name: Setup Java ${{ steps.properties.outputs.java_version }}
-        uses: actions/setup-java@v3.6.0
+        uses: actions/setup-java@v4
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: ${{ steps.properties.outputs.java_version }}
 
-      - name: make gradle wrapper executable
-        if: ${{ runner.os != 'Windows' }}
+      - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        uses: gradle/actions/setup-gradle@v4.3.1
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build
         run: ./gradlew build
 
-      - name: Get Version
-        id: version
+      - name: Resolve build artifact
+        id: artifact
+        shell: bash
         run: |
-          MESSAGE=$(ls build/libs/* | grep sources.jar -v | grep shadow.jar -v | grep slim.jar -v | awk -F '${{ steps.properties.outputs.mod_id }}-neoforge-|.jar' '{print $2}')
-          echo "version=$MESSAGE" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          jar=$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)
+          sources=$(find build/libs -maxdepth 1 -type f -name '*-sources.jar' | sort | head -n 1)
+          test -n "$jar"
+          version=$(./gradlew -q properties | awk -F': ' '$1 == "version" { print $2; exit }')
+          test -n "$version"
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+          echo "sources_path=$sources" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v4.3.3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: "${{ steps.properties.outputs.mod_name }} ${{ steps.version.outputs.version }}"
-          path: build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}.jar
+          name: "${{ steps.properties.outputs.mod_name }} ${{ steps.artifact.outputs.version }}"
+          path: ${{ steps.artifact.outputs.path }}
 
-      - name: Publish to maven
-        if: ${{ steps.properties.outputs.publish }}
+      - name: Publish to Maven
+        if: ${{ steps.properties.outputs.publish == 'true' }}
         run: ./gradlew publish
         env:
           MAVEN_URL: ${{ secrets.MAVEN_URL }}
@@ -68,30 +75,21 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASS }}
         continue-on-error: true
 
-#      - name: gametest
-#        uses: Anvil-Dev/dedicated-server-launch-test@26.1-neoforge
-#        with:
-#          mod: build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}.jar
-
-      - name: publish neoforge mc mod
+      - name: Publish to Modrinth and CurseForge
+        if: ${{ steps.properties.outputs.upload == 'true' && steps.properties.outputs.curseforge_id != '' }}
         uses: Kir-Antipov/mc-publish@v3.3
-        if: ${{ steps.properties.outputs.upload }}
-        continue-on-error: true
         with:
-          name: "${{ steps.properties.outputs.mod_name }} For NeoForge v${{ steps.version.outputs.version }}"
-          version: ${{ steps.version.outputs.version }}
-          game-versions: 26.1
+          name: "${{ steps.properties.outputs.mod_name }} for NeoForge ${{ steps.artifact.outputs.version }}"
+          version: ${{ steps.artifact.outputs.version }}
           version-type: ${{ env.VERSION_TYPE }}
+          game-versions: ${{ steps.properties.outputs.minecraft_version }}
+          loaders: neoforge
           java: ${{ steps.properties.outputs.java_version }}
-          fail-mode: skip
-
+          fail-mode: fail
           modrinth-id: ${{ steps.properties.outputs.modrinth_id }}
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-          modrinth-featured: true
-
           curseforge-id: ${{ steps.properties.outputs.curseforge_id }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-
           files: |
-            build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}.jar
-            build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}-sources.jar
+            ${{ steps.artifact.outputs.path }}
+            ${{ steps.artifact.outputs.sources_path }}
