@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - releases/**
+      - dev/**
     paths:
       - gradle/scripts/**
       - src/**
@@ -19,45 +20,44 @@ jobs:
       CI_BUILD: true
       PR_BUILD: true
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Read Properties
-        id: 'properties'
+      - name: Read properties
+        id: properties
         uses: christian-draeger/read-properties@1.1.1
         with:
           path: gradle.properties
-          properties: 'mod_id mod_name java_version'
+          properties: 'mod_name java_version'
 
       - name: Setup Java ${{ steps.properties.outputs.java_version }}
-        uses: actions/setup-java@v3.6.0
+        uses: actions/setup-java@v4
         with:
-          distribution: zulu
+          distribution: temurin
           java-version: ${{ steps.properties.outputs.java_version }}
 
-      - name: make gradle wrapper executable
-        if: ${{ runner.os != 'Windows' }}
+      - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build with Gradle
-        uses: gradle/actions/setup-gradle@v4.3.1
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build
         run: ./gradlew build
 
-      - name: Get Version
-        id: version
+      - name: Resolve build artifact
+        id: artifact
+        shell: bash
         run: |
-          MESSAGE=$(ls build/libs/* | grep sources.jar -v | grep shadow.jar -v | grep slim.jar -v | awk -F '${{ steps.properties.outputs.mod_id }}-neoforge-|.jar' '{print $2}')
-          echo "version=$MESSAGE" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          jar=$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | sort | head -n 1)
+          version=$(./gradlew -q properties | awk -F': ' '$1 == "version" { print $2; exit }')
+          test -n "$jar" -a -n "$version"
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: capture build artifacts
-        uses: actions/upload-artifact@v4.3.3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: "${{ steps.properties.outputs.mod_name }} ${{ steps.version.outputs.version }}"
-          path: build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}.jar
-
-#      - name: gametest
-#        uses: Anvil-Dev/dedicated-server-launch-test@26.1-neoforge
-#        with:
-#          mod: build/libs/${{ steps.properties.outputs.mod_id }}-neoforge-${{ steps.version.outputs.version }}.jar
+          name: "${{ steps.properties.outputs.mod_name }} ${{ steps.artifact.outputs.version }}"
+          path: ${{ steps.artifact.outputs.path }}
